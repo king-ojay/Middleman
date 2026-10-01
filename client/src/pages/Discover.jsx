@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import WorkerCard from '../components/WorkerCard.jsx';
-
-// TODO: replace with the real logged-in client id once auth exists
-const DEMO_CLIENT_ID = 'demo-client';
+import { api } from '../api.js';
+import { useAuth } from '../auth.jsx';
 
 // Placeholder data shown until the API + seed data are wired up, so the
 // screen is reviewable today. Shape matches exactly what GET /api/discover
@@ -14,6 +13,7 @@ const PLACEHOLDER_WORKERS = [
 ];
 
 export default function Discover() {
+  const { user } = useAuth();
   const [category, setCategory] = useState('electrician');
   const [area, setArea] = useState('');
   const [workers, setWorkers] = useState(PLACEHOLDER_WORKERS);
@@ -21,14 +21,13 @@ export default function Discover() {
   const [usingLiveData, setUsingLiveData] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams({ clientId: DEMO_CLIENT_ID, category, ...(area && { area }) });
+    const params = new URLSearchParams({ clientId: user._id, category, ...(area && { area }) });
     setLoading(true);
-    fetch(`/api/discover?${params}`)
-      .then(r => { if (!r.ok) throw new Error('no backend yet'); return r.json(); })
+    api(`/api/discover?${params}`)
       .then(data => { setWorkers(data); setUsingLiveData(true); })
       .catch(() => { setWorkers(PLACEHOLDER_WORKERS); setUsingLiveData(false); })
       .finally(() => setLoading(false));
-  }, [category, area]);
+  }, [user, category, area]);
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-12">

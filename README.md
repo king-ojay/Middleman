@@ -53,12 +53,15 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
   Remera and Gikondo, with completed and rated jobs plus open jobs.
 - **Discover page** (`client/src/pages/Discover.jsx`) — trust-ranked worker
   search.
+- **Demo login + role routing** — log in with a seeded phone number
+  (`POST /api/auth/login`, no password; not production security). Clients land
+  on Discover / Post a job, workers on "Open jobs near you" (`/jobs`), a
+  read-only list of open jobs matching their skills and area.
 - **Landing page** — hero and "how it works" explainer.
 - **Post Job page** — form scaffold, not yet wired to the API.
 
 ## Not built yet (next steps)
 
-- Auth (currently `DEMO_CLIENT_ID` is hardcoded in Discover.jsx)
 - Wiring PostJob's form to `POST /api/jobs`
 - Quote submission + accept flow
 - Escrow/Paypack integration
