@@ -57,12 +57,34 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
   (`POST /api/auth/login`, no password; not production security). Clients land
   on Discover / Post a job, workers on "Open jobs near you" (`/jobs`), a
   read-only list of open jobs matching their skills and area.
+- **Post Job** — submits to `POST /api/jobs` as the logged-in client; the job
+  then appears on matching workers' "Open jobs near you" list.
 - **Landing page** — hero and "how it works" explainer.
 - **Post Job page** — form scaffold, not yet wired to the API.
 
+## Deployment
+
+API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
+
+1. **Atlas** — create a free M0 cluster and a database user. Under Network
+   Access, allow `0.0.0.0/0` (Render's free tier has no fixed IP). Copy the
+   connection string and add the database name before the `?`:
+   `mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/middleman?retryWrites=true&w=majority`
+2. **Seed Atlas** from your machine (one-off; wipes and reloads demo data):
+   ```bash
+   cd server && MONGO_URI="<atlas connection string>" npm run seed
+   ```
+3. **Render** — New + → Blueprint → select this repo. It reads `render.yaml`
+   and prompts for `MONGO_URI`; paste the Atlas string there. Check
+   `https://<service>.onrender.com/api/health` returns `{"status":"ok"}`.
+   Free services sleep when idle, so the first request can take ~50s.
+4. **Vercel** — Add New → Project → import this repo, set **Root Directory**
+   to `client` (Vite is auto-detected), and add the environment variable
+   `VITE_API_URL=https://<service>.onrender.com` (no trailing slash). Deploy.
+   `client/vercel.json` makes deep links like `/discover` work.
+
 ## Not built yet (next steps)
 
-- Wiring PostJob's form to `POST /api/jobs`
 - Quote submission + accept flow
 - Escrow/Paypack integration
 - Rating submission UI (backend route exists: `POST /api/ratings`)
