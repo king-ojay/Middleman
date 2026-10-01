@@ -3,12 +3,32 @@ import Job from '../models/Job.js';
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+// GET /api/jobs?status=open&area=gikondo&category=electrician,plumber
+// `category` accepts a comma-separated list so a worker with several skills
+// gets every matching job in one call.
+router.get('/', async (req, res) => {
   try {
-    const job = await Job.create(req.body);
-    res.status(201).json(job);
+    const { status, area, category } = req.query;
+    const filter = {
+      ...(status ? { status } : {}),
+      ...(area ? { area } : {}),
+      ...(category ? { category: { $in: category.split(',') } } : {})
+    };
+    const jobs = await Job.find(filter).sort({ createdAt: -1 }).populate('client', 'name area').lean();
+    res.json(jobs);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/', async (req, res) => {
+  try {
+    const { client, category, description, area } = req.body;
+    const job = await Job.create({ client, category, description, area });
+    res.status(201).json(job);
+  } catch (err) {
+    const status = err.name === 'ValidationError' ? 400 : 500;
+    res.status(status).json({ error: err.message });
   }
 });
 
