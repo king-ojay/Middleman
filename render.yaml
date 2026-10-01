@@ -1,0 +1,15 @@
+# Render Blueprint for the Middleman API (free web service).
+# In Render: New + > Blueprint > pick this repo. MONGO_URI is prompted for
+# at creation and never stored in the repo.
+services:
+  - type: web
+    name: middleman-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGO_URI
+        sync: false
