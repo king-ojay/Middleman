@@ -1,0 +1,26 @@
+import mongoose from 'mongoose';
+
+const jobSchema = new mongoose.Schema({
+  client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  worker: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  category: { type: String, required: true },
+  description: { type: String, required: true },
+  area: { type: String, enum: ['kimironko', 'kwa_nayinzira'], required: true },
+  photos: [{ type: String }],
+  status: {
+    type: String,
+    enum: [
+      'open',            // posted, awaiting quotes
+      'quote_accepted',  // client picked a quote, awaiting escrow funding
+      'escrow_held',     // funded, worker may begin
+      'in_progress',
+      'disputed',
+      'completed'        // balance released, terminal state
+    ],
+    default: 'open'
+  },
+  agreedPrice: { type: Number, default: null },
+  depositAmount: { type: Number, default: 0 }
+}, { timestamps: true });
+
+export default mongoose.model('Job', jobSchema);

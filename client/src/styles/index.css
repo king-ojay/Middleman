@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #F6F1E7;
+  color: #201A15;
+  font-family: 'Work Sans', sans-serif;
+}
+
+h1, h2, h3, .font-display {
+  font-family: 'Zilla Slab', serif;
+}
+
+/* visible keyboard focus, kept deliberate rather than removed */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid #3B5B6B;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
