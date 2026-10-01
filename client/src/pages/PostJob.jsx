@@ -26,6 +26,8 @@ export default function PostJob() {
           <select className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60">
             <option value="kimironko">Kimironko</option>
             <option value="kwa_nayinzira">Kwa Nayinzira</option>
+            <option value="remera">Remera</option>
+            <option value="gikondo">Gikondo</option>
           </select>
         </div>
         <button type="button" className="px-5 py-3 bg-steel text-paper rounded font-medium hover:bg-steel-dark transition-colors">

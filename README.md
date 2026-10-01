@@ -18,8 +18,17 @@ client/   React + Vite frontend
 cd server
 cp .env.example .env      # fill in MONGO_URI if not using local default
 npm install
+npm run seed               # wipes the DB and loads demo users + jobs
 npm run dev                # runs on http://localhost:4000
 ```
+
+No local MongoDB? `docker run -d --name mongo -p 27017:27017 mongo:7` works
+with the default `MONGO_URI`.
+
+The seed prints the demo phone numbers. Logged in as Amina (`0788000001`),
+searching electricians on Discover shows all three trust tiers: network
+(Eric, direct; Claudine, 3 hops), area (Jean Bosco, rated by Gikondo clients)
+and new (Emmanuel, never rated).
 
 ### Frontend
 ```bash
@@ -37,8 +46,13 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
 - **Trust propagation algorithm** (`server/services/trustPropagation.js`) — the
   actual decay-weighted BFS traversal described in Section 3.2.3, including the
   `referredFlag` boost and bidirectional rating support.
+- **Area-level trust fallback** (`server/routes/discover.js`) — workers the
+  client's graph can't reach are scored by ratings from their own area, before
+  falling back to the verification floor (path → area → floor, Section 3.2.3).
+- **Seed script** (`server/seed.js`) — 16 users across Kimironko, Kwa Nayinzira,
+  Remera and Gikondo, with completed and rated jobs plus open jobs.
 - **Discover page** (`client/src/pages/Discover.jsx`) — trust-ranked worker
-  search, currently showing placeholder data until seed data + auth exist.
+  search.
 - **Landing page** — hero and "how it works" explainer.
 - **Post Job page** — form scaffold, not yet wired to the API.
 
@@ -49,7 +63,6 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
 - Quote submission + accept flow
 - Escrow/Paypack integration
 - Rating submission UI (backend route exists: `POST /api/ratings`)
-- Seed script for realistic demo data
 - The synthetic dataset generator described in Chapter 3, Section 3.2.1/3.2.2
 
 ## Design system

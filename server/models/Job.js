@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
+import { AREAS } from '../config/areas.js';
 
 const jobSchema = new mongoose.Schema({
   client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   worker: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   category: { type: String, required: true },
   description: { type: String, required: true },
-  area: { type: String, enum: ['kimironko', 'kwa_nayinzira'], required: true },
+  area: { type: String, enum: AREAS, required: true },
   photos: [{ type: String }],
   status: {
     type: String,
