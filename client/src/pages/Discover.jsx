@@ -61,6 +61,8 @@ export default function Discover() {
           <option value="">Any area</option>
           <option value="kimironko">Kimironko</option>
           <option value="kwa_nayinzira">Kwa Nayinzira</option>
+          <option value="remera">Remera</option>
+          <option value="gikondo">Gikondo</option>
         </select>
       </div>
 

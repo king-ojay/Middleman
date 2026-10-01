@@ -1,0 +1,124 @@
+// Seeds the database with demo users, completed + rated jobs, and open jobs.
+// Wipes existing data first. Run with: npm run seed (from server/).
+//
+// The rating graph is shaped so that, logged in as Amina (the demo client),
+// Discover shows all three trust tiers for electricians and masons:
+//   network  — reachable through Amina's own rating graph (1 or 3 hops)
+//   area     — not reachable, but rated by clients in the worker's own area
+//   fallback — never rated ("New — not yet rated")
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+import User from './models/User.js';
+import Job from './models/Job.js';
+import Quote from './models/Quote.js';
+import Rating from './models/Rating.js';
+import Transaction from './models/Transaction.js';
+import TrustEdge from './models/TrustEdge.js';
+import { writeTrustEdgeFromRating } from './services/trustPropagation.js';
+
+dotenv.config();
+
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/middleman';
+
+const USERS = [
+  // Clients
+  { key: 'amina', name: 'Amina Uwimana', phone: '0788000001', role: 'client', area: 'kimironko' },
+  { key: 'patrick', name: 'Patrick Nshimiyimana', phone: '0788000002', role: 'client', area: 'kimironko' },
+  { key: 'grace', name: 'Grace Mukamana', phone: '0788000003', role: 'client', area: 'remera' },
+  { key: 'jeanpaul', name: 'Jean Paul Habyarimana', phone: '0788000004', role: 'client', area: 'gikondo' },
+  { key: 'olivier', name: 'Olivier Mugisha', phone: '0788000005', role: 'client', area: 'gikondo' },
+  { key: 'diane', name: 'Diane Ingabire', phone: '0788000006', role: 'client', area: 'kwa_nayinzira' },
+
+  // Workers
+  { key: 'eric', name: 'Eric Habimana', phone: '0788000101', role: 'worker', area: 'kimironko', skills: ['electrician'], verifiedStatus: 'verified' },
+  { key: 'claudine', name: 'Claudine Uwase', phone: '0788000102', role: 'worker', area: 'remera', skills: ['electrician'] },
+  { key: 'bosco', name: 'Jean Bosco Niyonzima', phone: '0788000103', role: 'worker', area: 'gikondo', skills: ['electrician'], verifiedStatus: 'verified' },
+  { key: 'emmanuel', name: 'Emmanuel Twagirayezu', phone: '0788000104', role: 'worker', area: 'kwa_nayinzira', skills: ['electrician'], verifiedStatus: 'verified' },
+  { key: 'alice', name: 'Alice Mukeshimana', phone: '0788000105', role: 'worker', area: 'kimironko', skills: ['plumber'], verifiedStatus: 'verified' },
+  { key: 'fabrice', name: 'Fabrice Ndayisaba', phone: '0788000106', role: 'worker', area: 'gikondo', skills: ['plumber'] },
+  { key: 'samuel', name: 'Samuel Bizimana', phone: '0788000107', role: 'worker', area: 'remera', skills: ['mason'] },
+  { key: 'josiane', name: 'Josiane Umutoni', phone: '0788000108', role: 'worker', area: 'kimironko', skills: ['mason'] },
+  { key: 'vestine', name: 'Vestine Nyirahabimana', phone: '0788000109', role: 'worker', area: 'gikondo', skills: ['cleaner'] },
+  { key: 'innocent', name: 'Innocent Hakizimana', phone: '0788000110', role: 'worker', area: 'kwa_nayinzira', skills: ['mechanic'] }
+];
+
+// Completed jobs. `clientScore` is the client's rating of the worker;
+// `workerScore` (optional) is the worker's rating of the client.
+const COMPLETED_JOBS = [
+  // Amina's direct network
+  { client: 'amina', worker: 'eric', category: 'electrician', price: 25000, description: 'Replace faulty wiring in sitting room', clientScore: 5, workerScore: 5 },
+  { client: 'amina', worker: 'alice', category: 'plumber', price: 18000, description: 'Fix leaking kitchen tap', clientScore: 4, referred: true, workerScore: 5 },
+  // Alice -> Grace links Amina to Grace's hires (3-hop network trust)
+  { client: 'grace', worker: 'alice', category: 'plumber', price: 30000, description: 'Install new shower mixer', clientScore: 5, workerScore: 4 },
+  { client: 'grace', worker: 'claudine', category: 'electrician', price: 22000, description: 'Install security lights', clientScore: 5, workerScore: 5 },
+  { client: 'grace', worker: 'samuel', category: 'mason', price: 60000, description: 'Rebuild garden wall', clientScore: 4 },
+  // Gikondo community — unreachable from Amina, so area-level trust
+  { client: 'jeanpaul', worker: 'bosco', category: 'electrician', price: 20000, description: 'Rewire meter box', clientScore: 5, workerScore: 5 },
+  { client: 'olivier', worker: 'bosco', category: 'electrician', price: 15000, description: 'Fix tripping breaker', clientScore: 4 },
+  { client: 'jeanpaul', worker: 'vestine', category: 'cleaner', price: 8000, description: 'Deep clean after renovation', clientScore: 5 },
+  { client: 'olivier', worker: 'fabrice', category: 'plumber', price: 12000, description: 'Unblock drainage', clientScore: 4 },
+  // Kimironko community — Patrick isn't in Amina's graph, so Josiane is area-trusted
+  { client: 'patrick', worker: 'josiane', category: 'mason', price: 45000, description: 'Plaster bedroom walls', clientScore: 5 }
+];
+
+const OPEN_JOBS = [
+  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Socket in kitchen sparks when used' },
+  { client: 'olivier', category: 'electrician', area: 'gikondo', description: 'Need outdoor lighting installed' },
+  { client: 'amina', category: 'plumber', area: 'kimironko', description: 'Water heater not heating' },
+  { client: 'patrick', category: 'cleaner', area: 'kimironko', description: 'Weekly house cleaning' },
+  { client: 'grace', category: 'mason', area: 'remera', description: 'Cracked front steps need repair' },
+  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Car will not start in the mornings' }
+];
+
+async function seed() {
+  await mongoose.connect(MONGO_URI);
+  console.log(`Connected to ${mongoose.connection.name}. Clearing existing data...`);
+
+  await Promise.all([User, Job, Quote, Rating, Transaction, TrustEdge].map(M => M.deleteMany({})));
+
+  const users = {};
+  for (const { key, ...data } of USERS) {
+    users[key] = await User.create(data);
+  }
+
+  for (const j of COMPLETED_JOBS) {
+    const client = users[j.client];
+    const worker = users[j.worker];
+    const job = await Job.create({
+      client: client._id,
+      worker: worker._id,
+      category: j.category,
+      description: j.description,
+      area: client.area,
+      status: 'completed',
+      agreedPrice: j.price
+    });
+
+    await rate(job, client, worker, j.clientScore, j.referred);
+    if (j.workerScore) await rate(job, worker, client, j.workerScore, false);
+  }
+
+  for (const j of OPEN_JOBS) {
+    await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description });
+  }
+
+  console.log(`Seeded ${USERS.length} users, ${COMPLETED_JOBS.length} completed jobs, ${OPEN_JOBS.length} open jobs.\n`);
+  console.log('Demo logins (phone number):');
+  for (const u of USERS) {
+    console.log(`  ${u.phone}  ${u.role.padEnd(6)}  ${u.area.padEnd(13)}  ${u.name}${u.skills ? ` (${u.skills.join(', ')})` : ''}`);
+  }
+
+  await mongoose.disconnect();
+}
+
+// Mirrors POST /api/ratings: store the rating, then write its trust edge.
+async function rate(job, fromUser, toUser, score, referredFlag) {
+  await Rating.create({ job: job._id, fromUser: fromUser._id, toUser: toUser._id, score, referredFlag: !!referredFlag });
+  await writeTrustEdgeFromRating({ fromUser: fromUser._id, toUser: toUser._id, score, referredFlag });
+}
+
+seed().catch(err => {
+  console.error('Seed failed:', err);
+  process.exit(1);
+});

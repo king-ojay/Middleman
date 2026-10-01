@@ -1,10 +1,11 @@
 import mongoose from 'mongoose';
+import { AREAS } from '../config/areas.js';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   phone: { type: String, required: true, unique: true },
   role: { type: String, enum: ['client', 'worker'], required: true },
-  area: { type: String, enum: ['kimironko', 'kwa_nayinzira'], required: true },
+  area: { type: String, enum: AREAS, required: true },
   skills: [{ type: String }], // only relevant for role: 'worker', e.g. ['electrician', 'mason']
   verifiedStatus: {
     type: String,
