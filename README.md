@@ -4,6 +4,21 @@ Graph-based trust propagation platform for informal/blue-collar service discover
 in Kigali, Rwanda. Built for the Mission Capstone project — see `/docs` for the
 full research proposal this implements.
 
+## Live demo
+
+- **App:** https://middleman-client.vercel.app
+- **API:** https://middleman-api-74zb.onrender.com/api/health (free tier, so the
+  first request after idle can take ~50s while it wakes up)
+
+Log in with a seeded phone number (no password, demo only):
+
+| Phone | Role | Who | What you'll see |
+|---|---|---|---|
+| `0788000001` | Client | Amina, Kimironko | Discover → Electrician shows all three trust tiers |
+| `0788000004` | Client | Jean Paul, Gikondo | Same search, different personalised ranking |
+| `0788000103` | Worker | Jean Bosco, Gikondo electrician | Open jobs near you |
+| `0788000104` | Worker | Emmanuel, Kwa Nayinzira electrician | Open jobs near you |
+
 ## Structure
 
 ```
