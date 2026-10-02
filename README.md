@@ -72,8 +72,9 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
   (`POST /api/auth/login`, no password; not production security). Clients land
   on Discover / Post a job, workers on "Open jobs near you" (`/jobs`), a
   read-only list of open jobs matching their skills and area.
-- **Post Job** — submits to `POST /api/jobs` as the logged-in client; the job
-  then appears on matching workers' "Open jobs near you" list.
+- **Post Job** — submits to `POST /api/jobs` as the logged-in client, with an
+  optional budget in RWF. The confirmation names the workers who can now see it
+  (same skill + same area), and the page lists the client's own posted jobs.
 - **Landing page** — hero and "how it works" explainer.
 - **Post Job page** — form scaffold, not yet wired to the API.
 

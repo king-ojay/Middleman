@@ -1,16 +1,18 @@
 import express from 'express';
 import Job from '../models/Job.js';
+import User from '../models/User.js';
 
 const router = express.Router();
 
-// GET /api/jobs?status=open&area=gikondo&category=electrician,plumber
+// GET /api/jobs?status=open&area=gikondo&category=electrician,plumber&client=<id>
 // `category` accepts a comma-separated list so a worker with several skills
 // gets every matching job in one call.
 router.get('/', async (req, res) => {
   try {
-    const { status, area, category } = req.query;
+    const { status, area, category, client } = req.query;
     const filter = {
       ...(status ? { status } : {}),
+      ...(client ? { client } : {}),
       ...(area ? { area } : {}),
       ...(category ? { category: { $in: category.split(',') } } : {})
     };
@@ -23,9 +25,11 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { client, category, description, area } = req.body;
-    const job = await Job.create({ client, category, description, area });
-    res.status(201).json(job);
+    const { client, category, description, area, budget } = req.body;
+    const job = await Job.create({ client, category, description, area, budget: budget || null });
+    // Workers whose "Open jobs near you" list will now include this job.
+    const matchingWorkers = await User.find({ role: 'worker', skills: category, area }, 'name').lean();
+    res.status(201).json({ ...job.toObject(), matchingWorkers });
   } catch (err) {
     const status = err.name === 'ValidationError' ? 400 : 500;
     res.status(status).json({ error: err.message });

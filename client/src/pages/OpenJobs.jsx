@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
+import { formatBudget } from '../format.js';
 
 const formatArea = area => area.replace('_', ' ');
 
@@ -41,7 +42,7 @@ export default function OpenJobs() {
               <h3 className="font-medium text-ink">{job.description}</h3>
               <p className="text-sm text-ink/60 mt-1">
                 <span className="capitalize">{job.category} · {formatArea(job.area)}</span>
-                {' '}· posted by {job.client?.name} on {new Date(job.createdAt).toLocaleDateString()}
+                {' '}· {formatBudget(job.budget)} · posted by {job.client?.name} on {new Date(job.createdAt).toLocaleDateString()}
               </p>
             </div>
             <button disabled title="Quote submission coming soon" className="px-4 py-2 text-sm font-medium border border-ink/20 rounded shrink-0 opacity-50 cursor-not-allowed">
