@@ -8,6 +8,7 @@ const jobSchema = new mongoose.Schema({
   description: { type: String, required: true },
   area: { type: String, enum: AREAS, required: true },
   photos: [{ type: String }],
+  budget: { type: Number, min: 0, default: null }, // client's expected budget in RWF, optional
   status: {
     type: String,
     enum: [

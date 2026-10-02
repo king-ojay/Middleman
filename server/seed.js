@@ -63,11 +63,11 @@ const COMPLETED_JOBS = [
 ];
 
 const OPEN_JOBS = [
-  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Socket in kitchen sparks when used' },
-  { client: 'olivier', category: 'electrician', area: 'gikondo', description: 'Need outdoor lighting installed' },
-  { client: 'amina', category: 'plumber', area: 'kimironko', description: 'Water heater not heating' },
+  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Socket in kitchen sparks when used', budget: 15000 },
+  { client: 'olivier', category: 'electrician', area: 'gikondo', description: 'Need outdoor lighting installed', budget: 40000 },
+  { client: 'amina', category: 'plumber', area: 'kimironko', description: 'Water heater not heating', budget: 25000 },
   { client: 'patrick', category: 'cleaner', area: 'kimironko', description: 'Weekly house cleaning' },
-  { client: 'grace', category: 'mason', area: 'remera', description: 'Cracked front steps need repair' },
+  { client: 'grace', category: 'mason', area: 'remera', description: 'Cracked front steps need repair', budget: 50000 },
   { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Car will not start in the mornings' }
 ];
 
@@ -102,7 +102,7 @@ async function seed() {
   }
 
   for (const j of OPEN_JOBS) {
-    await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description });
+    await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description, budget: j.budget });
   }
 
   console.log(`Seeded ${USERS.length} users, ${COMPLETED_JOBS.length} completed jobs, ${OPEN_JOBS.length} open jobs.\n`);
