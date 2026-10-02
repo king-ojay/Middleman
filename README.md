@@ -64,8 +64,10 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
 - **Area-level trust fallback** (`server/routes/discover.js`) — workers the
   client's graph can't reach are scored by ratings from their own area, before
   falling back to the verification floor (path → area → floor, Section 3.2.3).
-- **Seed script** (`server/seed.js`) — 16 users across Kimironko, Kwa Nayinzira,
-  Remera and Gikondo, with completed and rated jobs plus open jobs.
+- **Seed script** (`server/seed.js`) — 23 users across Kimironko, Kwa Nayinzira,
+  Remera and Gikondo and 12 trades, with 15 completed and rated jobs plus 29
+  open jobs. Areas and trades are defined once in `server/config/` (models)
+  and `client/src/options.js` (dropdowns and labels).
 - **Discover page** (`client/src/pages/Discover.jsx`) — trust-ranked worker
   search.
 - **Demo login + role routing** — log in with a seeded phone number

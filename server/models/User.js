@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
 import { AREAS } from '../config/areas.js';
+import { CATEGORIES } from '../config/categories.js';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   phone: { type: String, required: true, unique: true },
   role: { type: String, enum: ['client', 'worker'], required: true },
   area: { type: String, enum: AREAS, required: true },
-  skills: [{ type: String }], // only relevant for role: 'worker', e.g. ['electrician', 'mason']
+  skills: [{ type: String, enum: CATEGORIES }], // only relevant for role: 'worker', e.g. ['electrician', 'mason']
   verifiedStatus: {
     type: String,
     enum: ['unverified', 'pending', 'verified'],

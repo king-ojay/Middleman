@@ -1,3 +1,5 @@
+import { categoryLabel, areaLabel } from '../options.js';
+
 const tierStyles = {
   network: { border: 'border-l-steel', badge: 'bg-steel text-paper', label: 'Trusted in your network' },
   area: { border: 'border-l-sisal', badge: 'bg-sisal/20 text-ink', label: 'Trusted in this area' },
@@ -13,8 +15,8 @@ export default function WorkerCard({ worker }) {
           <h3 className="font-medium text-ink">{worker.name}</h3>
           <span className={`text-xs px-2 py-0.5 rounded-sm ${tier.badge}`}>{tier.label}</span>
         </div>
-        <p className="text-sm text-ink/60 mt-1 capitalize">
-          {(worker.skills || []).join(', ')} · {worker.area?.replace('_', ' ')}
+        <p className="text-sm text-ink/60 mt-1">
+          {(worker.skills || []).map(categoryLabel).join(', ')} · {areaLabel(worker.area)}
         </p>
       </div>
       <button className="px-4 py-2 text-sm font-medium border border-ink/20 rounded hover:border-ink/40 transition-colors shrink-0">
