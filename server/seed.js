@@ -8,6 +8,7 @@
 //   fallback — never rated ("New — not yet rated")
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { getMongoUri } from './config/db.js';
 
 import User from './models/User.js';
 import Job from './models/Job.js';
@@ -19,7 +20,6 @@ import { writeTrustEdgeFromRating } from './services/trustPropagation.js';
 
 dotenv.config();
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/middleman';
 
 const USERS = [
   // Clients
@@ -72,7 +72,9 @@ const OPEN_JOBS = [
 ];
 
 async function seed() {
-  await mongoose.connect(MONGO_URI);
+  const mongo = getMongoUri();
+  console.log(`Connecting to MongoDB at ${mongo.description}...`);
+  await mongoose.connect(mongo.uri);
   console.log(`Connected to ${mongoose.connection.name}. Clearing existing data...`);
 
   await Promise.all([User, Job, Quote, Rating, Transaction, TrustEdge].map(M => M.deleteMany({})));
@@ -119,6 +121,6 @@ async function rate(job, fromUser, toUser, score, referredFlag) {
 }
 
 seed().catch(err => {
-  console.error('Seed failed:', err);
+  console.error('Seed failed:', err.message);
   process.exit(1);
 });
