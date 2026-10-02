@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatBudget } from '../format.js';
+import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
 
-const formatArea = area => area.replace('_', ' ');
 
 export default function PostJob() {
   const { user } = useAuth();
@@ -51,13 +51,12 @@ export default function PostJob() {
         <div role="status" className="mb-8 border border-leaf/40 bg-leaf/10 rounded-sm px-4 py-3">
           <p className="font-medium text-ink">Job posted successfully.</p>
           <p className="text-sm text-ink/70 mt-1">
-            “{posted.description}” · <span className="capitalize">{posted.category}</span> ·{' '}
-            <span className="capitalize">{formatArea(posted.area)}</span> · {formatBudget(posted.budget)}
+            “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatBudget(posted.budget)}
           </p>
           <p className="text-sm text-ink/70 mt-1">
             {posted.matchingWorkers.length > 0
-              ? <>Now visible to <span className="capitalize">{posted.category}s</span> in <span className="capitalize">{formatArea(posted.area)}</span>: {posted.matchingWorkers.map(w => w.name).join(', ')}.</>
-              : <>No <span className="capitalize">{posted.category}s</span> are registered in <span className="capitalize">{formatArea(posted.area)}</span> yet, so no workers can see it for now.</>}
+              ? `Now visible to ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)}: ${posted.matchingWorkers.map(w => w.name).join(', ')}.`
+              : `No ${categoryLabel(posted.category).toLowerCase()} workers are registered in ${areaLabel(posted.area)} yet, so no workers can see it for now.`}
           </p>
         </div>
       )}
@@ -66,11 +65,7 @@ export default function PostJob() {
         <div>
           <label htmlFor="category" className="block text-sm font-medium text-ink mb-1">Category</label>
           <select id="category" value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60">
-            <option value="electrician">Electrician</option>
-            <option value="mason">Mason</option>
-            <option value="plumber">Plumber</option>
-            <option value="cleaner">Cleaner</option>
-            <option value="mechanic">Mechanic</option>
+            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </div>
         <div>
@@ -80,10 +75,7 @@ export default function PostJob() {
         <div>
           <label htmlFor="area" className="block text-sm font-medium text-ink mb-1">Area</label>
           <select id="area" value={area} onChange={e => setArea(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60">
-            <option value="kimironko">Kimironko</option>
-            <option value="kwa_nayinzira">Kwa Nayinzira</option>
-            <option value="remera">Remera</option>
-            <option value="gikondo">Gikondo</option>
+            {AREAS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
           </select>
         </div>
         <div>
@@ -103,7 +95,7 @@ export default function PostJob() {
           <div key={job._id} className="bg-white/50 border border-ink/10 rounded-sm px-5 py-4">
             <h3 className="font-medium text-ink">{job.description}</h3>
             <p className="text-sm text-ink/60 mt-1">
-              <span className="capitalize">{job.category} · {formatArea(job.area)}</span> · {job.agreedPrice ? `Agreed ${job.agreedPrice.toLocaleString('en-US')} RWF` : formatBudget(job.budget)} ·{' '}
+              {categoryLabel(job.category)} · {areaLabel(job.area)} · {job.agreedPrice ? `Agreed ${job.agreedPrice.toLocaleString('en-US')} RWF` : formatBudget(job.budget)} ·{' '}
               <span className="capitalize">{job.status.replace('_', ' ')}</span>
             </p>
           </div>

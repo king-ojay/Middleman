@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatBudget } from '../format.js';
+import { categoryLabel, areaLabel } from '../options.js';
 
-const formatArea = area => area.replace('_', ' ');
 
 // Worker home: read-only list of open jobs in the worker's area that match
 // one of their skills. Quote submission isn't built yet.
@@ -25,8 +25,7 @@ export default function OpenJobs() {
     <div className="max-w-5xl mx-auto px-6 py-12">
       <h1 className="font-display text-3xl text-ink mb-2">Open jobs near you</h1>
       <p className="text-ink/60 mb-8">
-        <span className="capitalize">{(user.skills || []).join(', ')}</span> jobs in{' '}
-        <span className="capitalize">{formatArea(user.area)}</span>
+        {(user.skills || []).map(categoryLabel).join(', ')} jobs in {areaLabel(user.area)}
       </p>
 
       {loading && <p className="text-sm text-ink/50">Loading…</p>}
@@ -41,8 +40,7 @@ export default function OpenJobs() {
             <div>
               <h3 className="font-medium text-ink">{job.description}</h3>
               <p className="text-sm text-ink/60 mt-1">
-                <span className="capitalize">{job.category} · {formatArea(job.area)}</span>
-                {' '}· {formatBudget(job.budget)} · posted by {job.client?.name} on {new Date(job.createdAt).toLocaleDateString()}
+                {categoryLabel(job.category)} · {areaLabel(job.area)} · {formatBudget(job.budget)} · posted by {job.client?.name} on {new Date(job.createdAt).toLocaleDateString()}
               </p>
             </div>
             <button disabled title="Quote submission coming soon" className="px-4 py-2 text-sm font-medium border border-ink/20 rounded shrink-0 opacity-50 cursor-not-allowed">

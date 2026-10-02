@@ -40,7 +40,14 @@ const USERS = [
   { key: 'samuel', name: 'Samuel Bizimana', phone: '0788000107', role: 'worker', area: 'remera', skills: ['mason'] },
   { key: 'josiane', name: 'Josiane Umutoni', phone: '0788000108', role: 'worker', area: 'kimironko', skills: ['mason'] },
   { key: 'vestine', name: 'Vestine Nyirahabimana', phone: '0788000109', role: 'worker', area: 'gikondo', skills: ['cleaner'] },
-  { key: 'innocent', name: 'Innocent Hakizimana', phone: '0788000110', role: 'worker', area: 'kwa_nayinzira', skills: ['mechanic'] }
+  { key: 'innocent', name: 'Innocent Hakizimana', phone: '0788000110', role: 'worker', area: 'kwa_nayinzira', skills: ['mechanic'] },
+  { key: 'theoneste', name: 'Theoneste Nkurunziza', phone: '0788000111', role: 'worker', area: 'kimironko', skills: ['carpenter'], verifiedStatus: 'verified' },
+  { key: 'aline', name: 'Aline Uwera', phone: '0788000112', role: 'worker', area: 'remera', skills: ['painter', 'tiler'] },
+  { key: 'didier', name: 'Didier Mugabo', phone: '0788000113', role: 'worker', area: 'gikondo', skills: ['welder'] },
+  { key: 'solange', name: 'Solange Iradukunda', phone: '0788000114', role: 'worker', area: 'kwa_nayinzira', skills: ['tailor'], verifiedStatus: 'verified' },
+  { key: 'kevin', name: 'Kevin Ishimwe', phone: '0788000115', role: 'worker', area: 'kimironko', skills: ['phone_repair'] },
+  { key: 'yvonne', name: 'Yvonne Mutesi', phone: '0788000116', role: 'worker', area: 'remera', skills: ['hairdresser'] },
+  { key: 'gilbert', name: 'Gilbert Ndikumana', phone: '0788000117', role: 'worker', area: 'gikondo', skills: ['carpenter', 'painter'] }
 ];
 
 // Completed jobs. `clientScore` is the client's rating of the worker;
@@ -59,7 +66,13 @@ const COMPLETED_JOBS = [
   { client: 'jeanpaul', worker: 'vestine', category: 'cleaner', price: 8000, description: 'Deep clean after renovation', clientScore: 5 },
   { client: 'olivier', worker: 'fabrice', category: 'plumber', price: 12000, description: 'Unblock drainage', clientScore: 4 },
   // Kimironko community — Patrick isn't in Amina's graph, so Josiane is area-trusted
-  { client: 'patrick', worker: 'josiane', category: 'mason', price: 45000, description: 'Plaster bedroom walls', clientScore: 5 }
+  { client: 'patrick', worker: 'josiane', category: 'mason', price: 45000, description: 'Plaster bedroom walls', clientScore: 5 },
+  // Other trades (client ratings only, so the electrician paths above are unchanged)
+  { client: 'amina', worker: 'theoneste', category: 'carpenter', price: 35000, description: 'Build kitchen shelves', clientScore: 5 },
+  { client: 'patrick', worker: 'kevin', category: 'phone_repair', price: 25000, description: 'Replace phone battery', clientScore: 4 },
+  { client: 'grace', worker: 'aline', category: 'painter', price: 55000, description: 'Paint sitting room', clientScore: 5 },
+  { client: 'jeanpaul', worker: 'didier', category: 'welder', price: 60000, description: 'Weld new compound gate', clientScore: 4 },
+  { client: 'diane', worker: 'solange', category: 'tailor', price: 15000, description: 'Tailor a work suit', clientScore: 5 }
 ];
 
 const OPEN_JOBS = [
@@ -68,7 +81,34 @@ const OPEN_JOBS = [
   { client: 'amina', category: 'plumber', area: 'kimironko', description: 'Water heater not heating', budget: 25000 },
   { client: 'patrick', category: 'cleaner', area: 'kimironko', description: 'Weekly house cleaning' },
   { client: 'grace', category: 'mason', area: 'remera', description: 'Cracked front steps need repair', budget: 50000 },
-  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Car will not start in the mornings' }
+  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Car will not start in the mornings' },
+  // Kimironko
+  { client: 'amina', category: 'electrician', area: 'kimironko', description: 'Install ceiling fan in living room', budget: 20000 },
+  { client: 'patrick', category: 'electrician', area: 'kimironko', description: 'Outdoor socket stopped working', budget: 12000 },
+  { client: 'patrick', category: 'plumber', area: 'kimironko', description: 'Toilet cistern keeps running', budget: 10000 },
+  { client: 'amina', category: 'carpenter', area: 'kimironko', description: 'Repair broken wardrobe door', budget: 18000 },
+  { client: 'patrick', category: 'carpenter', area: 'kimironko', description: 'Build a small bookshelf', budget: 35000 },
+  { client: 'amina', category: 'phone_repair', area: 'kimironko', description: 'Cracked phone screen needs replacing', budget: 30000 },
+  { client: 'patrick', category: 'mason', area: 'kimironko', description: 'Patch cracks in compound wall', budget: 30000 },
+  // Gikondo
+  { client: 'jeanpaul', category: 'electrician', area: 'gikondo', description: "Rewire the shop's lighting", budget: 60000 },
+  { client: 'jeanpaul', category: 'electrician', area: 'gikondo', description: 'Install inverter for backup power', budget: 80000 },
+  { client: 'jeanpaul', category: 'plumber', area: 'gikondo', description: 'Replace corroded water pipes', budget: 45000 },
+  { client: 'olivier', category: 'welder', area: 'gikondo', description: 'Fix metal gate hinge', budget: 15000 },
+  { client: 'jeanpaul', category: 'welder', area: 'gikondo', description: 'Weld window security bars', budget: 70000 },
+  { client: 'olivier', category: 'cleaner', area: 'gikondo', description: 'Office cleaning twice a week', budget: 25000 },
+  { client: 'olivier', category: 'carpenter', area: 'gikondo', description: 'Fix sagging kitchen cabinets', budget: 20000 },
+  { client: 'jeanpaul', category: 'painter', area: 'gikondo', description: 'Repaint shop front', budget: 40000 },
+  // Remera
+  { client: 'grace', category: 'painter', area: 'remera', description: 'Paint two bedrooms', budget: 60000 },
+  { client: 'grace', category: 'tiler', area: 'remera', description: 'Tile bathroom floor', budget: 45000 },
+  { client: 'grace', category: 'hairdresser', area: 'remera', description: 'Bridal hair for wedding on Saturday', budget: 40000 },
+  { client: 'grace', category: 'electrician', area: 'remera', description: 'Add two sockets in the bedroom', budget: 15000 },
+  // Kwa Nayinzira
+  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Fix flickering lights in corridor', budget: 8000 },
+  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Replace brake pads', budget: 25000 },
+  { client: 'diane', category: 'tailor', area: 'kwa_nayinzira', description: 'Alter school uniforms for two kids', budget: 6000 },
+  { client: 'diane', category: 'tailor', area: 'kwa_nayinzira', description: 'Sew curtains for living room', budget: 20000 }
 ];
 
 async function seed() {

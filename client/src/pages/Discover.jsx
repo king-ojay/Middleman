@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import WorkerCard from '../components/WorkerCard.jsx';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
+import { CATEGORIES, AREAS } from '../options.js';
 
 export default function Discover() {
   const { user } = useAuth();
@@ -38,11 +39,7 @@ export default function Discover() {
           onChange={e => setCategory(e.target.value)}
           className="border border-ink/20 rounded px-3 py-2 text-sm bg-white/60"
         >
-          <option value="electrician">Electrician</option>
-          <option value="mason">Mason</option>
-          <option value="plumber">Plumber</option>
-          <option value="cleaner">Cleaner</option>
-          <option value="mechanic">Mechanic</option>
+          {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
         <select
           value={area}
@@ -50,10 +47,7 @@ export default function Discover() {
           className="border border-ink/20 rounded px-3 py-2 text-sm bg-white/60"
         >
           <option value="">Any area</option>
-          <option value="kimironko">Kimironko</option>
-          <option value="kwa_nayinzira">Kwa Nayinzira</option>
-          <option value="remera">Remera</option>
-          <option value="gikondo">Gikondo</option>
+          {AREAS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
         </select>
       </div>
 
