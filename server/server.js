@@ -5,7 +5,7 @@ import dotenv from 'dotenv';
 import { getMongoUri } from './config/db.js';
 
 import authRouter from './routes/auth.js';
-import jobsRouter from './routes/jobs.js';
+import jobsRouter from './modules/jobs/jobs.routes.js';
 import discoverRouter from './routes/discover.js';
 import ratingsRouter from './routes/ratings.js';
 
