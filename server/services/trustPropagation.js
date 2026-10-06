@@ -70,6 +70,70 @@ export async function computeTrustScores(clientId) {
   return scores;
 }
 
+// Area-level trust is second-hand community opinion, not a path through the
+// viewer's own network, so it's discounted relative to the edge weights it
+// averages.
+const AREA_DISCOUNT = 0.5;
+
+// Layered fallback order from Section 3.2.3: graph path -> area -> verification floor.
+export const TIER_RANK = { network: 0, area: 1, fallback: 2 };
+
+/**
+ * Area-level community trust for users the viewer's graph can't reach: the
+ * average weight of rating edges a user has received from people in that
+ * user's own area. Users with no such ratings get no entry.
+ */
+async function computeAreaScores(users) {
+  if (users.length === 0) return new Map();
+  const areaByUser = new Map(users.map(u => [String(u._id), u.area]));
+
+  const edges = await TrustEdge.find({
+    toUser: { $in: users.map(u => u._id) },
+    type: 'rating'
+  }).populate('fromUser', 'area').lean();
+
+  const sums = new Map(); // userId -> { total, count }
+  for (const edge of edges) {
+    const userId = String(edge.toUser);
+    if (edge.fromUser?.area !== areaByUser.get(userId)) continue;
+    const acc = sums.get(userId) || { total: 0, count: 0 };
+    acc.total += edge.weight;
+    acc.count += 1;
+    sums.set(userId, acc);
+  }
+
+  const scores = new Map();
+  for (const [userId, { total, count }] of sums) {
+    scores.set(userId, (total / count) * AREA_DISCOUNT);
+  }
+  return scores;
+}
+
+/**
+ * Scores and tiers `candidates` (plain user objects with _id, area and
+ * verifiedStatus) from `viewerId`'s point of view, applying the layered
+ * fallback, and returns them sorted by tier then score. Symmetric by design:
+ * a client ranking workers and a worker sizing up clients use the same call.
+ */
+export async function rankByTrust(viewerId, candidates) {
+  const scores = await computeTrustScores(viewerId);
+  const unreached = candidates.filter(c => !scores.has(String(c._id)));
+  const areaScores = await computeAreaScores(unreached);
+
+  const ranked = candidates.map(candidate => {
+    const id = String(candidate._id);
+    if (scores.has(id)) return { ...candidate, trustScore: scores.get(id), trustSource: 'network' };
+    if (areaScores.has(id)) return { ...candidate, trustScore: areaScores.get(id), trustSource: 'area' };
+    // Final fallback: verified users get a modest floor, unverified the lowest.
+    const floor = candidate.verifiedStatus === 'verified' ? 0.3 : 0.1;
+    return { ...candidate, trustScore: floor, trustSource: 'fallback' };
+  });
+
+  return ranked.sort((a, b) =>
+    TIER_RANK[a.trustSource] - TIER_RANK[b.trustSource] || b.trustScore - a.trustScore
+  );
+}
+
 /**
  * Writes a trust edge when a job is rated. Called from both rating directions
  * (client -> worker and worker -> client) — see Rating model.
