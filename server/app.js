@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 
 import authRouter from './modules/auth/auth.routes.js';
 import jobsRouter from './modules/jobs/jobs.routes.js';
@@ -13,6 +14,9 @@ import usersRouter from './modules/users/users.routes.js';
 const app = express();
 // Behind Render's proxy: use the client's IP (X-Forwarded-For) for rate limits.
 app.set('trust proxy', 1);
+// Security headers. The app (vercel.app) reads this API from another site,
+// so resources are allowed cross-origin; CORS still decides who may read them.
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(cors());
 app.use(express.json());
 
