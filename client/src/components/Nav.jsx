@@ -26,10 +26,14 @@ export default function Nav() {
             <>
               <NavLink to="/discover" className={linkClass}>Find a worker</NavLink>
               <NavLink to="/post-job" className={linkClass}>Post a job</NavLink>
+              <NavLink to="/my-jobs" className={linkClass}>My jobs</NavLink>
             </>
           )}
           {user?.role === 'worker' && (
-            <NavLink to="/jobs" className={linkClass}>Open jobs</NavLink>
+            <>
+              <NavLink to="/jobs" className={linkClass}>Open jobs</NavLink>
+              <NavLink to="/my-jobs" className={linkClass}>My jobs</NavLink>
+            </>
           )}
           {user ? (
             <>

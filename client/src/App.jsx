@@ -5,7 +5,9 @@ import Login from './pages/Login.jsx';
 import Discover from './pages/Discover.jsx';
 import PostJob from './pages/PostJob.jsx';
 import OpenJobs from './pages/OpenJobs.jsx';
-import { useAuth, homePathFor, RequireRole } from './auth.jsx';
+import MyJobs from './pages/MyJobs.jsx';
+import JobDetail from './pages/JobDetail.jsx';
+import { useAuth, homePathFor, RequireRole, RequireUser } from './auth.jsx';
 
 export default function App() {
   const { user } = useAuth();
@@ -19,6 +21,8 @@ export default function App() {
           <Route path="/discover" element={<RequireRole role="client"><Discover /></RequireRole>} />
           <Route path="/post-job" element={<RequireRole role="client"><PostJob /></RequireRole>} />
           <Route path="/jobs" element={<RequireRole role="worker"><OpenJobs /></RequireRole>} />
+          <Route path="/my-jobs" element={<RequireUser><MyJobs /></RequireUser>} />
+          <Route path="/my-jobs/:id" element={<RequireUser><JobDetail /></RequireUser>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

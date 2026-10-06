@@ -1,29 +1,12 @@
 import { createContext, useContext, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api } from './api.js';
+import { loadUser, saveUser } from './session.js';
 
 // Demo-grade auth: the logged-in user is whatever POST /api/auth/login
 // returned for a phone number, kept in localStorage so a refresh keeps you
 // logged in. Enough to know who the user is and route by role.
-const STORAGE_KEY = 'middleman.user';
 const AuthContext = createContext(null);
-
-function loadUser() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function saveUser(user) {
-  try {
-    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    else localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // storage unavailable (private mode etc.) — stay logged in for this tab only
-  }
-}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(loadUser);
@@ -46,6 +29,13 @@ export function AuthProvider({ children }) {
 export const useAuth = () => useContext(AuthContext);
 
 export const homePathFor = user => (user?.role === 'worker' ? '/jobs' : '/discover');
+
+// Renders children only for a logged-in user; otherwise sends them to login.
+export function RequireUser({ children }) {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
 
 // Renders children only for a logged-in user with the given role; otherwise
 // sends them to login, or to their own role's home.

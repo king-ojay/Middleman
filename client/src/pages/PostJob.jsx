@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatRwf } from '../format.js';
@@ -14,12 +15,6 @@ export default function PostJob() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [posted, setPosted] = useState(null);
-  const [myJobs, setMyJobs] = useState([]);
-
-  const loadMyJobs = () =>
-    api(`/api/jobs?client=${user._id}`).then(setMyJobs).catch(() => setMyJobs([]));
-
-  useEffect(() => { loadMyJobs(); }, [user]);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -29,12 +24,11 @@ export default function PostJob() {
     try {
       const job = await api('/api/jobs', {
         method: 'POST',
-        body: JSON.stringify({ client: user._id, category, description, area, proposedPrice: Number(proposedPrice) })
+        body: JSON.stringify({ category, description, area, proposedPrice: Number(proposedPrice) })
       });
       setPosted(job);
       setDescription('');
       setProposedPrice('');
-      loadMyJobs();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -45,7 +39,7 @@ export default function PostJob() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-12">
       <h1 className="font-display text-3xl text-ink mb-2">Post a job</h1>
-      <p className="text-ink/60 mb-8">Describe what you need done. Workers in your area will send quotes.</p>
+      <p className="text-ink/60 mb-8">Describe what you need done and name your price. Workers in your area can accept it or offer their own.</p>
 
       {posted && (
         <div role="status" className="mb-8 border border-leaf/40 bg-leaf/10 rounded-sm px-4 py-3">
@@ -58,6 +52,7 @@ export default function PostJob() {
               ? `Now visible to ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)}: ${posted.matchingWorkers.map(w => w.name).join(', ')}.`
               : `No ${categoryLabel(posted.category).toLowerCase()} workers are registered in ${areaLabel(posted.area)} yet, so no workers can see it for now.`}
           </p>
+          <Link to={`/my-jobs/${posted._id}`} className="inline-block text-sm text-ink underline mt-2">See responses as they come in</Link>
         </div>
       )}
 
@@ -88,20 +83,6 @@ export default function PostJob() {
           {submitting ? 'Posting…' : 'Post job'}
         </button>
       </form>
-
-      <h2 className="font-display text-2xl text-ink mt-12 mb-4">Your posted jobs</h2>
-      {myJobs.length === 0 && <p className="text-sm text-ink/60">You haven't posted any jobs yet.</p>}
-      <div className="space-y-3">
-        {myJobs.map(job => (
-          <div key={job._id} className="bg-white/50 border border-ink/10 rounded-sm px-5 py-4">
-            <h3 className="font-medium text-ink">{job.description}</h3>
-            <p className="text-sm text-ink/60 mt-1">
-              {categoryLabel(job.category)} · {areaLabel(job.area)} · {job.agreedPrice ? `Agreed ${formatRwf(job.agreedPrice)}` : `Your price ${formatRwf(job.proposedPrice)}`} ·{' '}
-              <span className="capitalize">{job.status.replace('_', ' ')}</span>
-            </p>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
