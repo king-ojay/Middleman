@@ -5,7 +5,8 @@ import Job from './job.model.js';
 import Quote from './quote.model.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
-import { HttpError, respond, selectResponse, transition } from './lifecycle.js';
+import Rating from '../trust/rating.model.js';
+import { HttpError, confirmAndRate, rateClient, respond, selectResponse, transition } from './lifecycle.js';
 
 const router = express.Router();
 router.use(requireUser);
@@ -92,7 +93,8 @@ router.get('/:id', handle(async (req, res) => {
   }
 
   const myResponse = await Quote.findOne({ job: job._id, worker: req.user._id }).lean();
-  res.json({ ...job, myResponse });
+  const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
+  res.json({ ...job, myResponse, myRating });
 }));
 
 // POST /api/jobs/:id/responses — worker accepts the price or counters (FR-05).
@@ -106,8 +108,20 @@ router.post('/:id/select', requireRole('client'), handle(async (req, res) => {
   res.json(await selectResponse(req.params.id, req.body.quoteId, req.user));
 }));
 
-// POST /api/jobs/:id/{start,complete,confirm,dispute} — lifecycle moves (FR-11, FR-12, FR-14).
-for (const action of ['start', 'complete', 'confirm', 'dispute']) {
+// POST /api/jobs/:id/confirm — client confirms and rates the worker in one
+// request (FR-12, FR-17). Body: { score, referred?, comment? }
+router.post('/:id/confirm', requireRole('client'), handle(async (req, res) => {
+  res.json(await confirmAndRate(req.params.id, req.user, req.body));
+}));
+
+// POST /api/jobs/:id/rate-client — worker rates the client (FR-12b).
+// Body: { score, comment? }
+router.post('/:id/rate-client', requireRole('worker'), handle(async (req, res) => {
+  res.status(201).json(await rateClient(req.params.id, req.user, req.body));
+}));
+
+// POST /api/jobs/:id/{start,complete,dispute} — lifecycle moves (FR-11, FR-14).
+for (const action of ['start', 'complete', 'dispute']) {
   router.post(`/:id/${action}`, handle(async (req, res) => {
     res.json(await transition(req.params.id, action, req.user));
   }));

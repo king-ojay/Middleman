@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import Job from './job.model.js';
 import Quote from './quote.model.js';
+import { validateRatingInput, writeRating } from '../trust/ratings.js';
 
 export class HttpError extends Error {
   constructor(status, message) {
@@ -120,4 +121,44 @@ export async function selectResponse(jobId, quoteId, client) {
   await Quote.updateOne({ _id: quote._id }, { status: 'accepted' });
   await Quote.updateMany({ job: job._id, _id: { $ne: quote._id } }, { status: 'declined' });
   return job;
+}
+
+const parseRating = body => {
+  const input = { score: Number(body.score), comment: body.comment ?? '', referredFlag: Boolean(body.referred) };
+  try {
+    validateRatingInput(input);
+  } catch (err) {
+    throw new HttpError(400, err.message);
+  }
+  return input;
+};
+
+/**
+ * Client confirms completion and rates the worker in one request (FR-12):
+ * the rating is required, and "vouch" sets the referred flag (FR-17).
+ */
+export async function confirmAndRate(jobId, client, body) {
+  const { score, comment, referredFlag } = parseRating(body);
+  const job = await transition(jobId, 'confirm', client);
+  await writeRating({ job: job._id, fromUser: client._id, toUser: job.worker, score, referredFlag, comment });
+  return job;
+}
+
+/**
+ * Worker rates the client, independently of the client's own confirmation,
+ * any time after marking the job complete (FR-12b).
+ */
+export async function rateClient(jobId, worker, body) {
+  const { score, comment } = parseRating(body);
+  if (!mongoose.isValidObjectId(jobId)) throw new HttpError(404, 'Job not found');
+  const job = await Job.findById(jobId).lean();
+  if (!job) throw new HttpError(404, 'Job not found');
+  if (String(job.worker) !== String(worker._id)) throw new HttpError(403, 'This is not your job');
+  if (!job.workerCompletedAt) throw new HttpError(409, 'Mark the job as complete before rating the client');
+  try {
+    return await writeRating({ job: job._id, fromUser: worker._id, toUser: job.client, score, comment });
+  } catch (err) {
+    if (err.code === 11000) throw new HttpError(409, 'You have already rated this client for this job');
+    throw err;
+  }
 }
