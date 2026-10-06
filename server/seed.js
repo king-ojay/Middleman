@@ -6,8 +6,8 @@
 //   network  — reachable through Amina's own rating graph (1 or 3 hops)
 //   area     — not reachable, but rated by clients in the worker's own area
 //   fallback — never rated ("New — not yet rated")
+import 'dotenv/config';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import { getMongoUri } from './config/db.js';
 
 import User from './modules/users/user.model.js';
@@ -22,7 +22,6 @@ import { hashPin } from './modules/auth/pin.js';
 // Every demo account logs in with this PIN.
 const DEMO_PIN = '1234';
 
-dotenv.config();
 
 
 const USERS = [

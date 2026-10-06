@@ -1,20 +1,19 @@
 import { createContext, useContext, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api } from './api.js';
-import { loadUser, saveUser } from './session.js';
+import { loadSession, saveSession } from './session.js';
 
-// The logged-in user is whatever POST /api/auth/login (phone + PIN) or
-// /register returned, kept in localStorage so a refresh keeps you logged in.
-// API calls still identify the user by id until Phase 7 adds real sessions.
+// The logged-in user and their signed session token, from POST /api/auth/login
+// (phone + PIN), /register or /pin/reset. api.js sends the token on every call.
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(loadUser);
+  const [user, setUser] = useState(() => loadSession()?.user ?? null);
 
-  const start = u => {
-    saveUser(u);
-    setUser(u);
-    return u;
+  const start = session => {
+    saveSession(session);
+    setUser(session.user);
+    return session.user;
   };
 
   const login = async (phone, pin) =>
@@ -27,7 +26,7 @@ export function AuthProvider({ children }) {
     start(await api('/api/auth/pin/reset', { method: 'POST', body: JSON.stringify({ phone, code, pin }) }));
 
   const logout = () => {
-    saveUser(null);
+    saveSession(null);
     setUser(null);
   };
 

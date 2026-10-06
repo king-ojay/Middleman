@@ -18,7 +18,7 @@ export default function Discover() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const params = new URLSearchParams({ clientId: user._id, category, ...(area && { area }) });
+    const params = new URLSearchParams({ category, ...(area && { area }) });
     setLoading(true);
     setError('');
     api(`/api/discover?${params}`)

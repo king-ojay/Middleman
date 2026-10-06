@@ -9,7 +9,7 @@
     "dev": "node --watch server.js",
     "start": "node server.js",
     "seed": "node seed.js",
-    "test": "node --test"
+    "test": "node --test \"test/*.test.js\""
   },
   "dependencies": {
     "cors": "^2.8.5",

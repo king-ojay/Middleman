@@ -14,7 +14,8 @@ const userSchema = new mongoose.Schema({
     default: 'unverified'
   },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // FR-03
-  pinHash: { type: String, select: false } // scrypt hash of the 4-digit login PIN, never returned
+  pinHash: { type: String, select: false }, // scrypt hash of the 4-digit login PIN, never returned
+  sessionVersion: { type: Number, default: 0, select: false } // bump to end every session (e.g. PIN reset)
 }, { timestamps: true });
 
 userSchema.index({ role: 1, area: 1, skills: 1 });

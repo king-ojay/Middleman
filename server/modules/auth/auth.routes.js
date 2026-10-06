@@ -8,26 +8,30 @@ import { CATEGORIES } from '../../config/categories.js';
 import { hashPin, isValidPin, verifyPin } from './pin.js';
 import { issueOtp, OtpError, verifyOtp } from './otp/otp.js';
 import { hit } from './rateLimit.js';
+import { createSessionToken } from './session.js';
 
 const router = express.Router();
 
 const publicUser = user => {
-  const { pinHash, __v, ...rest } = user.toObject ? user.toObject() : user;
+  const { pinHash, sessionVersion, __v, ...rest } = user.toObject ? user.toObject() : user;
   return rest;
 };
 
+// What login, registration and PIN reset return: the user plus a signed
+// session token the client sends as "Authorization: Bearer <token>".
+const session = user => ({ user: publicUser(user), token: createSessionToken(user) });
+
 // POST /api/auth/login  Body: { phone, pin }
 // Returns the user so the client can route by role. One message for any
-// failure, so it doesn't reveal which numbers have accounts. The session is
-// still the demo-grade x-user-id header until Phase 7.
+// failure, so it doesn't reveal which numbers have accounts.
 router.post('/login', async (req, res) => {
   try {
     const phone = normalisePhone(req.body.phone);
-    const user = phone ? await User.findOne({ phone }).select('+pinHash') : null;
+    const user = phone ? await User.findOne({ phone }).select('+pinHash +sessionVersion') : null;
     if (!user || !(await verifyPin(req.body.pin, user.pinHash))) {
       return res.status(401).json({ error: 'That phone number and PIN do not match' });
     }
-    res.json(publicUser(user));
+    res.json(session(user));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -75,9 +79,14 @@ router.post('/pin/reset', async (req, res) => {
       return res.status(429).json({ error: 'Too many attempts. Please wait and try again.' });
     }
     await verifyOtp(phone, 'pin_reset', req.body.code);
-    const user = await User.findOneAndUpdate({ phone }, { pinHash: await hashPin(req.body.pin) }, { new: true });
+    // Bumping sessionVersion ends every existing session for this account.
+    const user = await User.findOneAndUpdate(
+      { phone },
+      { pinHash: await hashPin(req.body.pin), $inc: { sessionVersion: 1 } },
+      { new: true, projection: '+sessionVersion' }
+    );
     if (!user) return res.status(400).json({ error: 'That code has expired. Ask for a new one.' });
-    res.json(publicUser(user));
+    res.json(session(user));
   } catch (err) {
     if (err instanceof OtpError) return res.status(err.status).json({ error: err.message });
     res.status(500).json({ error: err.message });
@@ -129,7 +138,7 @@ router.post('/register', async (req, res) => {
     });
     if (referrer) await writeTrustEdgeFromReferral({ fromUser: referrer._id, toUser: user._id });
 
-    res.status(201).json(publicUser(user));
+    res.status(201).json(session(user));
   } catch (err) {
     if (err instanceof OtpError) return res.status(err.status).json({ error: err.message });
     if (err.code === 11000) return res.status(409).json({ error: 'An account with this phone number already exists. Log in instead.' });

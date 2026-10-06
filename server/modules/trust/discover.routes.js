@@ -1,22 +1,18 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import User from '../users/user.model.js';
 import { rankByTrust } from './trustPropagation.js';
+import { requireUser } from '../auth/currentUser.js';
 
 const router = express.Router();
 
-// GET /api/discover?clientId=...&category=electrician&area=kimironko
-// Returns workers ranked by personalised trust score, with a layered fallback
-// for workers the graph can't yet reach (cold-start — see Section 3.2.3).
-router.get('/', async (req, res) => {
+// GET /api/discover?category=electrician&area=kimironko
+// Workers ranked by trust from the logged-in user's point of view, with a
+// layered fallback for workers the graph can't yet reach (Section 3.2.3).
+// The viewer always comes from the session, never from the query string.
+router.get('/', requireUser, async (req, res) => {
   try {
-    const { clientId, category, area } = req.query;
-    if (!clientId || !category) {
-      return res.status(400).json({ error: 'clientId and category are required' });
-    }
-    if (!mongoose.isValidObjectId(clientId)) {
-      return res.status(400).json({ error: 'clientId is not a valid id' });
-    }
+    const { category, area } = req.query;
+    if (!category) return res.status(400).json({ error: 'category is required' });
 
     const candidates = await User.find({
       role: 'worker',
@@ -24,7 +20,7 @@ router.get('/', async (req, res) => {
       ...(area ? { area } : {})
     }).lean();
 
-    res.json(await rankByTrust(clientId, candidates));
+    res.json(await rankByTrust(req.user._id, candidates));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
