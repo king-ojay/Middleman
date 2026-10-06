@@ -2,20 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background-color: #F6F1E7;
-  color: #201A15;
-  font-family: 'Work Sans', sans-serif;
-}
+@layer base {
+  body {
+    @apply bg-canvas text-ink font-sans text-body antialiased;
+  }
 
-h1, h2, h3, .font-display {
-  font-family: 'Zilla Slab', serif;
-}
-
-/* visible keyboard focus, kept deliberate rather than removed */
-a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-  outline: 2px solid #3B5B6B;
-  outline-offset: 2px;
+  /* visible keyboard focus, kept deliberate rather than removed */
+  a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role='switch']:focus-visible {
+    @apply outline-none ring-2 ring-signal ring-offset-2 ring-offset-canvas;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api } from '../api.js';
+import { Button } from './ui/index.js';
 
 // The next step(s) available to this person for this job (Fig. 5). Phase 3
 // replaces "Start job" with escrow funding.
@@ -35,22 +36,13 @@ export default function JobActions({ job, role, onChange }) {
   };
 
   return (
-    <div className="mt-3">
-      <div className="flex flex-wrap gap-3">
-        {actions.map(({ action, label, primary }) => (
-          <button
-            key={action}
-            disabled={busy}
-            onClick={() => run(action)}
-            className={primary
-              ? 'px-4 py-2 text-sm font-medium bg-steel text-paper rounded hover:bg-steel-dark transition-colors disabled:opacity-60'
-              : 'px-4 py-2 text-sm font-medium border border-ink/20 rounded hover:border-ink/40 transition-colors disabled:opacity-60'}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {error && <p className="text-sm text-brick mt-2">{error}</p>}
+    <div className="mt-4 space-y-3">
+      {actions.map(({ action, label, primary }) => (
+        <Button key={action} variant={primary ? 'primary' : 'outline'} disabled={busy} onClick={() => run(action)}>
+          {label}
+        </Button>
+      ))}
+      {error && <p className="text-small text-danger" role="alert">{error}</p>}
     </div>
   );
 }

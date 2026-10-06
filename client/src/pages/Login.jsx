@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth, homePathFor } from '../auth.jsx';
+import { Avatar, Button, FormField, LogoMark, PageLayout, TextInput } from '../components/ui/index.js';
 
 export default function Login() {
   const { user, login } = useAuth();
@@ -26,28 +27,44 @@ export default function Login() {
   };
 
   return (
-    <div className="max-w-sm mx-auto px-6 py-12">
-      <h1 className="font-display text-3xl text-ink mb-2">Log in</h1>
-      <p className="text-ink/60 mb-8">Enter the phone number you registered with.</p>
+    <PageLayout>
+      <div className="flex items-center gap-3 mb-12">
+        <LogoMark size={36} />
+        <span className="text-title text-forest">Middleman</span>
+      </div>
+
+      <h1 className="text-display tracking-tight text-ink">Welcome back</h1>
+      <p className="text-body text-muted mt-2 mb-8">Log in with your phone number.</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label htmlFor="phone" className="block text-sm font-medium text-ink mb-1">Phone number</label>
-          <input
-            id="phone"
-            type="tel"
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            placeholder="0788000001"
-            required
-            className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60"
-          />
-        </div>
-        {error && <p className="text-sm text-brick">{error}</p>}
-        <button type="submit" disabled={submitting} className="px-5 py-3 bg-steel text-paper rounded font-medium hover:bg-steel-dark transition-colors disabled:opacity-60">
-          {submitting ? 'Logging in…' : 'Log in'}
-        </button>
+        <FormField label="Phone number" error={error}>
+          {field => (
+            <TextInput
+              {...field}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="078X XXX XXX"
+              required
+            />
+          )}
+        </FormField>
+        <Button type="submit" disabled={submitting}>{submitting ? 'Logging in…' : 'Log in'}</Button>
       </form>
-    </div>
+
+      <section className="mt-12 bg-forest rounded-hero p-6">
+        <h2 className="text-title text-mint">Find someone trusted by people you trust.</h2>
+        <p className="text-body text-white mt-2">See the workers your network already trusts.</p>
+        <div className="mt-5 flex items-center gap-3 bg-white/10 rounded-card p-3">
+          <Avatar name="Eric Habimana" tier="area" size={44} />
+          <div>
+            <p className="text-body font-semibold text-white">Eric Habimana</p>
+            <p className="text-small text-mint">Trusted in your network</p>
+          </div>
+        </div>
+      </section>
+    </PageLayout>
   );
 }

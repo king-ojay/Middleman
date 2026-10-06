@@ -1,10 +1,9 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatRwf } from '../format.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
-
+import { Button, Chip, ChipRow, FormField, PageLayout, PriceInput, TextArea } from '../components/ui/index.js';
 
 export default function PostJob() {
   const { user } = useAuth();
@@ -19,6 +18,7 @@ export default function PostJob() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
+    if (!proposedPrice) return setError('Enter the price you want to pay.');
     setPosted(null);
     setSubmitting(true);
     try {
@@ -37,52 +37,53 @@ export default function PostJob() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-12">
-      <h1 className="font-display text-3xl text-ink mb-2">Post a job</h1>
-      <p className="text-ink/60 mb-8">Describe what you need done and name your price. Workers in your area can accept it or offer their own.</p>
-
+    <PageLayout back title="Post a job" subtitle="Takes under a minute." tabBar role="client">
       {posted && (
-        <div role="status" className="mb-8 border border-leaf/40 bg-leaf/10 rounded-sm px-4 py-3">
-          <p className="font-medium text-ink">Job posted successfully.</p>
-          <p className="text-sm text-ink/70 mt-1">
+        <div role="status" className="bg-mint rounded-card p-4 mb-6">
+          <p className="text-card text-forest">Job posted</p>
+          <p className="text-body text-ink mt-1">
             “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatRwf(posted.proposedPrice)}
           </p>
-          <p className="text-sm text-ink/70 mt-1">
+          <p className="text-body text-muted mt-1">
             {posted.matchingWorkers.length > 0
-              ? `Now visible to ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)}: ${posted.matchingWorkers.map(w => w.name).join(', ')}.`
-              : `No ${categoryLabel(posted.category).toLowerCase()} workers are registered in ${areaLabel(posted.area)} yet, so no workers can see it for now.`}
+              ? `Visible to ${posted.matchingWorkers.length} ${categoryLabel(posted.category).toLowerCase()} worker${posted.matchingWorkers.length === 1 ? '' : 's'} in ${areaLabel(posted.area)}.`
+              : `No ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)} yet.`}
           </p>
-          <Link to={`/my-jobs/${posted._id}`} className="inline-block text-sm text-ink underline mt-2">See responses as they come in</Link>
+          <Button to={`/my-jobs/${posted._id}`} variant="dark" size="md" className="mt-3">See offers</Button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label htmlFor="category" className="block text-sm font-medium text-ink mb-1">Category</label>
-          <select id="category" value={category} onChange={e => setCategory(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60">
-            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
+          <p className="text-label text-ink mb-2">What do you need?</p>
+          <ChipRow label="What do you need?">
+            {CATEGORIES.map(c => (
+              <Chip key={c.value} active={c.value === category} onClick={() => setCategory(c.value)}>{c.label}</Chip>
+            ))}
+          </ChipRow>
         </div>
+
+        <FormField label="Describe the job">
+          {field => (
+            <TextArea {...field} required value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g. Kitchen tap is leaking, needs replacing" />
+          )}
+        </FormField>
+
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-ink mb-1">Description</label>
-          <textarea id="description" rows={4} required value={description} onChange={e => setDescription(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="e.g. Kitchen tap is leaking, needs replacing" />
+          <p className="text-label text-ink mb-2">Area</p>
+          <ChipRow label="Area">
+            {AREAS.map(a => (
+              <Chip key={a.value} active={a.value === area} onClick={() => setArea(a.value)}>{a.label}</Chip>
+            ))}
+          </ChipRow>
         </div>
-        <div>
-          <label htmlFor="area" className="block text-sm font-medium text-ink mb-1">Area</label>
-          <select id="area" value={area} onChange={e => setArea(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60">
-            {AREAS.map(a => <option key={a.value} value={a.value}>{a.label}</option>)}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="proposedPrice" className="block text-sm font-medium text-ink mb-1">Your price (RWF)</label>
-          <input id="proposedPrice" type="number" min="1" step="1" required value={proposedPrice} onChange={e => setProposedPrice(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="e.g. 20000" />
-          <p className="text-xs text-ink/50 mt-1">Workers can accept this price or offer their own.</p>
-        </div>
-        {error && <p className="text-sm text-brick">Couldn't post job: {error}</p>}
-        <button type="submit" disabled={submitting} className="px-5 py-3 bg-steel text-paper rounded font-medium hover:bg-steel-dark transition-colors disabled:opacity-60">
-          {submitting ? 'Posting…' : 'Post job'}
-        </button>
+
+        <FormField label="Your price (RWF)" helper="Workers can accept this price or send one counter-offer." error={error}>
+          {field => <PriceInput {...field} value={proposedPrice} onChange={setProposedPrice} placeholder="15,000" />}
+        </FormField>
+
+        <Button type="submit" disabled={submitting}>{submitting ? 'Posting…' : 'Post job'}</Button>
       </form>
-    </div>
+    </PageLayout>
   );
 }
