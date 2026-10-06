@@ -44,7 +44,7 @@ export default function Landing() {
         <div className="border border-ink/10 rounded bg-white/40 p-6">
           <TrustGraphMark className="w-full h-auto" />
           <p className="mt-3 text-xs text-ink/50 leading-relaxed">
-            You've hired Amina before. Amina rated Eric well on a past job.
+            You invited Amina. Amina hired Eric and rated him highly.
             Eric now ranks higher for you — even though you've never met him.
           </p>
         </div>
