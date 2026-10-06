@@ -1,1 +1,1 @@
-export const formatBudget = budget => (budget ? `${budget.toLocaleString('en-US')} RWF` : 'No budget set');
+export const formatRwf = amount => `${Number(amount).toLocaleString('en-US')} RWF`;

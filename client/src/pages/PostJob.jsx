@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { formatBudget } from '../format.js';
+import { formatRwf } from '../format.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
 
 
@@ -10,7 +10,7 @@ export default function PostJob() {
   const [category, setCategory] = useState('electrician');
   const [description, setDescription] = useState('');
   const [area, setArea] = useState(user.area);
-  const [budget, setBudget] = useState('');
+  const [proposedPrice, setProposedPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [posted, setPosted] = useState(null);
@@ -29,11 +29,11 @@ export default function PostJob() {
     try {
       const job = await api('/api/jobs', {
         method: 'POST',
-        body: JSON.stringify({ client: user._id, category, description, area, budget: budget ? Number(budget) : null })
+        body: JSON.stringify({ client: user._id, category, description, area, proposedPrice: Number(proposedPrice) })
       });
       setPosted(job);
       setDescription('');
-      setBudget('');
+      setProposedPrice('');
       loadMyJobs();
     } catch (err) {
       setError(err.message);
@@ -51,7 +51,7 @@ export default function PostJob() {
         <div role="status" className="mb-8 border border-leaf/40 bg-leaf/10 rounded-sm px-4 py-3">
           <p className="font-medium text-ink">Job posted successfully.</p>
           <p className="text-sm text-ink/70 mt-1">
-            “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatBudget(posted.budget)}
+            “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatRwf(posted.proposedPrice)}
           </p>
           <p className="text-sm text-ink/70 mt-1">
             {posted.matchingWorkers.length > 0
@@ -79,8 +79,9 @@ export default function PostJob() {
           </select>
         </div>
         <div>
-          <label htmlFor="budget" className="block text-sm font-medium text-ink mb-1">Budget (RWF, optional)</label>
-          <input id="budget" type="number" min="0" step="500" value={budget} onChange={e => setBudget(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="e.g. 20000" />
+          <label htmlFor="proposedPrice" className="block text-sm font-medium text-ink mb-1">Your price (RWF)</label>
+          <input id="proposedPrice" type="number" min="1" step="500" required value={proposedPrice} onChange={e => setProposedPrice(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="e.g. 20000" />
+          <p className="text-xs text-ink/50 mt-1">Workers can accept this price or offer their own.</p>
         </div>
         {error && <p className="text-sm text-brick">Couldn't post job: {error}</p>}
         <button type="submit" disabled={submitting} className="px-5 py-3 bg-steel text-paper rounded font-medium hover:bg-steel-dark transition-colors disabled:opacity-60">
@@ -95,7 +96,7 @@ export default function PostJob() {
           <div key={job._id} className="bg-white/50 border border-ink/10 rounded-sm px-5 py-4">
             <h3 className="font-medium text-ink">{job.description}</h3>
             <p className="text-sm text-ink/60 mt-1">
-              {categoryLabel(job.category)} · {areaLabel(job.area)} · {job.agreedPrice ? `Agreed ${job.agreedPrice.toLocaleString('en-US')} RWF` : formatBudget(job.budget)} ·{' '}
+              {categoryLabel(job.category)} · {areaLabel(job.area)} · {job.agreedPrice ? `Agreed ${formatRwf(job.agreedPrice)}` : `Your price ${formatRwf(job.proposedPrice)}`} ·{' '}
               <span className="capitalize">{job.status.replace('_', ' ')}</span>
             </p>
           </div>

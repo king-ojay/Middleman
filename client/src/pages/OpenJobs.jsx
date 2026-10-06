@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { formatBudget } from '../format.js';
+import { formatRwf } from '../format.js';
 import { categoryLabel, areaLabel } from '../options.js';
 
 
@@ -40,7 +40,7 @@ export default function OpenJobs() {
             <div>
               <h3 className="font-medium text-ink">{job.description}</h3>
               <p className="text-sm text-ink/60 mt-1">
-                {categoryLabel(job.category)} · {areaLabel(job.area)} · {formatBudget(job.budget)} · posted by {job.client?.name} on {new Date(job.createdAt).toLocaleDateString()}
+                {categoryLabel(job.category)} · {areaLabel(job.area)} · {formatRwf(job.proposedPrice)} · posted by {job.client?.name} on {new Date(job.createdAt).toLocaleDateString()}
               </p>
             </div>
             <button disabled title="Quote submission coming soon" className="px-4 py-2 text-sm font-medium border border-ink/20 rounded shrink-0 opacity-50 cursor-not-allowed">

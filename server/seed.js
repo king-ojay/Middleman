@@ -11,8 +11,8 @@ import dotenv from 'dotenv';
 import { getMongoUri } from './config/db.js';
 
 import User from './models/User.js';
-import Job from './models/Job.js';
-import Quote from './models/Quote.js';
+import Job from './modules/jobs/job.model.js';
+import Quote from './modules/jobs/quote.model.js';
 import Rating from './models/Rating.js';
 import Transaction from './models/Transaction.js';
 import TrustEdge from './models/TrustEdge.js';
@@ -76,39 +76,39 @@ const COMPLETED_JOBS = [
 ];
 
 const OPEN_JOBS = [
-  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Socket in kitchen sparks when used', budget: 15000 },
-  { client: 'olivier', category: 'electrician', area: 'gikondo', description: 'Need outdoor lighting installed', budget: 40000 },
-  { client: 'amina', category: 'plumber', area: 'kimironko', description: 'Water heater not heating', budget: 25000 },
-  { client: 'patrick', category: 'cleaner', area: 'kimironko', description: 'Weekly house cleaning' },
-  { client: 'grace', category: 'mason', area: 'remera', description: 'Cracked front steps need repair', budget: 50000 },
-  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Car will not start in the mornings' },
+  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Socket in kitchen sparks when used', proposedPrice: 15000 },
+  { client: 'olivier', category: 'electrician', area: 'gikondo', description: 'Need outdoor lighting installed', proposedPrice: 40000 },
+  { client: 'amina', category: 'plumber', area: 'kimironko', description: 'Water heater not heating', proposedPrice: 25000 },
+  { client: 'patrick', category: 'cleaner', area: 'kimironko', description: 'Weekly house cleaning', proposedPrice: 15000 },
+  { client: 'grace', category: 'mason', area: 'remera', description: 'Cracked front steps need repair', proposedPrice: 50000 },
+  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Car will not start in the mornings', proposedPrice: 20000 },
   // Kimironko
-  { client: 'amina', category: 'electrician', area: 'kimironko', description: 'Install ceiling fan in living room', budget: 20000 },
-  { client: 'patrick', category: 'electrician', area: 'kimironko', description: 'Outdoor socket stopped working', budget: 12000 },
-  { client: 'patrick', category: 'plumber', area: 'kimironko', description: 'Toilet cistern keeps running', budget: 10000 },
-  { client: 'amina', category: 'carpenter', area: 'kimironko', description: 'Repair broken wardrobe door', budget: 18000 },
-  { client: 'patrick', category: 'carpenter', area: 'kimironko', description: 'Build a small bookshelf', budget: 35000 },
-  { client: 'amina', category: 'phone_repair', area: 'kimironko', description: 'Cracked phone screen needs replacing', budget: 30000 },
-  { client: 'patrick', category: 'mason', area: 'kimironko', description: 'Patch cracks in compound wall', budget: 30000 },
+  { client: 'amina', category: 'electrician', area: 'kimironko', description: 'Install ceiling fan in living room', proposedPrice: 20000 },
+  { client: 'patrick', category: 'electrician', area: 'kimironko', description: 'Outdoor socket stopped working', proposedPrice: 12000 },
+  { client: 'patrick', category: 'plumber', area: 'kimironko', description: 'Toilet cistern keeps running', proposedPrice: 10000 },
+  { client: 'amina', category: 'carpenter', area: 'kimironko', description: 'Repair broken wardrobe door', proposedPrice: 18000 },
+  { client: 'patrick', category: 'carpenter', area: 'kimironko', description: 'Build a small bookshelf', proposedPrice: 35000 },
+  { client: 'amina', category: 'phone_repair', area: 'kimironko', description: 'Cracked phone screen needs replacing', proposedPrice: 30000 },
+  { client: 'patrick', category: 'mason', area: 'kimironko', description: 'Patch cracks in compound wall', proposedPrice: 30000 },
   // Gikondo
-  { client: 'jeanpaul', category: 'electrician', area: 'gikondo', description: "Rewire the shop's lighting", budget: 60000 },
-  { client: 'jeanpaul', category: 'electrician', area: 'gikondo', description: 'Install inverter for backup power', budget: 80000 },
-  { client: 'jeanpaul', category: 'plumber', area: 'gikondo', description: 'Replace corroded water pipes', budget: 45000 },
-  { client: 'olivier', category: 'welder', area: 'gikondo', description: 'Fix metal gate hinge', budget: 15000 },
-  { client: 'jeanpaul', category: 'welder', area: 'gikondo', description: 'Weld window security bars', budget: 70000 },
-  { client: 'olivier', category: 'cleaner', area: 'gikondo', description: 'Office cleaning twice a week', budget: 25000 },
-  { client: 'olivier', category: 'carpenter', area: 'gikondo', description: 'Fix sagging kitchen cabinets', budget: 20000 },
-  { client: 'jeanpaul', category: 'painter', area: 'gikondo', description: 'Repaint shop front', budget: 40000 },
+  { client: 'jeanpaul', category: 'electrician', area: 'gikondo', description: "Rewire the shop's lighting", proposedPrice: 60000 },
+  { client: 'jeanpaul', category: 'electrician', area: 'gikondo', description: 'Install inverter for backup power', proposedPrice: 80000 },
+  { client: 'jeanpaul', category: 'plumber', area: 'gikondo', description: 'Replace corroded water pipes', proposedPrice: 45000 },
+  { client: 'olivier', category: 'welder', area: 'gikondo', description: 'Fix metal gate hinge', proposedPrice: 15000 },
+  { client: 'jeanpaul', category: 'welder', area: 'gikondo', description: 'Weld window security bars', proposedPrice: 70000 },
+  { client: 'olivier', category: 'cleaner', area: 'gikondo', description: 'Office cleaning twice a week', proposedPrice: 25000 },
+  { client: 'olivier', category: 'carpenter', area: 'gikondo', description: 'Fix sagging kitchen cabinets', proposedPrice: 20000 },
+  { client: 'jeanpaul', category: 'painter', area: 'gikondo', description: 'Repaint shop front', proposedPrice: 40000 },
   // Remera
-  { client: 'grace', category: 'painter', area: 'remera', description: 'Paint two bedrooms', budget: 60000 },
-  { client: 'grace', category: 'tiler', area: 'remera', description: 'Tile bathroom floor', budget: 45000 },
-  { client: 'grace', category: 'hairdresser', area: 'remera', description: 'Bridal hair for wedding on Saturday', budget: 40000 },
-  { client: 'grace', category: 'electrician', area: 'remera', description: 'Add two sockets in the bedroom', budget: 15000 },
+  { client: 'grace', category: 'painter', area: 'remera', description: 'Paint two bedrooms', proposedPrice: 60000 },
+  { client: 'grace', category: 'tiler', area: 'remera', description: 'Tile bathroom floor', proposedPrice: 45000 },
+  { client: 'grace', category: 'hairdresser', area: 'remera', description: 'Bridal hair for wedding on Saturday', proposedPrice: 40000 },
+  { client: 'grace', category: 'electrician', area: 'remera', description: 'Add two sockets in the bedroom', proposedPrice: 15000 },
   // Kwa Nayinzira
-  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Fix flickering lights in corridor', budget: 8000 },
-  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Replace brake pads', budget: 25000 },
-  { client: 'diane', category: 'tailor', area: 'kwa_nayinzira', description: 'Alter school uniforms for two kids', budget: 6000 },
-  { client: 'diane', category: 'tailor', area: 'kwa_nayinzira', description: 'Sew curtains for living room', budget: 20000 }
+  { client: 'diane', category: 'electrician', area: 'kwa_nayinzira', description: 'Fix flickering lights in corridor', proposedPrice: 8000 },
+  { client: 'diane', category: 'mechanic', area: 'kwa_nayinzira', description: 'Replace brake pads', proposedPrice: 25000 },
+  { client: 'diane', category: 'tailor', area: 'kwa_nayinzira', description: 'Alter school uniforms for two kids', proposedPrice: 6000 },
+  { client: 'diane', category: 'tailor', area: 'kwa_nayinzira', description: 'Sew curtains for living room', proposedPrice: 20000 }
 ];
 
 async function seed() {
@@ -134,6 +134,7 @@ async function seed() {
       description: j.description,
       area: client.area,
       status: 'completed',
+      proposedPrice: j.price,
       agreedPrice: j.price
     });
 
@@ -142,7 +143,7 @@ async function seed() {
   }
 
   for (const j of OPEN_JOBS) {
-    await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description, budget: j.budget });
+    await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description, proposedPrice: j.proposedPrice });
   }
 
   console.log(`Seeded ${USERS.length} users, ${COMPLETED_JOBS.length} completed jobs, ${OPEN_JOBS.length} open jobs.\n`);

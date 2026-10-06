@@ -1,5 +1,5 @@
 import express from 'express';
-import Job from '../models/Job.js';
+import Job from '../modules/jobs/job.model.js';
 import User from '../models/User.js';
 
 const router = express.Router();
@@ -25,8 +25,8 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { client, category, description, area, budget } = req.body;
-    const job = await Job.create({ client, category, description, area, budget: budget || null });
+    const { client, category, description, area, proposedPrice } = req.body;
+    const job = await Job.create({ client, category, description, area, proposedPrice });
     // Workers whose "Open jobs near you" list will now include this job.
     const matchingWorkers = await User.find({ role: 'worker', skills: category, area }, 'name').lean();
     res.status(201).json({ ...job.toObject(), matchingWorkers });
