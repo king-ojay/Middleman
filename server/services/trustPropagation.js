@@ -10,7 +10,8 @@ const REFERRED_BOOST = 1.4; // referred edges carry ~40% more weight and decay s
  *
  * This is the algorithm described in Chapter 3, Section 3.2.3 of the proposal:
  * - direct edges contribute their full weight
- * - each additional hop multiplies the contribution by that edge's decay rate
+ * - each additional hop multiplies the running score by that edge's decay rate
+ *   exactly once, so a path of n hops is decayed (n - 1) times in total
  * - where multiple paths reach the same worker, the strongest path wins
  * - a `referredFlag` edge propagates further/stronger than an ordinary rating
  *
@@ -47,7 +48,9 @@ export async function computeTrustScores(clientId) {
 
         const referredMultiplier = edge.referredFlag ? REFERRED_BOOST : 1.0;
         const decay = edge.decayRate ?? DEFAULT_DECAY;
-        const contribution = node.accumulated * edge.weight * referredMultiplier * (depth === 0 ? 1 : decay ** depth);
+        // node.accumulated already carries the decay of earlier hops, so this
+        // hop applies its own decay once rather than decay ** depth again.
+        const contribution = node.accumulated * edge.weight * referredMultiplier * (depth === 0 ? 1 : decay);
 
         // toUser being a worker is determined by the caller filtering final results;
         // here we just propagate through the graph regardless of role.
