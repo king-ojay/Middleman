@@ -59,7 +59,6 @@ export default function OpenJobs() {
 function ResponseControls({ job, onSent }) {
   const [offering, setOffering] = useState(false);
   const [price, setPrice] = useState(String(job.proposedPrice));
-  const [wantsDeposit, setWantsDeposit] = useState(false);
   const [deposit, setDeposit] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
@@ -88,7 +87,7 @@ function ResponseControls({ job, onSent }) {
 
   const sendOffer = e => {
     e.preventDefault();
-    send({ amount: Number(price), depositAmount: wantsDeposit ? Number(deposit) : 0 });
+    send({ amount: Number(price), depositAmount: Number(deposit) || 0 });
   };
 
   return (
@@ -108,18 +107,12 @@ function ResponseControls({ job, onSent }) {
         <form onSubmit={sendOffer} className="space-y-3 max-w-sm">
           <div>
             <label htmlFor={`price-${job._id}`} className="block text-sm font-medium text-ink mb-1">Your price (RWF)</label>
-            <input id={`price-${job._id}`} type="number" min="1" step="500" required value={price} onChange={e => setPrice(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" />
+            <input id={`price-${job._id}`} type="number" min="1" step="1" required value={price} onChange={e => setPrice(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" />
           </div>
-          <label className="flex items-center gap-2 text-sm text-ink">
-            <input type="checkbox" checked={wantsDeposit} onChange={e => setWantsDeposit(e.target.checked)} />
-            I need a deposit for materials first
-          </label>
-          {wantsDeposit && (
-            <div>
-              <label htmlFor={`deposit-${job._id}`} className="block text-sm font-medium text-ink mb-1">Deposit (RWF)</label>
-              <input id={`deposit-${job._id}`} type="number" min="1" step="500" required max={price || undefined} value={deposit} onChange={e => setDeposit(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" />
-            </div>
-          )}
+          <div>
+            <label htmlFor={`deposit-${job._id}`} className="block text-sm font-medium text-ink mb-1">Materials deposit (RWF, optional)</label>
+            <input id={`deposit-${job._id}`} type="number" min="0" step="1" max={price || undefined} value={deposit} onChange={e => setDeposit(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="Leave empty if you don't need one" />
+          </div>
           <div className="flex gap-3">
             <button type="submit" disabled={sending} className="px-4 py-2 text-sm font-medium bg-steel text-paper rounded hover:bg-steel-dark transition-colors disabled:opacity-60">
               {sending ? 'Sending…' : 'Send offer'}

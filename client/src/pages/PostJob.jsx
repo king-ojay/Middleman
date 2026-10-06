@@ -75,7 +75,7 @@ export default function PostJob() {
         </div>
         <div>
           <label htmlFor="proposedPrice" className="block text-sm font-medium text-ink mb-1">Your price (RWF)</label>
-          <input id="proposedPrice" type="number" min="1" step="500" required value={proposedPrice} onChange={e => setProposedPrice(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="e.g. 20000" />
+          <input id="proposedPrice" type="number" min="1" step="1" required value={proposedPrice} onChange={e => setProposedPrice(e.target.value)} className="w-full border border-ink/20 rounded px-3 py-2 bg-white/60" placeholder="e.g. 20000" />
           <p className="text-xs text-ink/50 mt-1">Workers can accept this price or offer their own.</p>
         </div>
         {error && <p className="text-sm text-brick">Couldn't post job: {error}</p>}
