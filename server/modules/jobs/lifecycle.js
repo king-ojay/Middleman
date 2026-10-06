@@ -71,8 +71,9 @@ export async function respond(jobId, worker, { amount, depositAmount = 0 }) {
   const price = Number(amount ?? job.proposedPrice);
   const deposit = Number(depositAmount || 0);
   if (!Number.isInteger(price) || price < 1) throw new HttpError(400, 'Price must be a whole number of RWF');
-  if (!Number.isInteger(deposit) || deposit < 0 || deposit > price) {
-    throw new HttpError(400, 'Deposit must be a whole number between 0 and your price');
+  // Optional materials deposit set by the worker; must be less than the price.
+  if (!Number.isInteger(deposit) || deposit < 0 || (deposit > 0 && deposit >= price)) {
+    throw new HttpError(400, 'The materials amount must be less than the price');
   }
 
   try {

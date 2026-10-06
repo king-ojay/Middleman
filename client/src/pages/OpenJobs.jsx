@@ -5,7 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { firstName } from '../greeting.js';
 import { formatRwf, timeAgo } from '../format.js';
 import { categoryLabel, areaLabel } from '../options.js';
-import { Avatar, Button, Card, Chip, ChipRow, FormField, PageLayout, PriceInput, Sheet, TierBadge } from '../components/ui/index.js';
+import { Avatar, Button, Card, Chip, ChipRow, FormField, PageLayout, PriceInput, Sheet, Switch, TierBadge } from '../components/ui/index.js';
 
 // Worker home: open jobs in the worker's area that match one of their skills.
 // Each job shows how trusted its client is from this worker's point of view,
@@ -64,8 +64,10 @@ export default function OpenJobs() {
 }
 
 function ResponseControls({ job, onSent }) {
-  const [countering, setCountering] = useState(false);
+  const [mode, setMode] = useState(null); // 'accept' | 'counter' | null
   const [price, setPrice] = useState(String(job.proposedPrice));
+  const [needsMaterials, setNeedsMaterials] = useState(false);
+  const [deposit, setDeposit] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
@@ -73,17 +75,34 @@ function ResponseControls({ job, onSent }) {
     const r = job.myResponse;
     return (
       <p className="text-body text-forest bg-mint rounded-field px-4 py-3 mt-4">
-        {r.isCounter ? `You countered at ${formatRwf(r.amount)}` : `You accepted ${formatRwf(r.amount)}`}. Waiting for the client to choose.
+        {r.isCounter ? `You countered at ${formatRwf(r.amount)}` : `You accepted ${formatRwf(r.amount)}`}
+        {r.depositAmount > 0 && `, needing ${formatRwf(r.depositAmount)} upfront for materials`}. Waiting for the client to choose.
       </p>
     );
   }
 
-  const send = async body => {
+  const open = next => {
+    setMode(next);
+    setPrice(String(job.proposedPrice));
+    setNeedsMaterials(false);
+    setDeposit('');
+    setError('');
+  };
+
+  // One sheet for both responses (FR-05). Accepting keeps the client's price;
+  // countering changes it. Either can ask for materials money upfront.
+  const submit = async e => {
+    e.preventDefault();
+    const amount = mode === 'accept' ? job.proposedPrice : Number(price);
+    const depositAmount = needsMaterials ? Number(deposit) : 0;
+    if (!amount) return setError('Enter your price.');
+    if (needsMaterials && !depositAmount) return setError('Enter how much you need upfront for materials.');
+    if (needsMaterials && depositAmount >= amount) return setError('The materials amount must be less than the price.');
     setError('');
     setSending(true);
     try {
-      await api(`/api/jobs/${job._id}/responses`, { method: 'POST', body: JSON.stringify(body) });
-      setCountering(false);
+      await api(`/api/jobs/${job._id}/responses`, { method: 'POST', body: JSON.stringify({ amount, depositAmount }) });
+      setMode(null);
       onSent();
     } catch (err) {
       setError(err.message);
@@ -91,25 +110,40 @@ function ResponseControls({ job, onSent }) {
     }
   };
 
-  const sendCounter = e => {
-    e.preventDefault();
-    send({ amount: Number(price) });
-  };
-
   return (
     <div className="mt-4">
       <div className="flex gap-3">
-        <Button size="md" className="flex-1" disabled={sending} onClick={() => send({})}>Accept</Button>
-        <Button variant="outline" size="md" className="flex-1" onClick={() => setCountering(true)}>Counter</Button>
+        <Button size="md" className="flex-1" onClick={() => open('accept')}>Accept</Button>
+        <Button variant="outline" size="md" className="flex-1" onClick={() => open('counter')}>Counter</Button>
       </div>
-      {error && !countering && <p className="text-small text-danger mt-2" role="alert">{error}</p>}
 
-      <Sheet open={countering} title="Your price" onClose={() => setCountering(false)}>
-        <form onSubmit={sendCounter} className="space-y-4">
-          <FormField helper={`The client offered ${formatRwf(job.proposedPrice)}. You can send one counter-offer.`} error={error}>
-            {field => <PriceInput {...field} aria-label="Your price in RWF" value={price} onChange={setPrice} />}
-          </FormField>
-          <Button type="submit" disabled={sending || !price}>{sending ? 'Sending…' : 'Send counter-offer'}</Button>
+      <Sheet open={mode !== null} title={mode === 'accept' ? 'Accept this price' : 'Your price'} onClose={() => setMode(null)}>
+        <form onSubmit={submit} className="space-y-4">
+          {mode === 'accept' ? (
+            <div>
+              <p className="text-small text-muted">Client's price</p>
+              <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
+            </div>
+          ) : (
+            <FormField helper={`The client offered ${formatRwf(job.proposedPrice)}. You can send one counter-offer.`}>
+              {field => <PriceInput {...field} aria-label="Your price in RWF" value={price} onChange={setPrice} />}
+            </FormField>
+          )}
+
+          <Card className="flex items-center justify-between gap-4">
+            <span id={`materials-${job._id}`} className="text-body text-ink">Needs materials upfront?</span>
+            <Switch checked={needsMaterials} onChange={setNeedsMaterials} aria-labelledby={`materials-${job._id}`} />
+          </Card>
+          {needsMaterials && (
+            <FormField label="Amount for materials" helper="Must be less than the price.">
+              {field => <PriceInput {...field} value={deposit} onChange={setDeposit} placeholder="5,000" />}
+            </FormField>
+          )}
+
+          {error && <p className="text-small text-danger" role="alert">{error}</p>}
+          <Button type="submit" disabled={sending}>
+            {sending ? 'Sending…' : mode === 'accept' ? `Accept ${formatRwf(job.proposedPrice)}` : 'Send counter-offer'}
+          </Button>
         </form>
       </Sheet>
     </div>

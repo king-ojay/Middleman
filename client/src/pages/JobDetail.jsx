@@ -54,7 +54,7 @@ export default function JobDetail() {
             <p className="text-body font-medium text-forest">{statusLabel(job.status, user.role)}</p>
             <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
             <p className="text-title text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
-            {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Includes {formatRwf(job.depositAmount)} for materials first</p>}
+            {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
             <JobActions job={job} role={user.role} onChange={load} />
           </Card>
           {!isClient && job.workerCompletedAt && <RateClient job={job} onRated={load} />}
@@ -107,7 +107,7 @@ function Offers({ job, onChosen }) {
                   <p className="text-body font-medium text-forest">
                     {r.isCounter ? `Counter-offer · ${difference > 0 ? '+' : '−'}${formatRwf(Math.abs(difference))}` : 'Accepts your price'}
                   </p>
-                  {r.depositAmount > 0 && <p className="text-small text-muted">Asks {formatRwf(r.depositAmount)} for materials first</p>}
+                  {r.depositAmount > 0 && <p className="text-body text-muted">Needs {formatRwf(r.depositAmount)} upfront for materials</p>}
                 </div>
                 <Button size="md" className="shrink-0" disabled={choosing !== null} onClick={() => choose(r._id)}>
                   {choosing === r._id ? 'Choosing…' : 'Choose'}
