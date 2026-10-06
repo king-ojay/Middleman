@@ -12,6 +12,8 @@ import usersRouter from './modules/users/users.routes.js';
 dotenv.config();
 
 const app = express();
+// Behind Render's proxy: use the client's IP (X-Forwarded-For) for rate limits.
+app.set('trust proxy', 1);
 app.use(cors());
 app.use(express.json());
 
