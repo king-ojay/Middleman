@@ -47,7 +47,10 @@ const USERS = [
   { key: 'solange', name: 'Solange Iradukunda', phone: '0788000114', role: 'worker', area: 'kwa_nayinzira', skills: ['tailor'], verifiedStatus: 'verified' },
   { key: 'kevin', name: 'Kevin Ishimwe', phone: '0788000115', role: 'worker', area: 'kimironko', skills: ['phone_repair'] },
   { key: 'yvonne', name: 'Yvonne Mutesi', phone: '0788000116', role: 'worker', area: 'remera', skills: ['hairdresser'] },
-  { key: 'gilbert', name: 'Gilbert Ndikumana', phone: '0788000117', role: 'worker', area: 'gikondo', skills: ['carpenter', 'painter'] }
+  { key: 'gilbert', name: 'Gilbert Ndikumana', phone: '0788000117', role: 'worker', area: 'gikondo', skills: ['carpenter', 'painter'] },
+  // More Kimironko electricians, so Amina's ceiling-fan job gets responses from all three trust tiers
+  { key: 'moses', name: 'Moses Habineza', phone: '0788000118', role: 'worker', area: 'kimironko', skills: ['electrician'] },
+  { key: 'ange', name: 'Ange Uwamahoro', phone: '0788000119', role: 'worker', area: 'kimironko', skills: ['electrician'] }
 ];
 
 // Completed jobs. `clientScore` is the client's rating of the worker;
@@ -67,12 +70,28 @@ const COMPLETED_JOBS = [
   { client: 'olivier', worker: 'fabrice', category: 'plumber', price: 12000, description: 'Unblock drainage', clientScore: 4 },
   // Kimironko community — Patrick isn't in Amina's graph, so Josiane is area-trusted
   { client: 'patrick', worker: 'josiane', category: 'mason', price: 45000, description: 'Plaster bedroom walls', clientScore: 5 },
+  { client: 'patrick', worker: 'moses', category: 'electrician', price: 15000, description: 'Fix doorbell wiring', clientScore: 5 },
   // Other trades (client ratings only, so the electrician paths above are unchanged)
   { client: 'amina', worker: 'theoneste', category: 'carpenter', price: 35000, description: 'Build kitchen shelves', clientScore: 5 },
   { client: 'patrick', worker: 'kevin', category: 'phone_repair', price: 25000, description: 'Replace phone battery', clientScore: 4 },
   { client: 'grace', worker: 'aline', category: 'painter', price: 55000, description: 'Paint sitting room', clientScore: 5 },
   { client: 'jeanpaul', worker: 'didier', category: 'welder', price: 60000, description: 'Weld new compound gate', clientScore: 4 },
   { client: 'diane', worker: 'solange', category: 'tailor', price: 15000, description: 'Tailor a work suit', clientScore: 5 }
+];
+
+// Worker responses to open jobs (FR-05). No amount = accepted the client's price.
+const RESPONSES = [
+  // Amina's ceiling fan: one response per trust tier, so the ranking is visible
+  { job: 'Install ceiling fan in living room', worker: 'eric' },                                       // network, accepts
+  { job: 'Install ceiling fan in living room', worker: 'moses', amount: 18000 },                       // area, counters lower
+  { job: 'Install ceiling fan in living room', worker: 'ange', amount: 15000, depositAmount: 5000 },   // new, cheapest + deposit
+  { job: "Rewire the shop's lighting", worker: 'bosco', amount: 70000, depositAmount: 20000 },
+  { job: 'Paint two bedrooms', worker: 'aline' }
+];
+
+// Jobs where the client has already chosen a worker, so "Start job" can be demoed.
+const CHOSEN = [
+  { job: 'Repair broken wardrobe door', worker: 'theoneste' }
 ];
 
 const OPEN_JOBS = [
@@ -142,11 +161,22 @@ async function seed() {
     if (j.workerScore) await rate(job, worker, client, j.workerScore, false);
   }
 
+  const openJobs = {};
   for (const j of OPEN_JOBS) {
-    await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description, proposedPrice: j.proposedPrice });
+    openJobs[j.description] = await Job.create({ client: users[j.client]._id, category: j.category, area: j.area, description: j.description, proposedPrice: j.proposedPrice });
   }
 
-  console.log(`Seeded ${USERS.length} users, ${COMPLETED_JOBS.length} completed jobs, ${OPEN_JOBS.length} open jobs.\n`);
+  for (const r of [...RESPONSES, ...CHOSEN]) {
+    const job = openJobs[r.job];
+    const amount = r.amount ?? job.proposedPrice;
+    const quote = await Quote.create({ job: job._id, worker: users[r.worker]._id, amount, isCounter: amount !== job.proposedPrice, depositAmount: r.depositAmount || 0 });
+    if (CHOSEN.includes(r)) {
+      await Job.updateOne({ _id: job._id }, { status: 'quote_accepted', worker: quote.worker, agreedPrice: amount, depositAmount: quote.depositAmount, acceptedAt: new Date() });
+      await Quote.updateOne({ _id: quote._id }, { status: 'accepted' });
+    }
+  }
+
+  console.log(`Seeded ${USERS.length} users, ${COMPLETED_JOBS.length} completed jobs, ${OPEN_JOBS.length} open jobs, ${RESPONSES.length + CHOSEN.length} worker responses.\n`);
   console.log('Demo logins (phone number):');
   for (const u of USERS) {
     console.log(`  ${u.phone}  ${u.role.padEnd(6)}  ${u.area.padEnd(13)}  ${u.name}${u.skills ? ` (${u.skills.join(', ')})` : ''}`);
