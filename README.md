@@ -31,33 +31,73 @@ server/   Express + MongoDB API, including the trust propagation algorithm
 client/   React + Vite frontend
 ```
 
-## Getting started
+## Run it locally
 
-### Backend
+You need Node.js 20+ and Docker (for MongoDB). From the repo root:
+
 ```bash
+# 1. MongoDB in Docker (first time creates the container; later just `docker start mongo`)
+docker run -d --name mongo -p 27017:27017 mongo:7
+
+# 2. Install everything (server and client are npm workspaces)
+npm install
+
+# 3. Server settings
+cp server/.env.example server/.env
+#    then set SESSION_SECRET in server/.env to any long random string
+
+# 4. Load the demo data and start the API on http://localhost:4000
 cd server
-cp .env.example .env      # fill in MONGO_URI if not using local default
-npm install
-npm run seed               # wipes the DB and loads demo users + jobs
-npm run dev                # runs on http://localhost:4000
-```
+MONGO_URI=mongodb://localhost:27017/middleman npm run seed
+MONGO_URI=mongodb://localhost:27017/middleman npm run dev
 
-No local MongoDB? `docker run -d --name mongo -p 27017:27017 mongo:7` works
-with the default `MONGO_URI`.
-
-The seed prints the demo phone numbers. Logged in as Amina (`0788000001`),
-searching electricians on Discover shows all three trust tiers: network
-(Eric, direct; Claudine, 3 hops), area (Jean Bosco, rated by Gikondo clients)
-and new (Emmanuel, never rated).
-
-### Frontend
-```bash
+# 5. In a second terminal, start the app on http://localhost:5173
 cd client
-npm install
-npm run dev                # runs on http://localhost:5173, proxies /api to :4000
+npm run dev
 ```
 
-Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
+> **`npm run seed` wipes the database `MONGO_URI` points at.** Passing
+> `MONGO_URI` on the command line as above keeps it on your local Docker
+> database even if `server/.env` points at Atlas.
+
+Open http://localhost:5173 and log in with any demo account below. **Every
+demo account's PIN is `1234`.**
+
+| Phone | Role | Who |
+|---|---|---|
+| `0788000001` | Client | Amina Uwimana, Kimironko |
+| `0788000002` | Client | Patrick Nshimiyimana, Kimironko |
+| `0788000003` | Client | Grace Mukamana, Remera |
+| `0788000004` | Client | Jean Paul Habyarimana, Gikondo |
+| `0788000005` | Client | Olivier Mugisha, Gikondo |
+| `0788000006` | Client | Diane Ingabire, Kwa Nayinzira |
+| `0788000101` | Worker | Eric Habimana, electrician, Kimironko |
+| `0788000102` | Worker | Claudine Uwase, electrician, Remera |
+| `0788000103` | Worker | Jean Bosco Niyonzima, electrician, Gikondo |
+| `0788000104` | Worker | Emmanuel Twagirayezu, electrician, Kwa Nayinzira |
+| `0788000105` | Worker | Alice Mukeshimana, plumber, Kimironko |
+| `0788000106` | Worker | Fabrice Ndayisaba, plumber, Gikondo |
+| `0788000107` | Worker | Samuel Bizimana, mason, Remera |
+| `0788000108` | Worker | Josiane Umutoni, mason, Kimironko |
+| `0788000109` | Worker | Vestine Nyirahabimana, cleaner, Gikondo |
+| `0788000110` | Worker | Innocent Hakizimana, mechanic, Kwa Nayinzira |
+| `0788000111` | Worker | Theoneste Nkurunziza, carpenter, Kimironko |
+| `0788000112` | Worker | Aline Uwera, painter and tiler, Remera |
+| `0788000113` | Worker | Didier Mugabo, welder, Gikondo |
+| `0788000114` | Worker | Solange Iradukunda, tailor, Kwa Nayinzira |
+| `0788000115` | Worker | Kevin Ishimwe, phone repair, Kimironko |
+| `0788000116` | Worker | Yvonne Mutesi, hairdresser, Remera |
+| `0788000117` | Worker | Gilbert Ndikumana, carpenter and painter, Gikondo |
+| `0788000118` | Worker | Moses Habineza, electrician, Kimironko |
+| `0788000119` | Worker | Ange Uwamahoro, electrician, Kimironko |
+
+To register a new account locally, use any other `07…` number: with
+`OTP_PROVIDER=console` (the default) the 6-digit SMS code is printed in the
+API terminal.
+
+**Tests:** `cd server && npm test` runs the unit tests. The API tests also run
+when you point them at a throwaway database:
+`TEST_MONGO_URI=mongodb://localhost:27017/middleman_test npm test`.
 
 ## What's built so far
 
