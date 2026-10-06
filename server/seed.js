@@ -10,13 +10,13 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { getMongoUri } from './config/db.js';
 
-import User from './models/User.js';
+import User from './modules/users/user.model.js';
 import Job from './modules/jobs/job.model.js';
 import Quote from './modules/jobs/quote.model.js';
-import Rating from './models/Rating.js';
+import Rating from './modules/trust/rating.model.js';
 import Transaction from './models/Transaction.js';
-import TrustEdge from './models/TrustEdge.js';
-import { writeTrustEdgeFromRating } from './services/trustPropagation.js';
+import TrustEdge from './modules/trust/trustEdge.model.js';
+import { writeTrustEdgeFromRating } from './modules/trust/trustPropagation.js';
 
 dotenv.config();
 

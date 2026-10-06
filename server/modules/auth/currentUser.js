@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import User from '../../models/User.js';
+import User from '../users/user.model.js';
 
 // Demo-grade identity: the client sends the logged-in user's id in an
 // `x-user-id` header and we trust it. Phase 7 replaces this with PIN login.

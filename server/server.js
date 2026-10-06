@@ -4,10 +4,9 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { getMongoUri } from './config/db.js';
 
-import authRouter from './routes/auth.js';
+import authRouter from './modules/auth/auth.routes.js';
 import jobsRouter from './modules/jobs/jobs.routes.js';
-import discoverRouter from './routes/discover.js';
-import ratingsRouter from './routes/ratings.js';
+import discoverRouter from './modules/trust/discover.routes.js';
 
 dotenv.config();
 
@@ -18,7 +17,6 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/jobs', jobsRouter);
 app.use('/api/discover', discoverRouter);
-app.use('/api/ratings', ratingsRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

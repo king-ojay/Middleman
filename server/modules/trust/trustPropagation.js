@@ -1,4 +1,4 @@
-import TrustEdge from '../models/TrustEdge.js';
+import TrustEdge from './trustEdge.model.js';
 
 const MAX_DEPTH = 3;
 const DEFAULT_DECAY = 0.5;

@@ -1,10 +1,10 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import User from '../../models/User.js';
+import User from '../users/user.model.js';
 import Job from './job.model.js';
 import Quote from './quote.model.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
-import { rankByTrust } from '../../services/trustPropagation.js';
+import { rankByTrust } from '../trust/trustPropagation.js';
 import { HttpError, respond, selectResponse, transition } from './lifecycle.js';
 
 const router = express.Router();

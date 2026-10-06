@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { AREAS } from '../config/areas.js';
-import { CATEGORIES } from '../config/categories.js';
+import { AREAS } from '../../config/areas.js';
+import { CATEGORIES } from '../../config/categories.js';
 
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
