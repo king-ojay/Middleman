@@ -14,10 +14,12 @@ Log in with a seeded phone number (no password, demo only):
 
 | Phone | Role | Who | What you'll see |
 |---|---|---|---|
-| `0788000001` | Client | Amina, Kimironko | Discover → Electrician shows all three trust tiers |
-| `0788000004` | Client | Jean Paul, Gikondo | Same search, different personalised ranking |
-| `0788000103` | Worker | Jean Bosco, Gikondo electrician | Open jobs near you |
-| `0788000104` | Worker | Emmanuel, Kwa Nayinzira electrician | Open jobs near you |
+| `0788000001` | Client | Amina, Kimironko | My jobs → "Install ceiling fan": three responses ranked by trust, not price |
+| `0788000004` | Client | Jean Paul, Gikondo | Discover: same search, different personalised ranking |
+| `0788000101` | Worker | Eric, Kimironko electrician | Open jobs: accept or counter; the client's trust tier on each job |
+| `0788000118` | Worker | Moses, Kimironko electrician | Area-trusted responder on Amina's job |
+| `0788000119` | Worker | Ange, Kimironko electrician | New worker, cheapest offer, still ranked last |
+| `0788000111` | Worker | Theoneste, Kimironko carpenter | My jobs: already chosen, can "Start job" |
 
 ## Structure
 
@@ -56,29 +58,38 @@ Requires MongoDB running locally (`mongod`) or a connection string in `.env`.
 
 ## What's built so far
 
-- **Data models** (`server/models/`) — matches the ERD in Chapter 3 of the proposal:
-  User, Job, Quote, Transaction, Rating, TrustEdge.
+- **Data models** — match the ERD in Chapter 3 of the proposal: User, Job,
+  Quote, Transaction, Rating, TrustEdge. Job and Quote live in
+  `server/modules/jobs/`; the rest move into domain modules phase by phase (NFR-08).
 - **Trust propagation algorithm** (`server/services/trustPropagation.js`) — the
   actual decay-weighted BFS traversal described in Section 3.2.3, including the
   `referredFlag` boost and bidirectional rating support.
-- **Area-level trust fallback** (`server/routes/discover.js`) — workers the
-  client's graph can't reach are scored by ratings from their own area, before
-  falling back to the verification floor (path → area → floor, Section 3.2.3).
-- **Seed script** (`server/seed.js`) — 23 users across Kimironko, Kwa Nayinzira,
-  Remera and Gikondo and 12 trades, with 15 completed and rated jobs plus 29
-  open jobs. Areas and trades are defined once in `server/config/` (models)
+- **Layered ranking** (`rankByTrust` in `server/services/trustPropagation.js`) —
+  users the viewer's graph can't reach are scored by ratings from their own
+  area, then the verification floor (path → area → floor, Section 3.2.3). The
+  same call ranks workers for a client and clients for a worker.
+- **Seed script** (`server/seed.js`) — 25 users across Kimironko, Kwa Nayinzira,
+  Remera and Gikondo and 12 trades, with 16 completed and rated jobs, 29 open
+  jobs, worker responses, and one job with a worker already chosen. Areas and trades are defined once in `server/config/` (models)
   and `client/src/options.js` (dropdowns and labels).
 - **Discover page** (`client/src/pages/Discover.jsx`) — trust-ranked worker
   search.
 - **Demo login + role routing** — log in with a seeded phone number
-  (`POST /api/auth/login`, no password; not production security). Clients land
-  on Discover / Post a job, workers on "Open jobs near you" (`/jobs`), a
-  read-only list of open jobs matching their skills and area.
-- **Post Job** — submits to `POST /api/jobs` as the logged-in client, with an
-  optional budget in RWF. The confirmation names the workers who can now see it
-  (same skill + same area), and the page lists the client's own posted jobs.
+  (`POST /api/auth/login`, no password; not production security). API calls
+  identify the user with an `x-user-id` header until Phase 7 adds a PIN.
+- **Client-anchored bidding** (Section 3.3.3, FR-04/05/05b) — the client posts a
+  job with a proposed price; each matching worker accepts it or sends one
+  counter-amount, optionally with a materials deposit; the client sees every
+  response ranked by trust and chooses one, which fixes the agreed price.
+- **Job lifecycle** (`server/modules/jobs/lifecycle.js`, Fig. 5) —
+  `open → quote_accepted → in_progress → awaiting_confirmation → completed`,
+  with `disputed` reachable from in progress or awaiting confirmation. The
+  worker starts and marks complete; the client confirms. Until escrow lands
+  (Phase 3), the worker's "Start job" stands in for escrow funding.
+- **Screens** — workers: *Open jobs near you* (accept / make an offer, with the
+  client's trust tier) and *My jobs*. Clients: *Post a job*, *My jobs*, and a
+  job page with trust-ranked responses. Every core flow is 4 steps or fewer.
 - **Landing page** — hero and "how it works" explainer.
-- **Post Job page** — form scaffold, not yet wired to the API.
 
 ## Deployment
 
@@ -103,9 +114,8 @@ API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
 
 ## Not built yet (next steps)
 
-- Quote submission + accept flow
-- Escrow/Paypack integration
-- Rating submission UI (backend route exists: `POST /api/ratings`)
+- Ratings, referrals and registration (Phase 2)
+- Escrow/Paypack sandbox integration (Phase 3)
 - The synthetic dataset generator described in Chapter 3, Section 3.2.1/3.2.2
 
 ## Design system
