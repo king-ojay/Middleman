@@ -16,7 +16,11 @@ import Quote from './modules/jobs/quote.model.js';
 import Rating from './modules/trust/rating.model.js';
 import Transaction from './models/Transaction.js';
 import TrustEdge from './modules/trust/trustEdge.model.js';
-import { writeTrustEdgeFromRating } from './modules/trust/trustPropagation.js';
+import { writeTrustEdgeFromRating, writeTrustEdgeFromReferral } from './modules/trust/trustPropagation.js';
+import { hashPin } from './modules/auth/pin.js';
+
+// Every demo account logs in with this PIN.
+const DEMO_PIN = '1234';
 
 dotenv.config();
 
@@ -57,20 +61,20 @@ const USERS = [
 // `workerScore` (optional) is the worker's rating of the client.
 const COMPLETED_JOBS = [
   // Amina's direct network
-  { client: 'amina', worker: 'eric', category: 'electrician', price: 25000, description: 'Replace faulty wiring in sitting room', clientScore: 5, workerScore: 5 },
-  { client: 'amina', worker: 'alice', category: 'plumber', price: 18000, description: 'Fix leaking kitchen tap', clientScore: 4, referred: true, workerScore: 5 },
+  { client: 'amina', worker: 'eric', category: 'electrician', price: 25000, description: 'Replace faulty wiring in sitting room', comment: 'Fixed the wiring fault the same day. I told two neighbours.', clientScore: 5, workerScore: 5 },
+  { client: 'amina', worker: 'alice', category: 'plumber', price: 18000, description: 'Fix leaking kitchen tap', comment: 'Quick, tidy, fair price.', clientScore: 4, referred: true, workerScore: 5 },
   // Alice -> Grace links Amina to Grace's hires (3-hop network trust)
   { client: 'grace', worker: 'alice', category: 'plumber', price: 30000, description: 'Install new shower mixer', clientScore: 5, workerScore: 4 },
-  { client: 'grace', worker: 'claudine', category: 'electrician', price: 22000, description: 'Install security lights', clientScore: 5, workerScore: 5 },
+  { client: 'grace', worker: 'claudine', category: 'electrician', price: 22000, description: 'Install security lights', comment: 'Good work, arrived a little later than agreed.', clientScore: 5, workerScore: 5 },
   { client: 'grace', worker: 'samuel', category: 'mason', price: 60000, description: 'Rebuild garden wall', clientScore: 4 },
   // Gikondo community — unreachable from Amina, so area-level trust
-  { client: 'jeanpaul', worker: 'bosco', category: 'electrician', price: 20000, description: 'Rewire meter box', clientScore: 5, workerScore: 5 },
+  { client: 'jeanpaul', worker: 'bosco', category: 'electrician', price: 20000, description: 'Rewire meter box', comment: 'Explained everything before starting.', clientScore: 5, workerScore: 5 },
   { client: 'olivier', worker: 'bosco', category: 'electrician', price: 15000, description: 'Fix tripping breaker', clientScore: 4 },
   { client: 'jeanpaul', worker: 'vestine', category: 'cleaner', price: 8000, description: 'Deep clean after renovation', clientScore: 5 },
   { client: 'olivier', worker: 'fabrice', category: 'plumber', price: 12000, description: 'Unblock drainage', clientScore: 4 },
   // Kimironko community — Patrick isn't in Amina's graph, so Josiane is area-trusted
   { client: 'patrick', worker: 'josiane', category: 'mason', price: 45000, description: 'Plaster bedroom walls', clientScore: 5 },
-  { client: 'patrick', worker: 'moses', category: 'electrician', price: 15000, description: 'Fix doorbell wiring', clientScore: 5 },
+  { client: 'patrick', worker: 'moses', category: 'electrician', price: 15000, description: 'Fix doorbell wiring', comment: 'Reliable and polite.', clientScore: 5 },
   // Other trades (client ratings only, so the electrician paths above are unchanged)
   { client: 'amina', worker: 'theoneste', category: 'carpenter', price: 35000, description: 'Build kitchen shelves', clientScore: 5 },
   { client: 'patrick', worker: 'kevin', category: 'phone_repair', price: 25000, description: 'Replace phone battery', clientScore: 4 },
@@ -92,6 +96,14 @@ const RESPONSES = [
 // Jobs where the client has already chosen a worker, so "Start job" can be demoed.
 const CHOSEN = [
   { job: 'Repair broken wardrobe door', worker: 'theoneste' }
+];
+
+// Signup invitations (FR-03): the inviter vouches for the person they invited.
+// Chosen so they don't change the electrician tiers the demo relies on.
+const SIGNUP_REFERRALS = [
+  { from: 'amina', to: 'eric' },
+  { from: 'jeanpaul', to: 'olivier' },
+  { from: 'diane', to: 'emmanuel' }
 ];
 
 const OPEN_JOBS = [
@@ -140,7 +152,12 @@ async function seed() {
 
   const users = {};
   for (const { key, ...data } of USERS) {
-    users[key] = await User.create(data);
+    users[key] = await User.create({ ...data, pinHash: await hashPin(DEMO_PIN) });
+  }
+
+  for (const r of SIGNUP_REFERRALS) {
+    await User.updateOne({ _id: users[r.to]._id }, { referredBy: users[r.from]._id });
+    await writeTrustEdgeFromReferral({ fromUser: users[r.from]._id, toUser: users[r.to]._id });
   }
 
   for (const j of COMPLETED_JOBS) {
@@ -157,7 +174,7 @@ async function seed() {
       agreedPrice: j.price
     });
 
-    await rate(job, client, worker, j.clientScore, j.referred);
+    await rate(job, client, worker, j.clientScore, j.referred, j.comment);
     if (j.workerScore) await rate(job, worker, client, j.workerScore, false);
   }
 
@@ -177,7 +194,7 @@ async function seed() {
   }
 
   console.log(`Seeded ${USERS.length} users, ${COMPLETED_JOBS.length} completed jobs, ${OPEN_JOBS.length} open jobs, ${RESPONSES.length + CHOSEN.length} worker responses.\n`);
-  console.log('Demo logins (phone number):');
+  console.log(`Demo logins (phone number, PIN ${DEMO_PIN}):`);
   for (const u of USERS) {
     console.log(`  ${u.phone}  ${u.role.padEnd(6)}  ${u.area.padEnd(13)}  ${u.name}${u.skills ? ` (${u.skills.join(', ')})` : ''}`);
   }
@@ -185,9 +202,9 @@ async function seed() {
   await mongoose.disconnect();
 }
 
-// Mirrors POST /api/ratings: store the rating, then write its trust edge.
-async function rate(job, fromUser, toUser, score, referredFlag) {
-  await Rating.create({ job: job._id, fromUser: fromUser._id, toUser: toUser._id, score, referredFlag: !!referredFlag });
+// Same as the app: store the rating, then write its trust edge.
+async function rate(job, fromUser, toUser, score, referredFlag, comment = '') {
+  await Rating.create({ job: job._id, fromUser: fromUser._id, toUser: toUser._id, score, referredFlag: !!referredFlag, comment });
   await writeTrustEdgeFromRating({ fromUser: fromUser._id, toUser: toUser._id, score, referredFlag });
 }
 
