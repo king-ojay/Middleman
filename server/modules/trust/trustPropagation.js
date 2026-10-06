@@ -12,7 +12,11 @@ const REFERRED_BOOST = 1.4; // referred edges carry ~40% more weight and decay s
  * - direct edges contribute their full weight
  * - each additional hop multiplies the running score by that edge's decay rate
  *   exactly once, so a path of n hops is decayed (n - 1) times in total
- * - where multiple paths reach the same worker, the strongest path wins
+ * - where multiple paths reach the same worker, the strongest path wins: a
+ *   person is explored again whenever a strictly stronger path to them is
+ *   found, so a weak short path can't hide a stronger longer one. This ends
+ *   because depth is capped, and cycles can't inflate a score because every
+ *   hop after the first multiplies by at most 1.4 x 0.65 = 0.91
  * - a `referredFlag` edge propagates further/stronger than an ordinary rating
  *
  * Returns a Map<workerId, score> for every worker reached through the graph.
@@ -21,10 +25,10 @@ const REFERRED_BOOST = 1.4; // referred edges carry ~40% more weight and decay s
  * verification floor) for those, per Section 3.2.3.
  */
 export async function computeTrustScores(clientId) {
-  const scores = new Map(); // workerId (string) -> best score found so far
-  const visited = new Set([String(clientId)]);
+  const viewer = String(clientId);
+  const scores = new Map(); // userId (string) -> best score found so far
 
-  let frontier = [{ userId: String(clientId), accumulated: 1.0, depth: 0 }];
+  let frontier = [{ userId: viewer, accumulated: 1.0, depth: 0 }];
 
   for (let depth = 0; depth < MAX_DEPTH && frontier.length > 0; depth++) {
     const frontierIds = frontier.map(f => f.userId);
@@ -44,7 +48,7 @@ export async function computeTrustScores(clientId) {
       const outgoing = edgesBySource.get(node.userId) || [];
       for (const edge of outgoing) {
         const targetId = String(edge.toUser);
-        if (visited.has(targetId)) continue; // prevent cycles
+        if (targetId === viewer) continue; // never score yourself
 
         const referredMultiplier = edge.referredFlag ? REFERRED_BOOST : 1.0;
         const decay = edge.decayRate ?? DEFAULT_DECAY;
@@ -54,17 +58,20 @@ export async function computeTrustScores(clientId) {
 
         // toUser being a worker is determined by the caller filtering final results;
         // here we just propagate through the graph regardless of role.
+        // Only a strictly stronger path is kept and explored further.
         const existing = scores.get(targetId);
-        if (!existing || contribution > existing) {
-          scores.set(targetId, contribution);
-        }
-
+        if (existing !== undefined && contribution <= existing) continue;
+        scores.set(targetId, contribution);
         nextFrontier.push({ userId: targetId, accumulated: contribution, depth: depth + 1 });
-        visited.add(targetId);
       }
     }
 
-    frontier = nextFrontier;
+    // Keep one entry per person (their strongest) before the next round.
+    const best = new Map();
+    for (const entry of nextFrontier) {
+      if (!best.has(entry.userId) || entry.accumulated > best.get(entry.userId).accumulated) best.set(entry.userId, entry);
+    }
+    frontier = [...best.values()];
   }
 
   return scores;
