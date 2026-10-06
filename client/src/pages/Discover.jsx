@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { greeting } from '../greeting.js';
@@ -91,13 +92,18 @@ export default function Discover() {
 
       <ul className="space-y-3">
         {!loading && workers.map(w => (
-          <Card as="li" key={w._id} className="flex items-center gap-4">
-            <Avatar name={w.name} tier={w.trustSource} size={52} />
-            <div className="min-w-0">
-              <h3 className="text-card text-ink">{w.name}</h3>
-              <p className="text-body text-muted">{(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)}</p>
-              <div className="mt-2"><TierBadge tier={w.trustSource} /></div>
-            </div>
+          <Card as="li" key={w._id} className="p-0">
+            <Link to={`/people/${w._id}`} className="flex items-center gap-4 p-4 rounded-card">
+              <Avatar name={w.name} tier={w.trustSource} size={52} />
+              <div className="min-w-0 flex-1">
+                <h3 className="text-card text-ink">{w.name}</h3>
+                <p className="text-body text-muted">{(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)}</p>
+                <div className="mt-2"><TierBadge tier={w.trustSource} /></div>
+              </div>
+              <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true" className="shrink-0">
+                <path d="m1.5 1.5 5 5.5-5 5.5" className="stroke-faint" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </Link>
           </Card>
         ))}
       </ul>

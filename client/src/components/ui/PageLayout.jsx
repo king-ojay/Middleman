@@ -1,12 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import TabBar from './TabBar.jsx';
 
-function BackButton({ to }) {
+// `back` may be true (browser back), a path, or a function (e.g. previous step).
+function BackButton({ back }) {
   const navigate = useNavigate();
+  const goBack = () => {
+    if (typeof back === 'function') return back();
+    if (typeof back === 'string') return navigate(back);
+    return navigate(-1);
+  };
   return (
     <button
       type="button"
-      onClick={() => (to ? navigate(to) : navigate(-1))}
+      onClick={goBack}
       aria-label="Back"
       className="-ml-3 w-11 h-11 inline-flex items-center justify-center rounded-full text-ink"
     >
@@ -25,7 +31,7 @@ export default function PageLayout({ back, right, eyebrow, title, subtitle, tabB
     <div className={`px-screen pt-[max(env(safe-area-inset-top),24px)] ${tabBar ? 'pb-[100px]' : 'pb-10'}`}>
       {hasHeaderRow && (
         <div className="flex items-center justify-between h-11 mb-4">
-          <div>{back && <BackButton to={typeof back === 'string' ? back : undefined} />}</div>
+          <div>{back && <BackButton back={back} />}</div>
           <div className="text-label text-muted">{right}</div>
         </div>
       )}

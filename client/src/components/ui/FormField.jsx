@@ -50,6 +50,15 @@ export function PriceInput({ value, onChange, className = '', ...props }) {
 // Backspace clears the last digit and steps back.
 export function PinBoxes({ value, onChange, id, label = 'PIN', ...props }) {
   const refs = useRef([]);
+  // The latest PIN, updated before focus moves, so the focus guard below
+  // never sees a stale value mid-typing.
+  const current = useRef(value);
+  current.current = value;
+
+  const update = next => {
+    current.current = next;
+    onChange(next);
+  };
 
   return (
     <div className="grid grid-cols-4 gap-3">
@@ -64,18 +73,19 @@ export function PinBoxes({ value, onChange, id, label = 'PIN', ...props }) {
           maxLength={1}
           aria-label={`${label} digit ${i + 1}`}
           value={value[i] || ''}
-          onFocus={() => { if (i > value.length) refs.current[value.length]?.focus(); }}
+          onFocus={() => { if (i > current.current.length) refs.current[current.current.length]?.focus(); }}
           onChange={e => {
             const digit = e.target.value.replace(/\D/g, '').slice(-1);
             if (!digit) return;
-            onChange((value.slice(0, i) + digit).slice(0, 4));
-            refs.current[i + 1]?.focus();
+            const next = (current.current.slice(0, i) + digit).slice(0, 4);
+            update(next);
+            refs.current[Math.min(next.length, 3)]?.focus();
           }}
           onKeyDown={e => {
             if (e.key !== 'Backspace') return;
             e.preventDefault();
-            const cut = value[i] ? i : Math.max(i - 1, 0);
-            onChange(value.slice(0, cut));
+            const cut = current.current[i] ? i : Math.max(i - 1, 0);
+            update(current.current.slice(0, cut));
             refs.current[cut]?.focus();
           }}
           className="h-[72px] w-full bg-white border border-line rounded-field text-center text-title text-ink focus:border-2 focus:border-signal focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"

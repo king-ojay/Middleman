@@ -11,3 +11,6 @@ export { default as StepBar } from './StepBar.jsx';
 export { default as JobStepper } from './JobStepper.jsx';
 export { default as StarRating } from './StarRating.jsx';
 export { default as LogoMark } from './LogoMark.jsx';
+export { default as Badge } from './Badge.jsx';
+export { default as OptionCard } from './OptionCard.jsx';
+export { default as Sheet } from './Sheet.jsx';

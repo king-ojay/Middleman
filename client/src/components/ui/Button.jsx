@@ -4,7 +4,8 @@ const VARIANTS = {
   primary: 'bg-signal text-on-signal',
   dark: 'bg-forest text-white',
   soft: 'bg-mint text-forest',
-  outline: 'bg-white border border-line text-ink'
+  outline: 'bg-white border border-line text-ink',
+  plain: 'bg-transparent text-muted' // low-emphasis text action, e.g. "Report a problem"
 };
 
 const SIZES = {

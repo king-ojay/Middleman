@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import ResetPin from './pages/ResetPin.jsx';
 import Discover from './pages/Discover.jsx';
 import PostJob from './pages/PostJob.jsx';
 import OpenJobs from './pages/OpenJobs.jsx';
@@ -18,12 +20,15 @@ export default function App() {
       <Routes>
         <Route path="/" element={user ? <Navigate to={homePathFor(user)} replace /> : <Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/reset-pin" element={<ResetPin />} />
         <Route path="/discover" element={<RequireRole role="client"><Discover /></RequireRole>} />
         <Route path="/post-job" element={<RequireRole role="client"><PostJob /></RequireRole>} />
         <Route path="/jobs" element={<RequireRole role="worker"><OpenJobs /></RequireRole>} />
         <Route path="/my-jobs" element={<RequireUser><MyJobs /></RequireUser>} />
         <Route path="/my-jobs/:id" element={<RequireUser><JobDetail /></RequireUser>} />
         <Route path="/profile" element={<RequireUser><Profile /></RequireUser>} />
+        <Route path="/people/:id" element={<RequireUser><Profile /></RequireUser>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>

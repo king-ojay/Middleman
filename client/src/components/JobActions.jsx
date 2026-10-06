@@ -11,7 +11,8 @@ const ACTIONS = {
   },
   client: {
     in_progress: [{ action: 'dispute', label: 'Report a problem' }],
-    awaiting_confirmation: [{ action: 'confirm', label: 'Confirm job is done', primary: true }, { action: 'dispute', label: 'Report a problem' }]
+    // Confirming needs a rating (FR-12), so it opens the Confirm & rate screen.
+    awaiting_confirmation: [{ to: 'rate', label: 'Confirm & rate', primary: true }, { action: 'dispute', label: 'Report a problem' }]
   }
 };
 
@@ -37,11 +38,15 @@ export default function JobActions({ job, role, onChange }) {
 
   return (
     <div className="mt-4 space-y-3">
-      {actions.map(({ action, label, primary }) => (
-        <Button key={action} variant={primary ? 'primary' : 'outline'} disabled={busy} onClick={() => run(action)}>
-          {label}
-        </Button>
-      ))}
+      {actions.map(({ action, to, label, primary }) =>
+        to ? (
+          <Button key={to} to={`/my-jobs/${job._id}`}>{label}</Button>
+        ) : (
+          <Button key={action} variant={primary ? 'primary' : 'plain'} disabled={busy} onClick={() => run(action)}>
+            {label}
+          </Button>
+        )
+      )}
       {error && <p className="text-small text-danger" role="alert">{error}</p>}
     </div>
   );

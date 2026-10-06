@@ -19,7 +19,8 @@ export default function Landing() {
       <p className="text-body text-muted mt-3">Agree a fair price and pay safely when the job is done.</p>
 
       <div className="mt-8 space-y-3">
-        <Button to="/login">Get started</Button>
+        <Button to="/register">Create an account</Button>
+        <Button to="/login" variant="outline">Log in</Button>
       </div>
 
       <section className="mt-10 bg-forest rounded-hero p-6">
