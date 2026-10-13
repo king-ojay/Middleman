@@ -55,7 +55,7 @@ export default function MyJobs() {
                 ? (job.worker ? job.worker.name : `${job.responseCount} offer${job.responseCount === 1 ? '' : 's'}`)
                 : job.client?.name}
             </p>
-            <p className="text-body font-medium text-forest mt-2">{statusLabel(job.status, user.role)}</p>
+            <p className="text-body font-medium text-heading mt-2">{statusLabel(job.status, user.role)}</p>
             {isClient && job.status === 'open' && job.responseCount > 0 && (
               <Button to={`/my-jobs/${job._id}`} className="mt-4">See offers</Button>
             )}

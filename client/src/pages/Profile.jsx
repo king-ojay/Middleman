@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
+import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import { Avatar, Badge, Button, Card, Chip, ChipRow, PageLayout, StarRating, TierBadge } from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
@@ -76,6 +77,8 @@ export default function Profile() {
         </ul>
       )}
 
+      {isOwn && <Preferences />}
+
       {isOwn && (
         <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>Log out</Button>
       )}
@@ -83,10 +86,30 @@ export default function Profile() {
   );
 }
 
+const THEME_LABELS = { system: 'Match phone', light: 'Light', dark: 'Dark' };
+
+// Your own profile only. Appearance is saved on this device (theme.js).
+function Preferences() {
+  const [theme, setTheme] = useState(loadTheme);
+  const choose = next => { saveTheme(next); setTheme(next); };
+  return (
+    <>
+      <h2 className="text-section text-ink mt-8 mb-3">Preferences</h2>
+      <Card className="p-5">
+        <p className="text-body font-semibold text-ink">Appearance</p>
+        <p className="text-small text-muted mt-1">Dark mode is easier on the eyes at night and saves battery on many phones.</p>
+        <div role="group" aria-label="Appearance" className="flex flex-wrap gap-2 mt-4">
+          {THEMES.map(t => <Chip key={t} active={theme === t} onClick={() => choose(t)}>{THEME_LABELS[t]}</Chip>)}
+        </div>
+      </Card>
+    </>
+  );
+}
+
 function Stat({ value, label }) {
   return (
     <div>
-      <p className="text-title text-forest">{value}</p>
+      <p className="text-title text-heading">{value}</p>
       <p className="text-small text-muted mt-1">{label}</p>
     </div>
   );

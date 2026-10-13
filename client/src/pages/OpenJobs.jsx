@@ -74,7 +74,7 @@ function ResponseControls({ job, onSent }) {
   if (job.myResponse) {
     const r = job.myResponse;
     return (
-      <p className="text-body text-forest bg-mint rounded-field px-4 py-3 mt-4">
+      <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mt-4">
         {r.isCounter ? `You countered at ${formatRwf(r.amount)}` : `You accepted ${formatRwf(r.amount)}`}
         {r.depositAmount > 0 && `, needing ${formatRwf(r.depositAmount)} upfront for materials`}. Waiting for the client to choose.
       </p>

@@ -23,12 +23,12 @@ export default function JobStepper({ status }) {
             {i > 0 && <span aria-hidden="true" className={`absolute top-3 right-1/2 w-full h-0.5 ${i <= done ? 'bg-signal' : 'bg-line'}`} />}
             <span
               className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center ${
-                isDone ? 'bg-signal' : isCurrent ? 'bg-white border-[3px] border-signal' : 'bg-white border-2 border-line'
+                isDone ? 'bg-signal' : isCurrent ? 'bg-surface border-[3px] border-signal' : 'bg-surface border-2 border-line'
               }`}
             >
               {isDone && <Check />}
             </span>
-            <span className={`mt-2 text-small ${isCurrent ? 'font-semibold text-forest' : 'text-muted'}`}>
+            <span className={`mt-2 text-small ${isCurrent ? 'font-semibold text-heading' : 'text-muted'}`}>
               {label}
               <span className="sr-only">{isDone ? ' (done)' : isCurrent ? ' (current)' : ''}</span>
             </span>

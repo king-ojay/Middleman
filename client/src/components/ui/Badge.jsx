@@ -1,6 +1,6 @@
 const TONES = {
   signal: 'bg-signal text-on-signal',
-  mint: 'bg-mint text-forest',
+  mint: 'bg-mint text-heading',
   soft: 'bg-soft text-muted'
 };
 

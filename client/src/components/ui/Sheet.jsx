@@ -21,13 +21,13 @@ export default function Sheet({ open, title, onClose, children }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-30 flex items-end justify-center">
-      <div className="absolute inset-0 bg-ink/40" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative w-full max-w-[430px] bg-white rounded-t-hero px-screen pt-3 pb-[max(env(safe-area-inset-bottom),24px)] shadow-tabbar"
+        className="relative w-full max-w-[430px] bg-surface rounded-t-hero px-screen pt-3 pb-[max(env(safe-area-inset-bottom),24px)] shadow-tabbar"
       >
         <span aria-hidden="true" className="block mx-auto w-10 h-1 rounded-full bg-line mb-5" />
         <h2 id={titleId} className="text-section text-ink mb-4">{title}</h2>

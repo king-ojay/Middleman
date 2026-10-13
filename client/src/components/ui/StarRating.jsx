@@ -3,7 +3,7 @@ function Star({ filled, size }) {
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
       <path
         d="M12 2.5l2.9 6.2 6.6.7-5 4.5 1.4 6.6L12 17.2l-5.9 3.3 1.4-6.6-5-4.5 6.6-.7z"
-        className={filled ? 'fill-signal' : 'fill-line'}
+        className={filled ? 'fill-accent' : 'fill-line'}
       />
     </svg>
   );

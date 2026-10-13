@@ -2,14 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colour tokens as RGB channels; tailwind.config.js maps names to these.
+   Light is the default. Dark applies when the system asks for it and the
+   person hasn't picked Light in their preferences, or when they picked Dark
+   (src/theme.js sets data-theme on <html>). Kept in CSS, not an inline
+   script, because the CSP only allows scripts from 'self'. */
 @layer base {
+  :root {
+    color-scheme: light;
+    --brand: 20 37 74;          /* #14254A navy */
+    --heading: 20 37 74;
+    --accent: 245 179 1;        /* #F5B301 sun amber */
+    --accent-soft: 255 244 209;
+    --on-accent: 20 37 74;
+    --signal: 32 186 88;        /* #20BA58 trust green */
+    --mint: 218 255 232;
+    --on-signal: 3 59 48;
+    --on-brand-soft: 218 255 232;
+    --surface: 255 255 255;
+    --ink: 31 31 31;
+    --canvas: 244 245 248;
+    --muted: 95 102 117;
+    --faint: 160 166 178;
+    --line: 225 228 234;
+    --soft: 234 236 241;
+    --danger: 180 35 24;
+    --shadow-card: 0 4px 16px rgba(20, 37, 74, 0.08);
+    --shadow-tabbar: 0 -4px 16px rgba(20, 37, 74, 0.07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --brand: 38 57 106;
+      --heading: 220 228 245;
+      --accent: 255 192 46;
+      --accent-soft: 58 48 20;
+      --on-accent: 20 37 74;
+      --signal: 52 199 106;
+      --mint: 19 58 40;
+      --on-signal: 3 59 48;
+      --on-brand-soft: 190 240 210;
+      --surface: 23 30 44;
+      --ink: 232 235 241;
+      --canvas: 14 19 29;
+      --muted: 160 168 184;
+      --faint: 107 116 135;
+      --line: 42 51 69;
+      --soft: 37 46 64;
+      --danger: 255 122 110;
+      --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+      --shadow-tabbar: 0 -4px 16px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --brand: 38 57 106;
+    --heading: 220 228 245;
+    --accent: 255 192 46;
+    --accent-soft: 58 48 20;
+    --on-accent: 20 37 74;
+    --signal: 52 199 106;
+    --mint: 19 58 40;
+    --on-signal: 3 59 48;
+    --on-brand-soft: 190 240 210;
+    --surface: 23 30 44;
+    --ink: 232 235 241;
+    --canvas: 14 19 29;
+    --muted: 160 168 184;
+    --faint: 107 116 135;
+    --line: 42 51 69;
+    --soft: 37 46 64;
+    --danger: 255 122 110;
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+    --shadow-tabbar: 0 -4px 16px rgba(0, 0, 0, 0.4);
+  }
+
   body {
     @apply bg-canvas text-ink font-sans text-body antialiased;
   }
 
   /* visible keyboard focus, kept deliberate rather than removed */
   a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role='switch']:focus-visible {
-    @apply outline-none ring-2 ring-signal ring-offset-2 ring-offset-canvas;
+    @apply outline-none ring-2 ring-heading ring-offset-2 ring-offset-canvas;
   }
 }
 

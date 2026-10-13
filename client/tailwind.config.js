@@ -1,22 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 // Design tokens: the single source of truth for colour, type, radius and
 // shadow (Figma "Mobile v2"). Components use these names only.
+const v = name => `rgb(var(--${name}) / <alpha-value>)`;
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      // Each colour is a CSS variable (src/styles/index.css) holding RGB
+      // channels, so dark mode swaps values without touching components and
+      // opacity modifiers like bg-black/50 keep working.
       colors: {
-        forest: '#033B30',      // headings, dark surfaces, selected states
-        signal: '#20BA58',      // primary actions, progress, network trust
-        mint: '#DAFFE8',        // soft fills, area trust
-        ink: '#1F1F1F',         // body text
-        canvas: '#F5F5F5',      // page background
-        muted: '#6B6B6B',       // secondary text
-        faint: '#A8A8A8',       // placeholders, inactive icons
-        line: '#E3E3E3',        // borders
-        soft: '#EDEDED',        // neutral fills, off switch
-        'on-signal': '#033B30', // text/icons on signal green (white on signal fails contrast)
-        danger: '#B42318'       // form and request errors (not in the Figma token set)
+        brand: v('brand'),             // dark surfaces: hero cards, active chips, network avatars
+        heading: v('heading'),         // headings and emphasised text
+        accent: v('accent'),           // primary actions, selection, ratings (sun amber)
+        'accent-soft': v('accent-soft'), // soft fills behind selected things
+        'on-accent': v('on-accent'),   // text/icons on accent
+        signal: v('signal'),           // trust and completion only: network trust, verified, job progress
+        mint: v('mint'),               // soft green fills: area trust, success notes
+        'on-signal': v('on-signal'),   // text/icons on signal green (white on signal fails contrast)
+        'on-brand-soft': v('on-brand-soft'), // light text and marks drawn on brand surfaces
+        surface: v('surface'),         // cards, sheets, inputs, tab bar
+        ink: v('ink'),                 // body text
+        canvas: v('canvas'),           // page background
+        muted: v('muted'),             // secondary text
+        faint: v('faint'),             // placeholders, inactive icons
+        line: v('line'),               // borders
+        soft: v('soft'),               // neutral fills, off switch
+        danger: v('danger')            // form and request errors
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif']
@@ -37,8 +48,8 @@ export default {
         field: '16px'
       },
       boxShadow: {
-        card: '0 4px 16px rgba(0,0,0,0.07)',
-        tabbar: '0 -4px 16px rgba(0,0,0,0.06)'
+        card: 'var(--shadow-card)',
+        tabbar: 'var(--shadow-tabbar)'
       },
       spacing: {
         screen: '24px', // page side padding

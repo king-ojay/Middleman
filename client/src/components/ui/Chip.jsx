@@ -8,7 +8,7 @@ export function Chip({ active = false, static: isStatic = false, className = '',
       {...(isStatic ? {} : { type: 'button', 'aria-pressed': active })}
       className={[
         'inline-flex items-center h-10 shrink-0 px-4 rounded-full text-label whitespace-nowrap transition-colors',
-        active ? 'bg-forest text-white' : 'bg-white border border-line text-ink',
+        active ? 'bg-brand text-white' : 'bg-surface border border-line text-ink',
         isStatic ? '' : "relative after:absolute after:inset-x-0 after:-inset-y-0.5 after:content-['']",
         className
       ].join(' ')}

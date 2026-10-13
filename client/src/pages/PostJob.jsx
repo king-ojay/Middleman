@@ -40,7 +40,7 @@ export default function PostJob() {
     <PageLayout back title="Post a job" subtitle="Takes under a minute." tabBar role="client">
       {posted && (
         <div role="status" className="bg-mint rounded-card p-4 mb-6">
-          <p className="text-card text-forest">Job posted</p>
+          <p className="text-card text-heading">Job posted</p>
           <p className="text-body text-ink mt-1">
             “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatRwf(posted.proposedPrice)}
           </p>
