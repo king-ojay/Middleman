@@ -71,12 +71,15 @@ test('traversal stops at three hops', async () => {
   assert.equal(scores.has('d'), false);
 });
 
+// The direct rating here was 2 stars (0.4) until 2 stars became negative
+// evidence; 3 stars is now the weakest positive rating, so the stronger path
+// is a referred one.
 test('where several paths reach a worker, the strongest one wins', async () => {
-  await writeTrustEdgeFromRating({ fromUser: 'you', toUser: 'w', score: 2 });     // direct: 0.4
-  await writeTrustEdgeFromRating({ fromUser: 'you', toUser: 'a', score: 5 });
-  await writeTrustEdgeFromRating({ fromUser: 'a', toUser: 'w', score: 5 });       // via a: 1.0 * 1.0 * 0.5 = 0.5
+  await writeTrustEdgeFromRating({ fromUser: 'you', toUser: 'w', score: 3 });     // direct: 0.6
+  await writeTrustEdgeFromReferral({ fromUser: 'you', toUser: 'a' });
+  await writeTrustEdgeFromRating({ fromUser: 'a', toUser: 'w', score: 5, referredFlag: true }); // via a: 1.0 * 1.0 * 1.4 * 0.65 = 0.91
   const scores = await computeTrustScores('you');
-  close(scores.get('w'), 0.5);
+  close(scores.get('w'), 0.91);
 });
 
 test('cycles do not loop and the viewer never scores themselves', async () => {

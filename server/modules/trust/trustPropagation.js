@@ -10,10 +10,10 @@ export const TIER_RANK = { network: 0, area: 1, fallback: 2 };
 const TIER_OF_SOURCE = { path: 'network', area: 'area', floor: 'fallback' };
 
 /**
- * Loads every edge leaving a person the viewer can reach in fewer than
- * `depth` hops, one query per hop. That is all computeTrust needs to follow
- * paths. With `candidates`, also loads the ratings they received (raters'
- * areas populated) for area-level trust.
+ * Loads every edge leaving a person the viewer can reach through positive
+ * edges in fewer hops than either evidence limit, one query per hop. That is
+ * all computeTrust needs to follow paths. With `candidates`, also loads the
+ * ratings they received (raters' areas populated) for area-level trust.
  */
 async function loadTrustGraph(viewerId, candidates = [], options = {}) {
   const o = { ...DEFAULTS, ...options };
@@ -22,7 +22,7 @@ async function loadTrustGraph(viewerId, candidates = [], options = {}) {
   const visited = new Set([viewer]);
   let frontier = [viewer];
 
-  for (let hop = 0; hop < o.depth && frontier.length > 0; hop++) {
+  for (let hop = 0; hop < Math.max(o.depth, o.negativeDepth) && frontier.length > 0; hop++) {
     // eslint-disable-next-line no-await-in-loop
     const found = await TrustEdge.find({ fromUser: { $in: frontier } }).lean();
     edges.push(...found);
@@ -30,7 +30,7 @@ async function loadTrustGraph(viewerId, candidates = [], options = {}) {
     frontier = [];
     for (const out of Object.values(graph.out)) {
       for (const edge of out) {
-        if (!visited.has(edge.to)) { visited.add(edge.to); frontier.push(edge.to); }
+        if (edge.positive > 0 && !visited.has(edge.to)) { visited.add(edge.to); frontier.push(edge.to); }
       }
     }
   }
@@ -47,8 +47,9 @@ async function loadTrustGraph(viewerId, candidates = [], options = {}) {
 }
 
 /**
- * Path score from `clientId` to everyone they have a path to. People with no
- * path are left out; rankByTrust applies the fallback for those.
+ * Final path score from `clientId` to everyone in the network tier. People
+ * with no positive path, or one cancelled out by negative evidence, are left
+ * out; rankByTrust applies the fallback for those.
  */
 export async function computeTrustScores(clientId, options = {}) {
   return pathScores(await loadTrustGraph(clientId, [], options), clientId, options);
@@ -57,7 +58,7 @@ export async function computeTrustScores(clientId, options = {}) {
 /**
  * Scores and tiers `candidates` (plain user objects with _id, area and
  * verifiedStatus) from `viewerId`'s point of view and returns them sorted by
- * tier then score.
+ * tier then score. Everyone passed in comes back, however they were rated.
  * Symmetric by design: a client ranking workers and a worker sizing up
  * clients use the same call.
  */
@@ -78,7 +79,7 @@ export async function rankByTrust(viewerId, candidates, options = {}) {
  * (client -> worker and worker -> client) — see Rating model.
  */
 export async function writeTrustEdgeFromRating({ fromUser, toUser, score, referredFlag }) {
-  const weight = score / 5; // normalise 1-5 to 0-1
+  const weight = score / 5; // normalise 1-5 to 0-1; computeTrust reads 1-2 stars as negative evidence
   return TrustEdge.create({
     fromUser,
     toUser,
