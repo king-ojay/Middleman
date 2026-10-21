@@ -1,139 +1,71 @@
 import TrustEdge from './trustEdge.model.js';
+import { DEFAULTS, buildGraph, computeTrust, pathScores } from './computeTrust.js';
 
-const MAX_DEPTH = 3;
-const DEFAULT_DECAY = 0.5;
-const REFERRED_BOOST = 1.4; // referred edges carry ~40% more weight and decay slower
-
-/**
- * Computes a personalised trust score from `clientId` to every worker reachable
- * within MAX_DEPTH hops, by weighted breadth-first traversal of the trust graph.
- *
- * This is the algorithm described in Chapter 3, Section 3.2.3 of the proposal:
- * - direct edges contribute their full weight
- * - each additional hop multiplies the running score by that edge's decay rate
- *   exactly once, so a path of n hops is decayed (n - 1) times in total
- * - where multiple paths reach the same worker, the strongest path wins: a
- *   person is explored again whenever a strictly stronger path to them is
- *   found, so a weak short path can't hide a stronger longer one. This ends
- *   because depth is capped, and cycles can't inflate a score because every
- *   hop after the first multiplies by at most 1.4 x 0.65 = 0.91
- * - a `referredFlag` edge propagates further/stronger than an ordinary rating
- *
- * Returns a Map<workerId, score> for every worker reached through the graph.
- * Workers with NO path (cold-start case) are not included here — the caller
- * is responsible for applying the layered fallback (area-level trust, then
- * verification floor) for those, per Section 3.2.3.
- */
-export async function computeTrustScores(clientId) {
-  const viewer = String(clientId);
-  const scores = new Map(); // userId (string) -> best score found so far
-
-  let frontier = [{ userId: viewer, accumulated: 1.0, depth: 0 }];
-
-  for (let depth = 0; depth < MAX_DEPTH && frontier.length > 0; depth++) {
-    const frontierIds = frontier.map(f => f.userId);
-    // eslint-disable-next-line no-await-in-loop
-    const edges = await TrustEdge.find({ fromUser: { $in: frontierIds } }).lean();
-
-    const edgesBySource = new Map();
-    for (const edge of edges) {
-      const key = String(edge.fromUser);
-      if (!edgesBySource.has(key)) edgesBySource.set(key, []);
-      edgesBySource.get(key).push(edge);
-    }
-
-    const nextFrontier = [];
-
-    for (const node of frontier) {
-      const outgoing = edgesBySource.get(node.userId) || [];
-      for (const edge of outgoing) {
-        const targetId = String(edge.toUser);
-        if (targetId === viewer) continue; // never score yourself
-
-        const referredMultiplier = edge.referredFlag ? REFERRED_BOOST : 1.0;
-        const decay = edge.decayRate ?? DEFAULT_DECAY;
-        // node.accumulated already carries the decay of earlier hops, so this
-        // hop applies its own decay once rather than decay ** depth again.
-        const contribution = node.accumulated * edge.weight * referredMultiplier * (depth === 0 ? 1 : decay);
-
-        // toUser being a worker is determined by the caller filtering final results;
-        // here we just propagate through the graph regardless of role.
-        // Only a strictly stronger path is kept and explored further.
-        const existing = scores.get(targetId);
-        if (existing !== undefined && contribution <= existing) continue;
-        scores.set(targetId, contribution);
-        nextFrontier.push({ userId: targetId, accumulated: contribution, depth: depth + 1 });
-      }
-    }
-
-    // Keep one entry per person (their strongest) before the next round.
-    const best = new Map();
-    for (const entry of nextFrontier) {
-      if (!best.has(entry.userId) || entry.accumulated > best.get(entry.userId).accumulated) best.set(entry.userId, entry);
-    }
-    frontier = [...best.values()];
-  }
-
-  return scores;
-}
-
-// Area-level trust is second-hand community opinion, not a path through the
-// viewer's own network, so it's discounted relative to the edge weights it
-// averages.
-const AREA_DISCOUNT = 0.5;
+// The trust service: loads the part of the trust graph a viewer can reach
+// and hands it to computeTrust (computeTrust.js), which holds the scoring
+// rules from Chapter 3, Section 3.2.3. Nothing here scores anyone itself.
 
 // Layered fallback order from Section 3.2.3: graph path -> area -> verification floor.
 export const TIER_RANK = { network: 0, area: 1, fallback: 2 };
+const TIER_OF_SOURCE = { path: 'network', area: 'area', floor: 'fallback' };
 
 /**
- * Area-level community trust for users the viewer's graph can't reach: the
- * average weight of rating edges a user has received from people in that
- * user's own area. Users with no such ratings get no entry.
+ * Loads every edge leaving a person the viewer can reach in fewer than
+ * `depth` hops, one query per hop. That is all computeTrust needs to follow
+ * paths. With `candidates`, also loads the ratings they received (raters'
+ * areas populated) for area-level trust.
  */
-async function computeAreaScores(users) {
-  if (users.length === 0) return new Map();
-  const areaByUser = new Map(users.map(u => [String(u._id), u.area]));
+async function loadTrustGraph(viewerId, candidates = [], options = {}) {
+  const o = { ...DEFAULTS, ...options };
+  const viewer = String(viewerId);
+  const edges = [];
+  const visited = new Set([viewer]);
+  let frontier = [viewer];
 
-  const edges = await TrustEdge.find({
-    toUser: { $in: users.map(u => u._id) },
-    type: 'rating'
-  }).populate('fromUser', 'area').lean();
-
-  const sums = new Map(); // userId -> { total, count }
-  for (const edge of edges) {
-    const userId = String(edge.toUser);
-    if (edge.fromUser?.area !== areaByUser.get(userId)) continue;
-    const acc = sums.get(userId) || { total: 0, count: 0 };
-    acc.total += edge.weight;
-    acc.count += 1;
-    sums.set(userId, acc);
+  for (let hop = 0; hop < o.depth && frontier.length > 0; hop++) {
+    // eslint-disable-next-line no-await-in-loop
+    const found = await TrustEdge.find({ fromUser: { $in: frontier } }).lean();
+    edges.push(...found);
+    const graph = buildGraph(found);
+    frontier = [];
+    for (const out of Object.values(graph.out)) {
+      for (const edge of out) {
+        if (!visited.has(edge.to)) { visited.add(edge.to); frontier.push(edge.to); }
+      }
+    }
   }
 
-  const scores = new Map();
-  for (const [userId, { total, count }] of sums) {
-    scores.set(userId, (total / count) * AREA_DISCOUNT);
+  if (candidates.length > 0) {
+    const received = await TrustEdge.find({
+      toUser: { $in: candidates.map(c => c._id) },
+      type: 'rating'
+    }).populate('fromUser', 'area').lean();
+    edges.push(...received);
   }
-  return scores;
+
+  return buildGraph(edges, candidates);
+}
+
+/**
+ * Path score from `clientId` to everyone they have a path to. People with no
+ * path are left out; rankByTrust applies the fallback for those.
+ */
+export async function computeTrustScores(clientId, options = {}) {
+  return pathScores(await loadTrustGraph(clientId, [], options), clientId, options);
 }
 
 /**
  * Scores and tiers `candidates` (plain user objects with _id, area and
- * verifiedStatus) from `viewerId`'s point of view, applying the layered
- * fallback, and returns them sorted by tier then score. Symmetric by design:
- * a client ranking workers and a worker sizing up clients use the same call.
+ * verifiedStatus) from `viewerId`'s point of view and returns them sorted by
+ * tier then score.
+ * Symmetric by design: a client ranking workers and a worker sizing up
+ * clients use the same call.
  */
-export async function rankByTrust(viewerId, candidates) {
-  const scores = await computeTrustScores(viewerId);
-  const unreached = candidates.filter(c => !scores.has(String(c._id)));
-  const areaScores = await computeAreaScores(unreached);
-
+export async function rankByTrust(viewerId, candidates, options = {}) {
+  const graph = await loadTrustGraph(viewerId, candidates, options);
   const ranked = candidates.map(candidate => {
-    const id = String(candidate._id);
-    if (scores.has(id)) return { ...candidate, trustScore: scores.get(id), trustSource: 'network' };
-    if (areaScores.has(id)) return { ...candidate, trustScore: areaScores.get(id), trustSource: 'area' };
-    // Final fallback: verified users get a modest floor, unverified the lowest.
-    const floor = candidate.verifiedStatus === 'verified' ? 0.3 : 0.1;
-    return { ...candidate, trustScore: floor, trustSource: 'fallback' };
+    const trust = computeTrust(graph, viewerId, candidate._id, options);
+    return { ...candidate, trustScore: trust.score, trustSource: TIER_OF_SOURCE[trust.source] };
   });
 
   return ranked.sort((a, b) =>
@@ -153,7 +85,7 @@ export async function writeTrustEdgeFromRating({ fromUser, toUser, score, referr
     type: 'rating',
     weight,
     referredFlag: Boolean(referredFlag),
-    decayRate: referredFlag ? 0.65 : DEFAULT_DECAY // referred edges decay slower
+    decayRate: referredFlag ? DEFAULTS.referralDecay : DEFAULTS.decay // kept for the record; computeTrust takes decay from its options
   });
 }
 
@@ -166,6 +98,6 @@ export async function writeTrustEdgeFromReferral({ fromUser, toUser }) {
     toUser,
     type: 'signup_referral',
     weight: 1.0,
-    decayRate: DEFAULT_DECAY
+    decayRate: DEFAULTS.decay
   });
 }
