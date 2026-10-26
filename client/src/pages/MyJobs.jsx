@@ -40,7 +40,7 @@ export default function MyJobs() {
           : <p className="text-body text-muted">No clients have chosen you yet. Respond to jobs near you to get hired.</p>
       )}
 
-      <ul className="space-y-3">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
         {jobs.map(job => (
           <Card as="li" key={job._id} className="p-5">
             <div className="flex items-start justify-between gap-4">
@@ -55,7 +55,7 @@ export default function MyJobs() {
                 ? (job.worker ? job.worker.name : `${job.responseCount} offer${job.responseCount === 1 ? '' : 's'}`)
                 : job.client?.name}
             </p>
-            <p className="text-body font-medium text-forest mt-2">{statusLabel(job.status, user.role)}</p>
+            <p className="text-body font-medium text-heading mt-2">{statusLabel(job.status, user.role)}</p>
             {isClient && job.status === 'open' && job.responseCount > 0 && (
               <Button to={`/my-jobs/${job._id}`} className="mt-4">See offers</Button>
             )}

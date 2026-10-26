@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
+import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import { Avatar, Badge, Button, Card, Chip, ChipRow, PageLayout, StarRating, TierBadge } from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
@@ -23,7 +24,7 @@ export default function Profile() {
     api(`/api/users/${profileId}/profile`).then(setProfile).catch(err => setError(err.message));
   }, [profileId]);
 
-  const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role };
+  const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role, width: 'medium' };
   if (error) return <PageLayout {...layout}><p className="text-body text-danger" role="alert">Couldn't load this profile: {error}</p></PageLayout>;
   if (!profile) return <PageLayout {...layout}><p className="text-body text-muted">Loading…</p></PageLayout>;
 
@@ -63,7 +64,7 @@ export default function Profile() {
       {profile.recentRatings.length === 0 ? (
         <p className="text-body text-muted">No ratings yet.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 md:grid-cols-2 items-start">
           {profile.recentRatings.map(r => (
             <Card as="li" key={r._id} className="p-5">
               <div className="flex items-center gap-3">
@@ -76,6 +77,8 @@ export default function Profile() {
         </ul>
       )}
 
+      {isOwn && <Preferences />}
+
       {isOwn && (
         <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>Log out</Button>
       )}
@@ -83,10 +86,30 @@ export default function Profile() {
   );
 }
 
+const THEME_LABELS = { system: 'Match phone', light: 'Light', dark: 'Dark' };
+
+// Your own profile only. Appearance is saved on this device (theme.js).
+function Preferences() {
+  const [theme, setTheme] = useState(loadTheme);
+  const choose = next => { saveTheme(next); setTheme(next); };
+  return (
+    <>
+      <h2 className="text-section text-ink mt-8 mb-3">Preferences</h2>
+      <Card className="p-5">
+        <p className="text-body font-semibold text-ink">Appearance</p>
+        <p className="text-small text-muted mt-1">Dark mode is easier on the eyes at night and saves battery on many phones.</p>
+        <div role="group" aria-label="Appearance" className="flex flex-wrap gap-2 mt-4">
+          {THEMES.map(t => <Chip key={t} active={theme === t} onClick={() => choose(t)}>{THEME_LABELS[t]}</Chip>)}
+        </div>
+      </Card>
+    </>
+  );
+}
+
 function Stat({ value, label }) {
   return (
     <div>
-      <p className="text-title text-forest">{value}</p>
+      <p className="text-title text-heading">{value}</p>
       <p className="text-small text-muted mt-1">{label}</p>
     </div>
   );

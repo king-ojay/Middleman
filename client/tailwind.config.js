@@ -1,22 +1,33 @@
 /** @type {import('tailwindcss').Config} */
 // Design tokens: the single source of truth for colour, type, radius and
 // shadow (Figma "Mobile v2"). Components use these names only.
+const token = name => `rgb(var(--color-${name}) / <alpha-value>)`;
+
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
+      // Values live in styles/index.css as RGB channels so they switch with
+      // the light/dark theme and still take opacity modifiers (bg-ink/40).
       colors: {
-        forest: '#033B30',      // headings, dark surfaces, selected states
-        signal: '#20BA58',      // primary actions, progress, network trust
-        mint: '#DAFFE8',        // soft fills, area trust
-        ink: '#1F1F1F',         // body text
-        canvas: '#F5F5F5',      // page background
-        muted: '#6B6B6B',       // secondary text
-        faint: '#A8A8A8',       // placeholders, inactive icons
-        line: '#E3E3E3',        // borders
-        soft: '#EDEDED',        // neutral fills, off switch
-        'on-signal': '#033B30', // text/icons on signal green (white on signal fails contrast)
-        danger: '#B42318'       // form and request errors (not in the Figma token set)
+        forest: token('forest'),         // brand dark green, same in both themes
+        signal: token('signal'),         // primary actions, progress, network trust
+        'on-signal': token('on-signal'), // text/icons on signal green (white on signal fails contrast)
+        mint: token('mint'),             // soft fills, area trust
+        canvas: token('canvas'),         // page background
+        surface: token('surface'),       // cards, inputs, sheets, nav bars
+        ink: token('ink'),               // body text
+        heading: token('heading'),       // emphasis text and selected states (forest in light)
+        muted: token('muted'),           // secondary text
+        faint: token('faint'),           // placeholders, inactive icons
+        line: token('line'),             // borders
+        soft: token('soft'),             // neutral fills, off switch
+        brand: token('brand'),           // dark feature panels (Landing, Login)
+        'on-brand-soft': token('on-brand-soft'), // mint text/art on a brand panel
+        danger: token('danger'),         // form and request errors (not in the Figma token set)
+        accent: token('signal'),
+        'on-accent': token('on-signal'),
+        'accent-soft': token('mint')
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif']

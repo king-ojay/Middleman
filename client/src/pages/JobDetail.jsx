@@ -20,21 +20,21 @@ export default function JobDetail() {
   useEffect(() => { load(); }, [id]);
 
   const isClient = user.role === 'client';
-  const layout = { back: '/my-jobs', tabBar: true, role: user.role };
+  const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
   if (error) return <PageLayout {...layout} title="Job"><p className="text-body text-danger" role="alert">Couldn't load this job: {error}</p></PageLayout>;
   if (!job) return <PageLayout {...layout} title="Job"><p className="text-body text-muted">Loading…</p></PageLayout>;
 
   if (isClient && job.status === 'open') {
     return (
-      <PageLayout {...layout} title="Offers for your job">
+      <PageLayout {...layout} title="Offers for your job" width="wide">
         <div className="bg-mint rounded-card p-5 flex items-center justify-between gap-4 mb-6">
           <div className="min-w-0">
-            <h2 className="text-card text-forest">{job.description}</h2>
+            <h2 className="text-card text-heading">{job.description}</h2>
             <p className="text-body text-muted">{categoryLabel(job.category)} · {areaLabel(job.area)}</p>
             <p className="text-small text-muted mt-1">Your price</p>
           </div>
-          <p className="text-section text-forest shrink-0">{formatRwf(job.proposedPrice)}</p>
+          <p className="text-section text-heading shrink-0">{formatRwf(job.proposedPrice)}</p>
         </div>
         <Offers job={job} onChosen={load} />
       </PageLayout>
@@ -51,7 +51,7 @@ export default function JobDetail() {
       ) : (
         <>
           <Card className="p-5">
-            <p className="text-body font-medium text-forest">{statusLabel(job.status, user.role)}</p>
+            <p className="text-body font-medium text-heading">{statusLabel(job.status, user.role)}</p>
             <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
             <p className="text-title text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
             {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
@@ -89,7 +89,7 @@ function Offers({ job, onChosen }) {
     <>
       <p className="text-body text-muted mb-3">Ranked by trust in your network</p>
       {error && <p className="text-body text-danger mb-3" role="alert">{error}</p>}
-      <ul className="space-y-3">
+      <ul className="grid gap-3 md:grid-cols-2 items-start">
         {job.responses.map(r => {
           const difference = r.amount - job.proposedPrice;
           return (
@@ -104,7 +104,7 @@ function Offers({ job, onChosen }) {
               <div className="flex items-end justify-between gap-4 mt-4">
                 <div className="min-w-0">
                   <p className="text-title text-ink">{formatRwf(r.amount)}</p>
-                  <p className="text-body font-medium text-forest">
+                  <p className="text-body font-medium text-heading">
                     {r.isCounter ? `Counter-offer · ${difference > 0 ? '+' : '−'}${formatRwf(Math.abs(difference))}` : 'Accepts your price'}
                   </p>
                   {r.depositAmount > 0 && <p className="text-body text-muted">Needs {formatRwf(r.depositAmount)} upfront for materials</p>}
@@ -158,9 +158,9 @@ function ConfirmAndRate({ job }) {
   return (
     <>
       <div className="bg-mint rounded-card p-5 mb-8">
-        <p className="text-card text-forest">{worker} marked this job complete</p>
+        <p className="text-card text-heading">{worker} marked this job complete</p>
         <p className="text-body text-muted mt-1">Confirm to finish the job.</p>
-        <p className="text-title text-forest mt-3">{formatRwf(job.agreedPrice)}</p>
+        <p className="text-title text-heading mt-3">{formatRwf(job.agreedPrice)}</p>
         <p className="text-small text-muted">agreed price</p>
       </div>
 
