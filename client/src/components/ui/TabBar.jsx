@@ -29,7 +29,7 @@ const ICONS = {
   profile: glyph(<><circle cx="12" cy="8" r="4" /><path d="M4 20.5c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" /></>)
 };
 
-// The active tab sits in a soft mint pill; colour alone never carries state
+// The active tab sits in a soft amber pill; colour alone never carries state
 // because the label also turns bold.
 function TabIcon({ name, active }) {
   const Icon = ICONS[name];

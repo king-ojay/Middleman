@@ -2,59 +2,81 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Colour tokens as RGB channels (see tailwind.config.js). Dark applies when
-   the person picks it, or when they chose "Match phone" and the phone is dark
-   (theme.js sets data-theme on <html>). */
+/* Colour tokens as RGB channels; tailwind.config.js maps names to these.
+   Light is the default. Dark applies when the system asks for it and the
+   person hasn't picked Light in their preferences, or when they picked Dark
+   (src/theme.js sets data-theme on <html>). Kept in CSS, not an inline
+   script, because the CSP only allows scripts from 'self'. */
 @layer base {
   :root {
     color-scheme: light;
-    --color-forest: 3 59 48;
-    --color-signal: 32 186 88;
-    --color-on-signal: 3 59 48;
-    --color-mint: 218 255 232;
-    --color-canvas: 245 245 245;
-    --color-surface: 255 255 255;
-    --color-ink: 31 31 31;
-    --color-heading: 3 59 48;
-    --color-muted: 107 107 107;
-    --color-faint: 168 168 168;
-    --color-line: 227 227 227;
-    --color-soft: 237 237 237;
-    --color-brand: 3 59 48;
-    --color-on-brand-soft: 218 255 232;
-    --color-danger: 180 35 24;
+    --brand: 20 37 74;          /* #14254A navy */
+    --heading: 20 37 74;
+    --accent: 245 179 1;        /* #F5B301 sun amber */
+    --accent-soft: 255 244 209;
+    --on-accent: 20 37 74;
+    --signal: 32 186 88;        /* #20BA58 trust green */
+    --mint: 218 255 232;
+    --on-signal: 3 59 48;
+    --on-brand-soft: 218 255 232;
+    --surface: 255 255 255;
+    --ink: 31 31 31;
+    --canvas: 244 245 248;
+    --muted: 95 102 117;
+    --faint: 160 166 178;
+    --line: 225 228 234;
+    --soft: 234 236 241;
+    --danger: 180 35 24;
+    --shadow-card: 0 4px 16px rgba(20, 37, 74, 0.08);
+    --shadow-tabbar: 0 -4px 16px rgba(20, 37, 74, 0.07);
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme='light']) {
       color-scheme: dark;
-      --color-mint: 18 64 46;
-      --color-canvas: 15 20 18;
-      --color-surface: 26 33 30;
-      --color-ink: 236 238 237;
-      --color-heading: 200 245 218;
-      --color-muted: 163 168 165;
-      --color-faint: 110 117 113;
-      --color-line: 50 60 55;
-      --color-soft: 42 51 47;
-      --color-brand: 14 74 60;
-      --color-danger: 249 112 102;
+      --brand: 38 57 106;
+      --heading: 220 228 245;
+      --accent: 255 192 46;
+      --accent-soft: 58 48 20;
+      --on-accent: 20 37 74;
+      --signal: 52 199 106;
+      --mint: 19 58 40;
+      --on-signal: 3 59 48;
+      --on-brand-soft: 190 240 210;
+      --surface: 23 30 44;
+      --ink: 232 235 241;
+      --canvas: 14 19 29;
+      --muted: 160 168 184;
+      --faint: 107 116 135;
+      --line: 42 51 69;
+      --soft: 37 46 64;
+      --danger: 255 122 110;
+      --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+      --shadow-tabbar: 0 -4px 16px rgba(0, 0, 0, 0.4);
     }
   }
 
   :root[data-theme='dark'] {
     color-scheme: dark;
-    --color-mint: 18 64 46;
-    --color-canvas: 15 20 18;
-    --color-surface: 26 33 30;
-    --color-ink: 236 238 237;
-    --color-heading: 200 245 218;
-    --color-muted: 163 168 165;
-    --color-faint: 110 117 113;
-    --color-line: 50 60 55;
-    --color-soft: 42 51 47;
-    --color-brand: 14 74 60;
-    --color-danger: 249 112 102;
+    --brand: 38 57 106;
+    --heading: 220 228 245;
+    --accent: 255 192 46;
+    --accent-soft: 58 48 20;
+    --on-accent: 20 37 74;
+    --signal: 52 199 106;
+    --mint: 19 58 40;
+    --on-signal: 3 59 48;
+    --on-brand-soft: 190 240 210;
+    --surface: 23 30 44;
+    --ink: 232 235 241;
+    --canvas: 14 19 29;
+    --muted: 160 168 184;
+    --faint: 107 116 135;
+    --line: 42 51 69;
+    --soft: 37 46 64;
+    --danger: 255 122 110;
+    --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+    --shadow-tabbar: 0 -4px 16px rgba(0, 0, 0, 0.4);
   }
 
   body {
@@ -69,7 +91,7 @@
 
   /* visible keyboard focus, kept deliberate rather than removed */
   a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role='switch']:focus-visible {
-    @apply outline-none ring-2 ring-signal ring-offset-2 ring-offset-canvas;
+    @apply outline-none ring-2 ring-heading ring-offset-2 ring-offset-canvas;
   }
 }
 

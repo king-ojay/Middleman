@@ -1,4 +1,4 @@
-// Three nodes, two solid heading-colour edges and one dashed signal edge: trust
+// Three nodes, two solid navy edges and one dashed signal edge: trust
 // reaching someone you have not met through people you have.
 export default function LogoMark({ size = 32, className = '' }) {
   return (

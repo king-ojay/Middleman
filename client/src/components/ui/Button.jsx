@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 
 const VARIANTS = {
-  primary: 'bg-signal text-on-signal',
-  dark: 'bg-heading text-surface',
+  primary: 'bg-accent text-on-accent',
+  dark: 'bg-brand text-white',
   soft: 'bg-mint text-heading',
   outline: 'bg-surface border border-line text-ink',
   plain: 'bg-transparent text-muted' // low-emphasis text action, e.g. "Report a problem"

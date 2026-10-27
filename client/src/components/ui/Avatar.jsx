@@ -8,7 +8,7 @@ const SIZES = {
 };
 
 const TIER_FILL = {
-  network: 'bg-forest text-white',
+  network: 'bg-brand text-white',
   area: 'bg-signal text-on-signal',
   new: 'bg-faint text-white'
 };
