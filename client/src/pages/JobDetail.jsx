@@ -20,14 +20,14 @@ export default function JobDetail() {
   useEffect(() => { load(); }, [id]);
 
   const isClient = user.role === 'client';
-  const layout = { back: '/my-jobs', tabBar: true, role: user.role };
+  const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
   if (error) return <PageLayout {...layout} title="Job"><p className="text-body text-danger" role="alert">Couldn't load this job: {error}</p></PageLayout>;
   if (!job) return <PageLayout {...layout} title="Job"><p className="text-body text-muted">Loading…</p></PageLayout>;
 
   if (isClient && job.status === 'open') {
     return (
-      <PageLayout {...layout} title="Offers for your job">
+      <PageLayout {...layout} title="Offers for your job" width="wide">
         <div className="bg-mint rounded-card p-5 flex items-center justify-between gap-4 mb-6">
           <div className="min-w-0">
             <h2 className="text-card text-heading">{job.description}</h2>
@@ -89,7 +89,7 @@ function Offers({ job, onChosen }) {
     <>
       <p className="text-body text-muted mb-3">Ranked by trust in your network</p>
       {error && <p className="text-body text-danger mb-3" role="alert">{error}</p>}
-      <ul className="space-y-3">
+      <ul className="grid gap-3 md:grid-cols-2 items-start">
         {job.responses.map(r => {
           const difference = r.amount - job.proposedPrice;
           return (

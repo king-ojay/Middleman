@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
 
-// Bottom sheet dialog. Closes on Escape or a tap outside; focus moves into
+// Bottom sheet dialog on phones, a centred dialog from 768px. Closes on Escape or a tap outside; focus moves into
 // the sheet when it opens and back to where it was when it closes.
 export default function Sheet({ open, title, onClose, children }) {
   const titleId = useId();
@@ -20,16 +20,16 @@ export default function Sheet({ open, title, onClose, children }) {
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-30 flex items-end justify-center">
+    <div className="fixed inset-0 z-30 flex items-end md:items-center justify-center md:p-6">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden="true" />
       <div
         ref={panel}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative w-full max-w-[430px] bg-surface rounded-t-hero px-screen pt-3 pb-[max(env(safe-area-inset-bottom),24px)] shadow-tabbar"
+        className="relative w-full md:max-w-[520px] max-h-[90dvh] overflow-y-auto overscroll-contain bg-surface rounded-t-hero md:rounded-hero px-screen pt-3 md:pt-6 pb-[max(env(safe-area-inset-bottom),24px)] shadow-tabbar"
       >
-        <span aria-hidden="true" className="block mx-auto w-10 h-1 rounded-full bg-line mb-5" />
+        <span aria-hidden="true" className="block mx-auto w-10 h-1 rounded-full bg-line mb-5 md:hidden" />
         <h2 id={titleId} className="text-section text-ink mb-4">{title}</h2>
         {children}
       </div>

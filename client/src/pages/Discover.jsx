@@ -90,7 +90,7 @@ export default function Discover() {
         <p className="text-body text-muted">No {categoryLabel(category).toLowerCase()} workers{area ? ` in ${areaLabel(area)}` : ''} yet.</p>
       )}
 
-      <ul className="space-y-3">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
         {!loading && workers.map(w => (
           <Card as="li" key={w._id} className="p-0">
             <Link to={`/people/${w._id}`} className="flex items-center gap-4 p-4 rounded-card">

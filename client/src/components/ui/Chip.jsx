@@ -17,14 +17,15 @@ export function Chip({ active = false, static: isStatic = false, className = '',
   );
 }
 
-// One horizontal line of chips that scrolls sideways instead of wrapping.
-// Bleeds to the screen edge so the last chip visibly continues off-screen.
+// Phones: one horizontal line of chips that scrolls sideways instead of
+// wrapping, bleeding to the screen edge so the last chip visibly continues
+// off-screen. From 768px (mouse and keyboard, room to spare) chips wrap.
 export function ChipRow({ label, children, className = '' }) {
   return (
     <div
       role="group"
       aria-label={label}
-      className={`-mx-screen px-screen py-1 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${className}`}
+      className={`-mx-screen px-screen py-1 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0 md:flex-wrap md:overflow-visible ${className}`}
     >
       {children}
     </div>

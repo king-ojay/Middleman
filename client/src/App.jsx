@@ -11,12 +11,12 @@ import JobDetail from './pages/JobDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import { useAuth, homePathFor, RequireRole, RequireUser } from './auth.jsx';
 
-// Mobile-first: every screen is designed at 390px; on wider screens the app
-// sits in a centred 430px column.
+// Mobile-first: every screen is designed at 390px. From 768px up, PageLayout
+// widens the content and the tab bar becomes a top navigation bar.
 export default function App() {
   const { user } = useAuth();
   return (
-    <main className="mx-auto max-w-[430px] min-h-screen bg-canvas">
+    <main className="min-h-dvh bg-canvas">
       <Routes>
         <Route path="/" element={user ? <Navigate to={homePathFor(user)} replace /> : <Landing />} />
         <Route path="/login" element={<Login />} />

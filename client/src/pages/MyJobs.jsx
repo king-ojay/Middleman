@@ -40,7 +40,7 @@ export default function MyJobs() {
           : <p className="text-body text-muted">No clients have chosen you yet. Respond to jobs near you to get hired.</p>
       )}
 
-      <ul className="space-y-3">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
         {jobs.map(job => (
           <Card as="li" key={job._id} className="p-5">
             <div className="flex items-start justify-between gap-4">

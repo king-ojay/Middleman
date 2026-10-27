@@ -24,7 +24,7 @@ export default function Profile() {
     api(`/api/users/${profileId}/profile`).then(setProfile).catch(err => setError(err.message));
   }, [profileId]);
 
-  const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role };
+  const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role, width: 'medium' };
   if (error) return <PageLayout {...layout}><p className="text-body text-danger" role="alert">Couldn't load this profile: {error}</p></PageLayout>;
   if (!profile) return <PageLayout {...layout}><p className="text-body text-muted">Loading…</p></PageLayout>;
 
@@ -64,7 +64,7 @@ export default function Profile() {
       {profile.recentRatings.length === 0 ? (
         <p className="text-body text-muted">No ratings yet.</p>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 md:grid-cols-2 items-start">
           {profile.recentRatings.map(r => (
             <Card as="li" key={r._id} className="p-5">
               <div className="flex items-center gap-3">

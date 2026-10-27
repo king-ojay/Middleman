@@ -9,31 +9,35 @@ const steps = [
 
 export default function Landing() {
   return (
-    <PageLayout>
-      <div className="flex items-center gap-3 mb-10">
-        <LogoMark size={36} />
-        <span className="text-title text-heading">Middleman</span>
+    <PageLayout width="wide">
+      <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center lg:min-h-[70vh]">
+        <div>
+          <div className="flex items-center gap-3 mb-10">
+            <LogoMark size={36} />
+            <span className="text-title text-heading">Middleman</span>
+          </div>
+
+          <h1 className="text-display tracking-tight text-ink">Find someone trusted by people you trust.</h1>
+          <p className="text-body text-muted mt-3">Agree a fair price and pay safely when the job is done.</p>
+
+          <div className="mt-8 space-y-3 max-w-sm">
+            <Button to="/register">Create an account</Button>
+            <Button to="/login" variant="outline">Log in</Button>
+          </div>
+        </div>
+
+        <section className="mt-10 lg:mt-0 bg-brand rounded-hero p-6 md:p-8">
+          <TrustGraphMark className="w-full max-w-lg mx-auto h-auto" />
+          <p className="text-body text-white mt-4">
+            You invited Amina. Amina hired Eric and rated him highly.
+          </p>
+          <p className="text-small text-on-brand-soft mt-1">Eric now ranks higher for you, even though you have never met him.</p>
+        </section>
       </div>
-
-      <h1 className="text-display tracking-tight text-ink">Find someone trusted by people you trust.</h1>
-      <p className="text-body text-muted mt-3">Agree a fair price and pay safely when the job is done.</p>
-
-      <div className="mt-8 space-y-3">
-        <Button to="/register">Create an account</Button>
-        <Button to="/login" variant="outline">Log in</Button>
-      </div>
-
-      <section className="mt-10 bg-brand rounded-hero p-6">
-        <TrustGraphMark className="w-full h-auto" />
-        <p className="text-body text-white mt-4">
-          You invited Amina. Amina hired Eric and rated him highly.
-        </p>
-        <p className="text-small text-on-brand-soft mt-1">Eric now ranks higher for you, even though you have never met him.</p>
-      </section>
 
       <section className="mt-10">
         <h2 className="text-section text-ink mb-4">How it works</h2>
-        <ol className="space-y-3">
+        <ol className="grid gap-3 md:grid-cols-3">
           {steps.map((s, i) => (
             <Card as="li" key={s.title} className="flex gap-4">
               <span className="w-11 h-11 shrink-0 rounded-full bg-mint text-heading text-card flex items-center justify-center">{i + 1}</span>

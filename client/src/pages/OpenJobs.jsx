@@ -39,7 +39,7 @@ export default function OpenJobs() {
         </p>
       )}
 
-      <ul className="space-y-3">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
         {jobs.map(job => (
           <Card as="li" key={job._id} className="p-5">
             <h2 className="text-card text-ink">{job.description}</h2>

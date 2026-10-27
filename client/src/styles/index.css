@@ -83,6 +83,12 @@
     @apply bg-canvas text-ink font-sans text-body antialiased;
   }
 
+  /* A long unbroken word (a pasted link, a typo) wraps instead of pushing a
+     card wider than the phone. */
+  h1, h2, h3, p {
+    overflow-wrap: anywhere;
+  }
+
   /* visible keyboard focus, kept deliberate rather than removed */
   a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [role='switch']:focus-visible {
     @apply outline-none ring-2 ring-heading ring-offset-2 ring-offset-canvas;
