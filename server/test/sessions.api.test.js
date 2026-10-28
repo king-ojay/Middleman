@@ -101,8 +101,8 @@ test('discover ranks for the session user and ignores clientId in the URL', { sk
   const res = await call('GET', `/api/discover?category=electrician&clientId=${other._id}`, { token: data.token });
   assert.equal(res.status, 200);
   assert.deepEqual(res.data.map(w => w.name), ['Worker One']);
-  // order and tier only: no numeric trust score in the response
-  assert.ok(res.data.every(w => typeof w.trustSource === 'string' && !('trustScore' in w)));
+  // only what the Discover card shows: no trust score, phone, referrer, verification or timestamps
+  for (const w of res.data) assert.deepEqual(Object.keys(w).sort(), ['_id', 'area', 'name', 'skills', 'trustSource']);
 });
 
 test('registration returns a working session', { skip }, async () => {

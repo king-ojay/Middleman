@@ -58,7 +58,8 @@ export async function computeTrustScores(clientId, options = {}) {
 /**
  * Scores and tiers `candidates` (plain user objects with _id, area and
  * verifiedStatus) from `viewerId`'s point of view and returns them sorted by
- * tier then score. Everyone passed in comes back, however they were rated.
+ * tier, then score, then worker id, so equal scores always come back in the
+ * same order. Everyone passed in comes back, however they were rated.
  * Symmetric by design: a client ranking workers and a worker sizing up
  * clients use the same call.
  */
@@ -70,24 +71,30 @@ export async function rankByTrust(viewerId, candidates, options = {}) {
   });
 
   return ranked.sort((a, b) =>
-    TIER_RANK[a.trustSource] - TIER_RANK[b.trustSource] || b.trustScore - a.trustScore
+    TIER_RANK[a.trustSource] - TIER_RANK[b.trustSource] ||
+    b.trustScore - a.trustScore ||
+    String(a._id).localeCompare(String(b._id))
   );
 }
 
 /**
  * Writes a trust edge when a job is rated. Called from both rating directions
- * (client -> worker and worker -> client) — see Rating model.
+ * (client -> worker and worker -> client) — see Rating model. With a
+ * `session`, the write is part of that transaction (see writeRating).
  */
-export async function writeTrustEdgeFromRating({ fromUser, toUser, score, referredFlag }) {
+export async function writeTrustEdgeFromRating({ fromUser, toUser, score, referredFlag }, { session = null } = {}) {
   const weight = score / 5; // normalise 1-5 to 0-1; computeTrust reads 1-2 stars as negative evidence
-  return TrustEdge.create({
+  const edge = {
     fromUser,
     toUser,
     type: 'rating',
     weight,
     referredFlag: Boolean(referredFlag),
     decayRate: referredFlag ? DEFAULTS.referralDecay : DEFAULTS.decay // kept for the record; computeTrust takes decay from its options
-  });
+  };
+  if (!session) return TrustEdge.create(edge);
+  const [created] = await TrustEdge.create([edge], { session });
+  return created;
 }
 
 /**

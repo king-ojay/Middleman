@@ -15,6 +15,12 @@ services:
         sync: false
       - key: NODE_ENV
         value: production
+      # Pinned Node version (same as .nvmrc). Node 24 is the current LTS line.
+      - key: NODE_VERSION
+        value: 24.22.1
+      # Browser origins allowed to call the API (comma-separated). Anything else gets 403.
+      - key: CORS_ORIGINS
+        value: https://middleman-client.vercel.app
       # Signs session tokens; the API refuses to start in production without it.
       - key: SESSION_SECRET
         generateValue: true

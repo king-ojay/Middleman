@@ -218,6 +218,21 @@ test('1. in results, a cancelled path ties with an unrated worker and stays abov
   ]);
 });
 
+test('ties are broken by worker id, whatever order the workers arrive in; a cancelled path stays tied', async () => {
+  // b-cancelled (path cancelled to 0) and a-unrated tie at the verified floor, 0.3
+  const edges = [rating('you', 'x', 5), rating('x', 'b-cancelled', 5), rating('you', 'b-cancelled', 1)];
+  TrustEdge.find = query => {
+    if (query.fromUser) return { lean: async () => edges.filter(e => query.fromUser.$in.includes(e.fromUser)) };
+    return { populate: () => ({ lean: async () => [] }) };
+  };
+  const workers = [kimironko('z-new'), kimironko('b-cancelled', true), kimironko('m-new'), kimironko('a-unrated', true)];
+  const expected = [['a-unrated', 0.3], ['b-cancelled', 0.3], ['m-new', 0.1], ['z-new', 0.1]];
+  for (const order of [workers, [...workers].reverse()]) {
+    const ranked = await rankByTrust('you', order);
+    assert.deepEqual(ranked.map(r => [r._id, r.trustScore]), expected);
+  }
+});
+
 test('1. a path that stays above 0 is still in the network tier', () => {
   const g = buildGraph([...strongPath, rating('you', 'w', 2)]);
   const w = computeTrust(g, 'you', 'w');

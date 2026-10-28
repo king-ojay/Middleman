@@ -7,7 +7,7 @@ import { AREAS } from '../../config/areas.js';
 import { CATEGORIES } from '../../config/categories.js';
 import { hashPin, isValidPin, verifyPin } from './pin.js';
 import { issueOtp, OtpError, verifyOtp } from './otp/otp.js';
-import { hit } from './rateLimit.js';
+import { clearFailures, hit, lockedFor, recordFailure } from './rateLimit.js';
 import { createSessionToken } from './session.js';
 
 const router = express.Router();
@@ -21,23 +21,49 @@ const publicUser = user => {
 // session token the client sends as "Authorization: Bearer <token>".
 const session = user => ({ user: publicUser(user), token: createSessionToken(user) });
 
+const MINUTE = 60 * 1000;
+
+// Failed logins: 5 per phone number or 20 per IP inside 15 minutes lock that
+// phone number or IP out for 15 minutes. A successful login clears the
+// phone's count. Unknown numbers are counted and locked exactly like real
+// ones, so neither the messages nor the lockout reveal who has an account.
+export const LOGIN_LIMITS = Object.freeze({ perPhone: 5, perIp: 20, windowMs: 15 * MINUTE, lockMs: 15 * MINUTE });
+const LOGIN_FAILED = 'That phone number and PIN do not match';
+const LOGIN_LOCKED = 'Too many attempts. Please wait 15 minutes and try again.';
+
+// Checked when the number has no account, so an unknown number takes as long
+// to answer as a wrong PIN (scrypt is the slow part).
+let dummyPinHash;
+const unknownUserPinHash = () => (dummyPinHash ||= hashPin('0000'));
+
 // POST /api/auth/login  Body: { phone, pin }
 // Returns the user so the client can route by role. One message for any
 // failure, so it doesn't reveal which numbers have accounts.
 router.post('/login', async (req, res) => {
   try {
     const phone = normalisePhone(req.body.phone);
-    const user = phone ? await User.findOne({ phone }).select('+pinHash +sessionVersion') : null;
-    if (!user || !(await verifyPin(req.body.pin, user.pinHash))) {
-      return res.status(401).json({ error: 'That phone number and PIN do not match' });
+    const phoneKey = phone && `login:phone:${phone}`;
+    const ipKey = `login:ip:${req.ip}`;
+    if (lockedFor(ipKey) || (phoneKey && lockedFor(phoneKey))) {
+      return res.status(429).json({ error: LOGIN_LOCKED });
     }
+
+    const user = phone ? await User.findOne({ phone }).select('+pinHash +sessionVersion') : null;
+    const pinMatches = await verifyPin(req.body.pin, user?.pinHash ?? await unknownUserPinHash());
+    if (!user || !pinMatches) {
+      const { perPhone, perIp, windowMs, lockMs } = LOGIN_LIMITS;
+      const ipLocked = recordFailure(ipKey, perIp, windowMs, lockMs);
+      const phoneLocked = phoneKey ? recordFailure(phoneKey, perPhone, windowMs, lockMs) : false;
+      if (ipLocked || phoneLocked) return res.status(429).json({ error: LOGIN_LOCKED });
+      return res.status(401).json({ error: LOGIN_FAILED });
+    }
+
+    clearFailures(phoneKey);
     res.json(session(user));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
-
-const MINUTE = 60 * 1000;
 
 // POST /api/auth/otp  Body: { phone, purpose: 'register' | 'pin_reset' }
 // Sends a one-time code by SMS. Rwandan (+250) mobile numbers only, which

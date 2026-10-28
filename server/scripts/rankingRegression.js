@@ -2,6 +2,10 @@
 // old trust engine (a git ref) and the current one, against the same seeded
 // database. Positive-only rankings must stay identical: same order, same tiers,
 // same scores. With the seed data that is 25 users x 12 trades = 300 rankings.
+// The current engine breaks ties by worker id; the old one left tied workers
+// in database order. So rankings are compared with ties ordered by id on both
+// sides, and rankings that differed only in the order of tied workers are
+// counted separately.
 //
 // Read-only. Run against a seeded database, never production:
 //   MONGO_URI=mongodb://127.0.0.1:27017/middleman_regression node seed.js
@@ -37,6 +41,13 @@ async function loadOldEngine(dir) {
 
 const describe = ranked => ranked.map(w => `${w.name} [${w.trustSource} ${w.trustScore.toFixed(4)}]`).join(', ');
 
+const TIER_RANK = { network: 0, area: 1, fallback: 2 };
+const byIdWithinTies = ranked => [...ranked].sort((a, b) =>
+  TIER_RANK[a.trustSource] - TIER_RANK[b.trustSource] ||
+  b.trustScore - a.trustScore ||
+  String(a._id).localeCompare(String(b._id))
+);
+
 function differs(a, b) {
   if (a.length !== b.length) return true;
   return a.some((w, i) =>
@@ -60,6 +71,7 @@ async function main() {
     const viewers = await User.find().sort({ phone: 1 }).lean();
     let total = 0;
     let empty = 0;
+    let tieOrderOnly = 0;
     const mismatches = [];
 
     for (const viewer of viewers) {
@@ -70,7 +82,8 @@ async function main() {
         const after = await current.rankByTrust(viewer._id, candidates);
         total += 1;
         if (candidates.length === 0) empty += 1;
-        if (differs(before, after)) mismatches.push({ viewer: viewer.name, category, before, after });
+        if (differs(byIdWithinTies(before), byIdWithinTies(after))) mismatches.push({ viewer: viewer.name, category, before, after });
+        else if (differs(before, after)) tieOrderOnly += 1;
       }
     }
 
@@ -81,6 +94,7 @@ async function main() {
       console.log(`  new: ${describe(m.after)}`);
     }
     console.log(`\n${total - mismatches.length} identical, ${mismatches.length} different`);
+    console.log(`(${tieOrderOnly} of the identical ones differed only in the order of tied workers, now ordered by id)`);
     process.exitCode = mismatches.length === 0 ? 0 : 1;
   } finally {
     await mongoose.disconnect();
