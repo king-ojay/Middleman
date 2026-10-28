@@ -20,7 +20,9 @@ router.get('/', requireUser, async (req, res) => {
       ...(area ? { area } : {})
     }).lean();
 
-    res.json(await rankByTrust(req.user._id, candidates));
+    // Order and tier only: the numeric score never leaves the server.
+    const ranked = await rankByTrust(req.user._id, candidates);
+    res.json(ranked.map(({ trustScore, ...worker }) => worker));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

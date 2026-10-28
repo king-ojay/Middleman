@@ -122,14 +122,13 @@ test('strongest negative path wins rather than adding up', () => {
 // (d) lambda
 
 test('lambda 0.25, 0.5 and 1.0 scale the penalty; a path pushed to 0 leaves the network tier', () => {
-  // no users given, so no area trust: a cancelled path falls to the unverified floor minus epsilon
+  // no users given, so no area trust: a cancelled path falls to the plain unverified floor
   const g = buildGraph([...strongPath, rating('you', 'w', 1)]);
   close(computeTrust(g, 'you', 'w', { lambda: 0.25 }).score, 0.91 - 0.25);
   close(computeTrust(g, 'you', 'w', { lambda: 0.5 }).score, 0.91 - 0.5);
   const cancelled = computeTrust(g, 'you', 'w', { lambda: 1.0 });
   close(cancelled.positive, 0.91);
-  close(cancelled.score, 0.1 - 0.01);
-  assert.deepEqual({ ...cancelled, positive: 0.91, score: 0.09 }, { score: 0.09, positive: 0.91, negative: 1, source: 'floor', pathLength: 2 });
+  assert.deepEqual({ ...cancelled, positive: 0.91 }, { score: 0.1, positive: 0.91, negative: 1, source: 'floor', pathLength: 2 });
 });
 
 test('other options override the defaults', () => {
@@ -195,24 +194,28 @@ test('1. a path cancelled out to 0 falls to the area tier, scored by area trust'
   assert.equal(pathScores(g, 'you').has('w'), false);
 });
 
-test('1. a path cancelled out to 0 with no area trust falls to the floor, minus epsilon', () => {
+test('1. a path cancelled out to 0 with no area trust falls to the plain floor, no epsilon', () => {
   const edges = [rating('you', 'a', 5), rating('a', 'w', 5), rating('you', 'w', 1)];
   const verified = buildGraph(edges, [kimironko('w', true)]);
-  assert.deepEqual(computeTrust(verified, 'you', 'w'), { score: 0.3 - 0.01, positive: 0.5, negative: 1, source: 'floor', pathLength: 2 });
+  assert.deepEqual(computeTrust(verified, 'you', 'w'), { score: 0.3, positive: 0.5, negative: 1, source: 'floor', pathLength: 2 });
   const unverified = buildGraph(edges, [kimironko('w')]);
-  close(computeTrust(unverified, 'you', 'w').score, 0.1 - 0.01);
+  assert.equal(computeTrust(unverified, 'you', 'w').score, 0.1);
+  // epsilon is for negative-only workers, so changing it changes nothing here
+  assert.equal(computeTrust(unverified, 'you', 'w', { negativeEpsilon: 0.05 }).score, 0.1);
   assert.equal(pathScores(verified, 'you').has('w'), false);
 });
 
-test('1. in results, a cancelled path ranks just under an unrated worker with the same verification', async () => {
-  const workers = [kimironko('cancelled', true), kimironko('unrated', true), kimironko('stranger')];
-  const edges = [rating('you', 'a', 5), rating('a', 'cancelled', 5), rating('you', 'cancelled', 1)];
+test('1. in results, a cancelled path ties with an unrated worker and stays above a negative-only one', async () => {
+  const workers = [kimironko('negOnly', true), kimironko('cancelled', true), kimironko('unrated', true), kimironko('stranger')];
+  const edges = [rating('you', 'a', 5), rating('a', 'cancelled', 5), rating('you', 'cancelled', 1), rating('you', 'negOnly', 1)];
   TrustEdge.find = query => {
     if (query.fromUser) return { lean: async () => edges.filter(e => query.fromUser.$in.includes(e.fromUser)) };
     return { populate: () => ({ lean: async () => [] }) };
   };
   const ranked = await rankByTrust('you', workers);
-  assert.deepEqual(ranked.map(r => [r._id, r.trustSource]), [['unrated', 'fallback'], ['cancelled', 'fallback'], ['stranger', 'fallback']]);
+  assert.deepEqual(ranked.map(r => [r._id, r.trustSource, r.trustScore]), [
+    ['cancelled', 'fallback', 0.3], ['unrated', 'fallback', 0.3], ['negOnly', 'fallback', 0.3 - 0.01], ['stranger', 'fallback', 0.1]
+  ]);
 });
 
 test('1. a path that stays above 0 is still in the network tier', () => {
@@ -248,6 +251,26 @@ test('3. referred negative evidence gets no boost and the default decay', () => 
   close(computeTrust(buildGraph([rating('you', 'a', 5), rating('a', 'w', 1, true)]), 'you', 'w', { referralDecay: 0.9 }).negative, 0.5);
   // the boost still applies to positive evidence
   close(computeTrust(buildGraph(strongPath), 'you', 'w').positive, 0.91);
+});
+
+test('3. the first hop of a negative path gets no referral boost either', () => {
+  // you -5 stars, referred-> a -1 star-> w: lead-in 1.0 unboosted, so 1.0 x 1.0 x 0.5 (was 1.4 x 1.0 x 0.5 = 0.7)
+  const g = buildGraph([rating('you', 'a', 5, true), rating('a', 'w', 1)]);
+  close(computeTrust(g, 'you', 'w').negative, 0.5);
+  // the same referred edge still carries the boost as positive evidence
+  close(computeTrust(g, 'you', 'a').positive, 1.4);
+  // two edges to a: referred 3 stars (0.84 boosted, 0.6 unboosted) and plain 4 stars (0.8).
+  // The negative lead-in is the strongest unboosted one, 0.8, not the boosted 0.84.
+  const parallel = buildGraph([rating('you', 'a', 3, true), rating('you', 'a', 4), rating('a', 'w', 2)]);
+  close(computeTrust(parallel, 'you', 'a').positive, 0.84);
+  close(computeTrust(parallel, 'you', 'w').negative, 0.8 * 0.5 * 0.5);
+});
+
+test('3. negative-only stays at floor minus epsilon and never takes area trust, verified or not', () => {
+  const users = [kimironko('v', true), kimironko('u'), kimironko('n1')];
+  const g = buildGraph([rating('you', 'v', 2), rating('you', 'u', 1), rating('n1', 'v', 5), rating('n1', 'u', 5)], users);
+  assert.deepEqual(computeTrust(g, 'you', 'v'), { score: 0.3 - 0.01, positive: 0, negative: 0.5, source: 'floor', pathLength: null });
+  assert.deepEqual(computeTrust(g, 'you', 'u'), { score: 0.1 - 0.01, positive: 0, negative: 1, source: 'floor', pathLength: null });
 });
 
 test('4. area trust averages 3-5 star ratings only', () => {

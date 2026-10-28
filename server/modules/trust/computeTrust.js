@@ -12,7 +12,7 @@ export const DEFAULTS = Object.freeze({
   areaDiscount: 0.5,   // area trust is second-hand, so it's discounted
   floorVerified: 0.3,
   floorUnverified: 0.1,
-  negativeEpsilon: 0.01 // only negative evidence: just below the floor, so below an unrated worker
+  negativeEpsilon: 0.01 // negative evidence and no positive: just below the floor, so below an unrated worker
 });
 
 /**
@@ -64,55 +64,65 @@ export function buildGraph(edges, users = []) {
 }
 
 // One hop's multiplier: full weight on the first hop, decay after. Referred
-// edges get the boost and the slower referral decay as positive evidence;
-// as negative evidence every edge is unboosted with the default decay.
-function hopFactor(edge, hops, o, positive = true) {
-  const referred = positive && edge.referred;
+// edges get the boost and the slower referral decay on positive paths; on a
+// negative path (boosted false) every edge is unboosted with the default decay.
+function hopFactor(edge, hops, o, boosted = true) {
+  const referred = boosted && edge.referred;
   const boost = referred ? o.referralBoost : 1;
   const decay = hops === 0 ? 1 : referred ? o.referralDecay : o.decay;
   return boost * decay;
 }
 
 /**
- * Every person's best positive and negative evidence from `sourceId`.
- *
- * Positive: weighted breadth-first rounds up to `depth` hops. Each hop
- * multiplies the running score by its weight and (after the first hop) its
- * decay exactly once. A person is explored again only when a strictly
- * stronger path to them is found, so the strongest path wins, a weak short
- * path can't hide a stronger longer one, and cycles can't loop (depth is
- * capped and every later hop multiplies by at most 1.4 x 0.65 = 0.91).
- * Only positive edges carry trust onward.
- *
- * Negative: a negative edge at the end of a positive path of fewer than
- * `negativeDepth` hops, with the default decay and no referral boost. With the
- * default of 2 that is the viewer's own 1-2 star rating (undecayed), or one
- * from someone the viewer rated positively, one hop out (decayed once).
- * Strongest negative path wins. Distrust is not passed on through the person
- * who was rated badly.
+ * Strongest positive path from `sourceId` to everyone within `depth` hops:
+ * weighted breadth-first rounds. Each hop multiplies the running score by its
+ * weight and (after the first hop) its decay exactly once. A person is
+ * explored again only when a strictly stronger path to them is found, so the
+ * strongest path wins, a weak short path can't hide a stronger longer one,
+ * and cycles can't loop (depth is capped and every later hop multiplies by at
+ * most 1.4 x 0.65 = 0.91). Only positive edges carry trust onward. With
+ * `boosted` false, referred edges get no boost and the default decay.
  */
-function propagate(graph, sourceId, o) {
-  const best = new Map();   // id -> { score, hops }, strongest positive path
-  const within = [new Map([[sourceId, { score: 1, hops: 0 }]])]; // within[d]: best paths of <= d hops, incl. source
+function strongestPaths(graph, sourceId, depth, o, boosted) {
+  const best = new Map(); // id -> { score, hops }
   let frontier = [{ id: sourceId, score: 1, hops: 0 }];
 
-  for (let hops = 0; hops < o.depth && frontier.length > 0; hops++) {
+  for (let hops = 0; hops < depth && frontier.length > 0; hops++) {
     const improved = new Map();
     for (const node of frontier) {
       for (const edge of graph.out[node.id] || []) {
         if (edge.to === sourceId || edge.positive <= 0) continue;
-        const score = node.score * edge.positive * hopFactor(edge, hops, o);
+        const score = node.score * edge.positive * hopFactor(edge, hops, o, boosted);
         if (score <= (best.get(edge.to)?.score ?? 0)) continue;
         best.set(edge.to, { score, hops: hops + 1 });
         improved.set(edge.to, { id: edge.to, score, hops: hops + 1 });
       }
     }
     frontier = [...improved.values()];
-    within.push(new Map([[sourceId, { score: 1, hops: 0 }], ...best]));
   }
+  return best;
+}
+
+/**
+ * Every person's best positive and negative evidence from `sourceId`.
+ *
+ * Positive: strongest paths up to `depth` hops, referral boost included.
+ *
+ * Negative: a negative edge at the end of a positive path of fewer than
+ * `negativeDepth` hops. The whole negative path, including that positive
+ * lead-in, takes the default decay and no referral boost. With the default
+ * of 2 that is the viewer's own 1-2 star rating (undecayed), or one from
+ * someone the viewer rated positively, one hop out (decayed once).
+ * Strongest negative path wins. Distrust is not passed on through the person
+ * who was rated badly.
+ */
+function propagate(graph, sourceId, o) {
+  const best = strongestPaths(graph, sourceId, o.depth, o, true);
 
   const negative = new Map(); // id -> strongest negative evidence
-  const prefixes = o.negativeDepth > 0 ? within[Math.min(o.negativeDepth - 1, within.length - 1)] : new Map();
+  const prefixes = o.negativeDepth > 0
+    ? new Map([[sourceId, { score: 1, hops: 0 }], ...strongestPaths(graph, sourceId, o.negativeDepth - 1, o, false)])
+    : new Map();
   for (const [id, path] of prefixes) {
     for (const edge of graph.out[id] || []) {
       if (edge.to === sourceId || edge.negative <= 0) continue;
@@ -150,7 +160,8 @@ function propagateCached(graph, sourceId, o) {
  * - Positive path with score = max(0, positive - lambda * negative) above 0:
  *   source 'path'.
  * - Positive path cancelled out by negative evidence (score 0): source 'area'
- *   with area trust when there is some, otherwise the floor case below.
+ *   with area trust when there is some, otherwise the plain verification
+ *   floor (no epsilon: they have positive evidence too).
  * - Only negative evidence: source 'floor', just under the verification floor
  *   (floor - negativeEpsilon), so below an unrated worker with the same
  *   verification. Area trust is not used for them.
@@ -178,7 +189,7 @@ export function computeTrust(graph, sourceId, targetId, options = {}) {
     if (net > 0) return { score: net, positive, negative, source: 'path', pathLength: path.hops };
     const area = areaScore(graph, target, o);
     if (area !== undefined) return { score: area, positive, negative, source: 'area', pathLength: path.hops };
-    return { score: Math.max(0, floor - o.negativeEpsilon), positive, negative, source: 'floor', pathLength: path.hops };
+    return { score: floor, positive, negative, source: 'floor', pathLength: path.hops };
   }
 
   if (negative > 0) return { score: Math.max(0, floor - o.negativeEpsilon), positive, negative, source: 'floor', pathLength: null };
