@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { wakeApi } from '../api.js';
 import { Button, Card, LogoMark, PageLayout } from '../components/ui/index.js';
 import TrustGraphMark from '../components/TrustGraphMark.jsx';
 
@@ -8,6 +10,7 @@ const steps = [
 ];
 
 export default function Landing() {
+  useEffect(wakeApi, []);
   return (
     <PageLayout width="wide">
       <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center lg:min-h-[70vh]">

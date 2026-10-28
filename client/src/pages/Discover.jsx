@@ -18,13 +18,17 @@ export default function Discover() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Only the latest trade/area may fill the list: a slow answer for a trade
+    // the user has already switched away from is ignored.
+    let current = true;
     const params = new URLSearchParams({ category, ...(area && { area }) });
     setLoading(true);
     setError('');
     api(`/api/discover?${params}`)
-      .then(setWorkers)
-      .catch(err => { setWorkers([]); setError(err.message); })
-      .finally(() => setLoading(false));
+      .then(data => current && setWorkers(data))
+      .catch(err => { if (current) { setWorkers([]); setError(err.message); } })
+      .finally(() => current && setLoading(false));
+    return () => { current = false; };
   }, [user, category, area]);
 
   // Matches the typed text against trade names only. Free-text job

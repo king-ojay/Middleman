@@ -58,6 +58,12 @@ export default function JobDetail() {
             <JobActions job={job} role={user.role} onChange={load} />
           </Card>
           {!isClient && job.workerCompletedAt && <RateClient job={job} onRated={load} />}
+          {isClient && job.myRating && (
+            <Card className="p-5 mt-3">
+              <p className="text-body text-ink">You rated {firstName(job.worker)}</p>
+              <StarRating readOnly value={job.myRating.score} />
+            </Card>
+          )}
         </>
       )}
     </PageLayout>
@@ -105,7 +111,9 @@ function Offers({ job, onChosen }) {
                 <div className="min-w-0">
                   <p className="text-title text-ink">{formatRwf(r.amount)}</p>
                   <p className="text-body font-medium text-heading">
-                    {r.isCounter ? `Counter-offer · ${difference > 0 ? '+' : '−'}${formatRwf(Math.abs(difference))}` : 'Accepts your price'}
+                    {r.isCounter
+                      ? <>Counter-offer · <span className="whitespace-nowrap">{difference > 0 ? '+' : '−'}{formatRwf(Math.abs(difference))}</span></>
+                      : 'Accepts your price'}
                   </p>
                   {r.depositAmount > 0 && <p className="text-body text-muted">Needs {formatRwf(r.depositAmount)} upfront for materials</p>}
                 </div>
@@ -147,11 +155,14 @@ function ConfirmAndRate({ job }) {
 
   const reportProblem = async () => {
     if (!window.confirm('Report a problem with this job? It will be held for review.')) return;
+    setError('');
+    setBusy(true);
     try {
       await api(`/api/jobs/${job._id}/dispute`, { method: 'POST' });
       navigate('/my-jobs');
     } catch (err) {
       setError(err.message);
+      setBusy(false);
     }
   };
 
@@ -182,7 +193,7 @@ function ConfirmAndRate({ job }) {
       {error && <p className="text-small text-danger mt-4" role="alert">{error}</p>}
       <div className="mt-6 space-y-2">
         <Button onClick={confirm} disabled={busy}>{busy ? 'Confirming…' : 'Confirm job is done'}</Button>
-        <Button variant="plain" onClick={reportProblem}>Report a problem</Button>
+        <Button variant="plain" onClick={reportProblem} disabled={busy}>Report a problem</Button>
       </div>
     </>
   );

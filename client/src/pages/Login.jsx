@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { wakeApi } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
 import { Avatar, Button, FormField, LogoMark, PageLayout, TextInput } from '../components/ui/index.js';
 
@@ -10,6 +11,7 @@ export default function Login() {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  useEffect(wakeApi, []);
 
   if (user) return <Navigate to={homePathFor(user)} replace />;
 

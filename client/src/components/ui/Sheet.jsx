@@ -5,18 +5,26 @@ import { useEffect, useId, useRef } from 'react';
 export default function Sheet({ open, title, onClose, children }) {
   const titleId = useId();
   const panel = useRef(null);
+  // Latest onClose without re-running the effect: callers pass a new function
+  // each render, which would otherwise move focus back on every keystroke.
+  const close = useRef(onClose);
+  close.current = onClose;
 
   useEffect(() => {
     if (!open) return undefined;
     const previous = document.activeElement;
     panel.current?.querySelector('input, button, textarea')?.focus();
-    const onKey = e => { if (e.key === 'Escape') onClose(); };
+    const onKey = e => { if (e.key === 'Escape') close.current(); };
     document.addEventListener('keydown', onKey);
+    // The page behind stays put while the sheet is open (phones scroll it otherwise).
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     return () => {
       document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
       previous?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
   return (

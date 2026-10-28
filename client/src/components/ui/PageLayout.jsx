@@ -2,12 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import TabBar from './TabBar.jsx';
 
 // `back` may be true (browser back), a path, or a function (e.g. previous step).
+// Browser back only within the app: on a page opened straight from a link
+// (React Router's history index 0) it goes home instead of leaving the site.
 function BackButton({ back }) {
   const navigate = useNavigate();
   const goBack = () => {
     if (typeof back === 'function') return back();
     if (typeof back === 'string') return navigate(back);
-    return navigate(-1);
+    return window.history.state?.idx > 0 ? navigate(-1) : navigate('/');
   };
   return (
     <button
