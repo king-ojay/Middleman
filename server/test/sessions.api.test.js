@@ -9,7 +9,7 @@ const MONGO = process.env.TEST_MONGO_URI;
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
 
 let server, base, mongoose, User, hashPin, createSessionToken;
-const codes = new Map(); // phone -> last OTP printed by the console provider
+const codes = new Map(); // last 3 digits of the phone -> last OTP printed by the console provider (the log masks the rest)
 
 before(async () => {
   if (skip) return;
@@ -18,8 +18,8 @@ before(async () => {
   process.env.OTP_PROVIDER = 'console';
   const log = console.log;
   console.log = (...args) => {
-    const m = String(args[0]).match(/^\[otp\] code for \+250(\d+) is (\d{6})$/);
-    if (m) codes.set(`0${m[1]}`, m[2]); else log(...args);
+    const m = String(args[0]).match(/^\[otp\] code for \+250\*{5}(\d{3}) is (\d{6})$/);
+    if (m) codes.set(m[1], m[2]); else log(...args);
   };
 
   mongoose = (await import('mongoose')).default;
@@ -109,7 +109,7 @@ test('registration returns a working session', { skip }, async () => {
   const phone = '0788100009';
   assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' } })).status, 200);
   const reg = await call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Client', phone, area: 'remera', pin: '2468', otpCode: codes.get(phone) }
+    body: { role: 'client', name: 'New Client', phone, area: 'remera', pin: '2468', otpCode: codes.get(phone.slice(-3)) }
   });
   assert.equal(reg.status, 201);
   assert.equal((await call('GET', `/api/users/${reg.data.user._id}/profile`, { token: reg.data.token })).status, 200);
@@ -121,7 +121,7 @@ test('a PIN reset ends every older session and returns a new one', { skip }, asy
   assert.equal((await call('GET', '/api/jobs/mine', { token: before })).status, 200);
 
   await call('POST', '/api/auth/otp', { body: { phone, purpose: 'pin_reset' } });
-  const reset = await call('POST', '/api/auth/pin/reset', { body: { phone, code: codes.get(phone), pin: '9753' } });
+  const reset = await call('POST', '/api/auth/pin/reset', { body: { phone, code: codes.get(phone.slice(-3)), pin: '9753' } });
   assert.equal(reset.status, 200);
 
   assert.equal((await call('GET', '/api/jobs/mine', { token: before })).status, 401);

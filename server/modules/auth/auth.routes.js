@@ -7,6 +7,7 @@ import { AREAS } from '../../config/areas.js';
 import { CATEGORIES } from '../../config/categories.js';
 import { hashPin, isValidPin, verifyPin } from './pin.js';
 import { issueOtp, OtpError, verifyOtp } from './otp/otp.js';
+import { maskPhonesIn } from './otp/providers.js';
 import { clearFailures, hit, lockedFor, recordFailure } from './rateLimit.js';
 import { createSessionToken } from './session.js';
 
@@ -91,7 +92,7 @@ router.post('/otp', async (req, res) => {
     res.json({ sent: true });
   } catch (err) {
     res.status(502).json({ error: 'We could not send the code. Please try again.' });
-    console.error('[otp] send failed:', err.message);
+    console.error('[otp] send failed:', maskPhonesIn(err.message));
   }
 });
 

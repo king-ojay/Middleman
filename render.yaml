@@ -26,7 +26,7 @@ services:
         generateValue: true
       - key: OTP_SECRET
         generateValue: true
-      # console prints signup codes to the Render log; switch to twilio or
-      # africastalking (and add their keys) to send real SMS.
+      # console logs only a masked number in production (codes are not logged);
+      # switch to twilio or africastalking (and add their keys) to send real SMS.
       - key: OTP_PROVIDER
         value: console
