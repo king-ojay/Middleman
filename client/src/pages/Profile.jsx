@@ -20,8 +20,14 @@ export default function Profile() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Ignore a slow answer for a profile we have already moved away from.
+    let current = true;
     setProfile(null);
-    api(`/api/users/${profileId}/profile`).then(setProfile).catch(err => setError(err.message));
+    setError('');
+    api(`/api/users/${profileId}/profile`)
+      .then(data => current && setProfile(data))
+      .catch(err => current && setError(err.message));
+    return () => { current = false; };
   }, [profileId]);
 
   const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role, width: 'medium' };

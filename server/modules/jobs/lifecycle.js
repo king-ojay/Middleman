@@ -29,9 +29,10 @@ const actorFilter = (actor, userId) => {
 /**
  * Applies a lifecycle action as one conditional update, so a double tap or
  * two racing requests can't move a job twice. On failure, works out whether
- * the job is missing, not the caller's, or in the wrong state.
+ * the job is missing, not the caller's, or in the wrong state. Pass a
+ * `session` to make the move part of a transaction.
  */
-export async function transition(jobId, action, user) {
+export async function transition(jobId, action, user, session = null) {
   const rule = TRANSITIONS[action];
   if (!rule) throw new HttpError(400, `Unknown action: ${action}`);
   if (!mongoose.isValidObjectId(jobId)) throw new HttpError(404, 'Job not found');
@@ -42,11 +43,11 @@ export async function transition(jobId, action, user) {
   const job = await Job.findOneAndUpdate(
     { _id: jobId, status: { $in: rule.from }, ...actorFilter(rule.actor, user._id) },
     update,
-    { new: true }
+    { new: true, session }
   );
   if (job) return job;
 
-  const existing = await Job.findById(jobId).lean();
+  const existing = await Job.findById(jobId).session(session).lean();
   if (!existing) throw new HttpError(404, 'Job not found');
   const isClient = String(existing.client) === String(user._id);
   const isWorker = String(existing.worker) === String(user._id);
@@ -137,12 +138,16 @@ const parseRating = body => {
 /**
  * Client confirms completion and rates the worker in one request (FR-12):
  * the rating is required, and "vouch" sets the referred flag (FR-17).
+ * One transaction: if the rating or its trust edge can't be written, the job
+ * stays awaiting confirmation and the client can simply try again.
  */
 export async function confirmAndRate(jobId, client, body) {
   const { score, comment, referredFlag } = parseRating(body);
-  const job = await transition(jobId, 'confirm', client);
-  await writeRating({ job: job._id, fromUser: client._id, toUser: job.worker, score, referredFlag, comment });
-  return job;
+  return mongoose.connection.transaction(async session => {
+    const job = await transition(jobId, 'confirm', client, session);
+    await writeRating({ job: job._id, fromUser: client._id, toUser: job.worker, score, referredFlag, comment, session });
+    return job;
+  });
 }
 
 /**

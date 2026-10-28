@@ -9,6 +9,7 @@ import OpenJobs from './pages/OpenJobs.jsx';
 import MyJobs from './pages/MyJobs.jsx';
 import JobDetail from './pages/JobDetail.jsx';
 import Profile from './pages/Profile.jsx';
+import ServerWaking from './components/ServerWaking.jsx';
 import { useAuth, homePathFor, RequireRole, RequireUser } from './auth.jsx';
 
 // Mobile-first: every screen is designed at 390px. From 768px up, PageLayout
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/people/:id" element={<RequireUser><Profile /></RequireUser>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ServerWaking />
     </main>
   );
 }

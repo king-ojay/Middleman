@@ -33,11 +33,13 @@ client/   React + Vite frontend
 
 ## Run it locally
 
-You need Node.js 20+ and Docker (for MongoDB). From the repo root:
+You need Node.js 24 (see `.nvmrc`; `nvm use` picks it up) and Docker (for MongoDB). From the repo root:
 
 ```bash
-# 1. MongoDB in Docker (first time creates the container; later just `docker start mongo`)
-docker run -d --name mongo -p 27017:27017 mongo:7
+# 1. MongoDB in Docker as a one-node replica set (ratings are written in
+#    transactions, which need one). First time only; later just `docker start mongo`.
+docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0
+docker exec mongo mongosh --quiet --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]})"
 
 # 2. Install everything (server and client are npm workspaces)
 npm install
@@ -48,8 +50,8 @@ cp server/.env.example server/.env
 
 # 4. Load the demo data and start the API on http://localhost:4000
 cd server
-MONGO_URI=mongodb://localhost:27017/middleman npm run seed
-MONGO_URI=mongodb://localhost:27017/middleman npm run dev
+MONGO_URI='mongodb://localhost:27017/middleman?directConnection=true' npm run seed
+MONGO_URI='mongodb://localhost:27017/middleman?directConnection=true' npm run dev
 
 # 5. In a second terminal, start the app on http://localhost:5173
 cd client
@@ -97,7 +99,7 @@ API terminal.
 
 **Tests:** `cd server && npm test` runs the unit tests. The API tests also run
 when you point them at a throwaway database:
-`TEST_MONGO_URI=mongodb://localhost:27017/middleman_test npm test`.
+`TEST_MONGO_URI='mongodb://localhost:27017/middleman_test?directConnection=true' npm test` (against the replica set above).
 
 ## What's built so far
 

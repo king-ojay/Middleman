@@ -20,7 +20,10 @@ router.get('/', requireUser, async (req, res) => {
       ...(area ? { area } : {})
     }).lean();
 
-    res.json(await rankByTrust(req.user._id, candidates));
+    // Order, tier and what the Discover card shows. The numeric score, phone
+    // numbers, referrer, verification and timestamps never go to other users.
+    const ranked = await rankByTrust(req.user._id, candidates);
+    res.json(ranked.map(w => ({ _id: w._id, name: w.name, skills: w.skills, area: w.area, trustSource: w.trustSource })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

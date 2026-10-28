@@ -1,10 +1,23 @@
 // SMS providers for one-time codes, chosen by OTP_PROVIDER:
 //   console        — development only: prints the code in the server log
+//                    (outside production; the number is always masked)
 //   twilio         — TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM
 //   africastalking — AT_USERNAME, AT_API_KEY, AT_SENDER_ID (optional);
 //                    AT_USERNAME=sandbox uses the sandbox endpoint
 // Every provider implements sendOtp(phone, code) with an E.164 number (+2507…).
 // Credentials live in the host's environment settings, never in the repo.
+
+// Logs never carry a full phone number (ethics form): keep the country code
+// and the last 3 digits, e.g. +250788123456 -> +250*****456.
+export const maskPhone = phone => {
+  const digits = String(phone ?? '').replace(/\D/g, '');
+  return `${digits.startsWith('250') ? '+250' : ''}*****${digits.slice(-3)}`;
+};
+
+// Masks any Rwandan mobile number inside free text, such as a provider's
+// error message, before it is logged.
+export const maskPhonesIn = text =>
+  String(text ?? '').replace(/(?:\+?250|0)7\d{8}/g, maskPhone);
 
 const message = code => `Your Middleman code is ${code}. It expires in 5 minutes. Do not share it.`;
 
@@ -29,7 +42,11 @@ const requireEnv = names => {
 const PROVIDERS = {
   console: {
     async sendOtp(phone, code) {
-      console.log(`[otp] code for ${phone} is ${code}`);
+      if (process.env.NODE_ENV === 'production') {
+        console.log(`[otp] code for ${maskPhone(phone)} not logged in production; set an SMS provider`);
+      } else {
+        console.log(`[otp] code for ${maskPhone(phone)} is ${code}`);
+      }
     }
   },
 

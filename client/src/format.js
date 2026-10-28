@@ -1,4 +1,5 @@
-export const formatRwf = amount => `${Number(amount).toLocaleString('en-US')} RWF`;
+// A no-break space keeps the amount and "RWF" on one line in narrow cards.
+export const formatRwf = amount => `${Number(amount).toLocaleString('en-US')}\u00a0RWF`;
 
 // "posted 2 hours ago" style relative time.
 export function timeAgo(date, now = new Date()) {
