@@ -170,10 +170,64 @@ API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
    `VITE_API_URL=https://<service>.onrender.com` (no trailing slash). Deploy.
    `client/vercel.json` makes deep links like `/discover` work.
 
+## Evaluation, Part A: public datasets
+
+`server/scripts/experiments/run.js` tests the trust engine's core (path
+propagation, decay, strongest path, the negative-evidence rule) on real public
+signed networks, with the leave-one-out protocol of Kumar et al. (2016), "Edge
+weight prediction in weighted signed networks" (ICDM). No synthetic data.
+
+```bash
+# The data is not in the repo (data/raw/ is gitignored). Download once:
+mkdir -p data/raw
+curl -L -o data/raw/soc-sign-bitcoinotc.csv.gz https://snap.stanford.edu/data/soc-sign-bitcoinotc.csv.gz
+curl -L -o data/raw/soc-sign-bitcoinalpha.csv.gz https://snap.stanford.edu/data/soc-sign-bitcoinalpha.csv.gz  # optional replication
+
+cd server
+node scripts/experiments/run.js --dataset bitcoinotc --sample 2000   # quick check, ~20s
+node scripts/experiments/run.js --dataset bitcoinotc                 # every edge, a few minutes
+node scripts/experiments/run.js --dataset bitcoinalpha
+```
+
+Options: `--sample N` tests a seeded random sample of N edges; `--seed S`
+(default 1) fixes the sample and split; `--tune-split` also tunes lambda
+{0.25, 0.5, 1.0, 1.5, 2.0} and depth {2, 3, 4} (best RMSE) and fits a linear
+calibration on a seeded 20% of the test edges, then reports every method on
+the other 80%, which tuning never sees; `--reciprocal` adds the
+"proposed + reciprocal" row (off by default: it uses the target's own rating
+of the source, which suits Bitcoin OTC's mutual ratings but not Middleman,
+where clients rank strangers). `.csv` and `.csv.gz` both work. The run logs the file's MD5 (OTC:
+`eeaf5cd1d29ab435505baeeb6816317b`), its line count (OTC: 35,592), the git
+commit and a hash of the experiment code.
+
+- **Graph**: weight = rating/10; a rating > 0 is positive evidence of
+  rating/10, a rating <= 0 negative evidence of |rating|/10; every member is
+  one node type. Referral boost, area trust and verification are off: the data
+  has none of them (they are evaluated in the pilot).
+- **Protocol**: for each test edge, the edge is hidden, predicted from the rest
+  of the graph, and put back. Prediction = positive − lambda × negative from
+  `computeTrust` (unchanged), clamped to [-1, 1]; with no evidence it is the
+  floor `computeTrust` returns (0.1). `test/experiments.test.js` checks that a
+  hidden edge never influences its own prediction.
+- **Compared on the same edges**: global average, flat average of the target's
+  other ratings, MoleTrust (horizon 3, threshold 0.5), TidalTrust, the
+  proposed model with lambda 0.5, and with lambda 0 (positive-only). Sweeps:
+  lambda 0.25/0.5/1.0 and depth 1–4. Experiment-only variants, each its own
+  row: "proposed + community fallback" (no evidence: the target's average of
+  its other ratings, the OTC analogue of the app's area-trust tier, else the
+  global average), the tuned and calibrated versions (with `--tune-split`)
+  and "proposed + reciprocal" (with `--reciprocal`). None of them changes
+  `computeTrust` or the app's defaults.
+- **Metrics**: RMSE and Pearson correlation (the paper's), MAE, sign accuracy
+  (overall and on negative ratings), coverage, precision@5/10, cold start
+  (targets with 1–3 ratings) and latency. Kumar et al.'s Table IV is printed
+  beside the results; only their unsupervised Table IV is comparable.
+- **Output**: a console report and `results/<dataset>_<timestamp>.json` and
+  `.csv` (aggregate metrics only, never the ratings).
+
 ## Not built yet (next steps)
 
 - Escrow through a payment provider sandbox (Phase 3)
-- The synthetic dataset generator described in Chapter 3, Section 3.2.1/3.2.2
 
 ## Design system
 
