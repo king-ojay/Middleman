@@ -6,7 +6,8 @@ import Quote from './quote.model.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
 import Rating from '../trust/rating.model.js';
-import { HttpError, confirmAndRate, rateClient, respond, selectResponse, transition } from './lifecycle.js';
+import { HttpError, confirmAndRate, dispute, rateClient, respond, selectResponse, transition } from './lifecycle.js';
+import { fund, sync } from '../payments/escrow.js';
 
 const router = express.Router();
 router.use(requireUser);
@@ -89,7 +90,8 @@ router.get('/:id', handle(async (req, res) => {
       ...quoteByWorker.get(String(w._id)),
       trustSource: w.trustSource
     }));
-    return res.json({ ...job, responses });
+    const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
+    return res.json({ ...job, responses, myRating });
   }
 
   const myResponse = await Quote.findOne({ job: job._id, worker: req.user._id }).lean();
@@ -108,10 +110,30 @@ router.post('/:id/select', requireRole('client'), handle(async (req, res) => {
   res.json(await selectResponse(req.params.id, req.body.quoteId, req.user));
 }));
 
-// POST /api/jobs/:id/confirm — client confirms and rates the worker in one
-// request (FR-12, FR-17). Body: { score, referred?, comment? }
+// POST /api/jobs/:id/fund — client pays the agreed price into escrow (FR-09).
+// 200 once settled (escrow.status held, or none if the payer declined), 202
+// while the payment waits for approval (then poll /escrow/sync).
+router.post('/:id/fund', requireRole('client'), handle(async (req, res) => {
+  const job = await fund(req.params.id, req.user);
+  res.status(job.escrow.pending ? 202 : 200).json(job);
+}));
+
+// POST /api/jobs/:id/escrow/sync — either party: check a payment or payout in
+// flight with the provider (the fallback when no callback arrives).
+router.post('/:id/escrow/sync', handle(async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) throw new HttpError(404, 'Job not found');
+  const job = await Job.findOne({ _id: req.params.id, $or: [{ client: req.user._id }, { worker: req.user._id }] }, '_id').lean();
+  if (!job) throw new HttpError(404, 'Job not found');
+  res.json(await sync(job._id));
+}));
+
+// POST /api/jobs/:id/confirm — client confirms, which releases escrow to the
+// worker, and rates the worker in the same request (FR-12, FR-13, FR-17).
+// Body: { score, referred?, comment? }. 200 { job, myRating } when paid and
+// rated; 202 { job, myRating: null } while the payout is in flight.
 router.post('/:id/confirm', requireRole('client'), handle(async (req, res) => {
-  res.json(await confirmAndRate(req.params.id, req.user, req.body));
+  const result = await confirmAndRate(req.params.id, req.user, req.body);
+  res.status(result.myRating ? 200 : 202).json(result);
 }));
 
 // POST /api/jobs/:id/rate-client — worker rates the client (FR-12b).
@@ -120,11 +142,16 @@ router.post('/:id/rate-client', requireRole('worker'), handle(async (req, res) =
   res.status(201).json(await rateClient(req.params.id, req.user, req.body));
 }));
 
-// POST /api/jobs/:id/{start,complete,dispute} — lifecycle moves (FR-11, FR-14).
-for (const action of ['start', 'complete', 'dispute']) {
+// POST /api/jobs/:id/{start,complete} — lifecycle moves (FR-11).
+for (const action of ['start', 'complete']) {
   router.post(`/:id/${action}`, handle(async (req, res) => {
     res.json(await transition(req.params.id, action, req.user));
   }));
 }
+
+// POST /api/jobs/:id/dispute — either party reports a problem; escrow stays locked (FR-14).
+router.post('/:id/dispute', handle(async (req, res) => {
+  res.json(await dispute(req.params.id, req.user));
+}));
 
 export default router;

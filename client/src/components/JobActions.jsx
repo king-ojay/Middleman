@@ -1,29 +1,38 @@
 import { useState } from 'react';
 import { api } from '../api.js';
+import { formatRwf } from '../format.js';
 import { Button } from './ui/index.js';
 
-// The next step(s) available to this person for this job (Fig. 5). Phase 3
-// replaces "Start job" with escrow funding.
+const DISPUTE = { action: 'dispute', label: 'Report a problem' };
+
+// The next step(s) available to this person for this job (Fig. 5). The
+// worker starts only once the client has paid into escrow (FR-09).
 const ACTIONS = {
   worker: {
-    quote_accepted: [{ action: 'start', label: 'Start job', primary: true }],
-    in_progress: [{ action: 'complete', label: 'Mark as complete', primary: true }, { action: 'dispute', label: 'Report a problem' }]
+    escrow_held: [{ action: 'start', label: 'Start job', primary: true }, DISPUTE],
+    in_progress: [{ action: 'complete', label: 'Mark as complete', primary: true }, DISPUTE]
   },
   client: {
-    in_progress: [{ action: 'dispute', label: 'Report a problem' }],
+    quote_accepted: [{ action: 'fund', label: 'Pay into escrow', primary: true }],
+    escrow_held: [DISPUTE],
+    in_progress: [DISPUTE],
     // Confirming needs a rating (FR-12), so it opens the Confirm & rate screen.
-    awaiting_confirmation: [{ to: 'rate', label: 'Confirm & rate', primary: true }, { action: 'dispute', label: 'Report a problem' }]
+    awaiting_confirmation: [{ to: 'rate', label: 'Confirm & rate', primary: true }, DISPUTE]
   }
 };
+
+// While a payment waits for approval there is nothing to do but check on it.
+const CHECK_PAYMENT = [{ action: 'escrow/sync', label: 'Check payment' }];
 
 export default function JobActions({ job, role, onChange }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const actions = ACTIONS[role]?.[job.status] || [];
+  const actions = job.escrow?.pending ? CHECK_PAYMENT : ACTIONS[role]?.[job.status] || [];
   if (actions.length === 0) return null;
 
   const run = async action => {
-    if (action === 'dispute' && !window.confirm('Report a problem with this job? It will be held for review.')) return;
+    if (action === 'dispute' && !window.confirm('Report a problem with this job? The payment stays locked until it is reviewed.')) return;
+    if (action === 'fund' && !window.confirm(`Pay ${formatRwf(job.agreedPrice)} into escrow? It is held until you confirm the work is done. (Sandbox: no real money.)`)) return;
     setError('');
     setBusy(true);
     try {

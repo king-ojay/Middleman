@@ -145,10 +145,19 @@ test('CORS config: production allows only CORS_ORIGINS and refuses to start with
 
 // 5. Transactions
 
+// Escrow already held (the fake payment provider pays out on confirm).
 const awaitingJob = () => Job.create({
   client: users.client._id, worker: users.worker._id, category: 'plumber', area: 'kimironko',
   description: 'Fix tap', proposedPrice: 10000, agreedPrice: 10000,
-  status: 'awaiting_confirmation', workerCompletedAt: new Date()
+  status: 'awaiting_confirmation', workerCompletedAt: new Date(),
+  escrow: { status: 'held', amount: 10000, currency: 'RWF', provider: 'fake' }
+});
+// Confirmed and paid out: both parties may rate.
+const settledJob = () => Job.create({
+  client: users.client._id, worker: users.worker._id, category: 'plumber', area: 'kimironko',
+  description: 'Fix tap', proposedPrice: 10000, agreedPrice: 10000,
+  status: 'completed', workerCompletedAt: new Date(), completedAt: new Date(),
+  escrow: { status: 'released', amount: 10000, currency: 'RWF', provider: 'fake' }
 });
 const tokenFor = async phone => (await login(phone, '1234', `10.9.${phone.slice(-2)}.1`)).data.token;
 
@@ -158,26 +167,30 @@ const failNextEdgeWrite = () => {
   TrustEdge.create = async () => { TrustEdge.create = original; throw new Error('simulated edge write failure'); };
 };
 
-test('confirm + rating is one unit: a failed write leaves the job unconfirmed and unrated, and a retry works', { skip }, async () => {
+test('confirm + rating: a failed rating write after the payout leaves the job paid and unrated, and resending confirm rates it', { skip }, async () => {
   const job = await awaitingJob();
   const token = await tokenFor('0788200001');
+  const edges = () => TrustEdge.countDocuments({ fromUser: users.client._id, toUser: users.worker._id });
+  const before = await edges();
 
   failNextEdgeWrite();
   const failed = await call('POST', `/api/jobs/${job._id}/confirm`, { token, body: { score: 5 } });
   assert.equal(failed.status, 500);
-  assert.equal((await Job.findById(job._id)).status, 'awaiting_confirmation');
+  // the money has moved, so the confirmation stands; the rating and its edge were written together or not at all
+  const paid = await Job.findById(job._id);
+  assert.equal(paid.status, 'completed');
+  assert.equal(paid.escrow.status, 'released');
   assert.equal(await Rating.countDocuments({ job: job._id }), 0);
-  assert.equal(await TrustEdge.countDocuments({ fromUser: users.client._id, toUser: users.worker._id }), 0);
+  assert.equal(await edges(), before);
 
   const retried = await call('POST', `/api/jobs/${job._id}/confirm`, { token, body: { score: 5 } });
   assert.equal(retried.status, 200);
-  assert.equal((await Job.findById(job._id)).status, 'completed');
   assert.equal(await Rating.countDocuments({ job: job._id, fromUser: users.client._id }), 1);
-  assert.equal(await TrustEdge.countDocuments({ fromUser: users.client._id, toUser: users.worker._id }), 1);
+  assert.equal(await edges(), before + 1);
 });
 
 test('rating + trust edge is one unit: a failed edge write stores no rating, so the worker can rate again', { skip }, async () => {
-  const job = await awaitingJob();
+  const job = await settledJob();
   const token = await tokenFor('0788200002');
   const edges = () => TrustEdge.countDocuments({ fromUser: users.worker._id, toUser: users.client._id });
   const before = await edges();

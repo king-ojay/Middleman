@@ -14,7 +14,7 @@ import User from './modules/users/user.model.js';
 import Job from './modules/jobs/job.model.js';
 import Quote from './modules/jobs/quote.model.js';
 import Rating from './modules/trust/rating.model.js';
-import Transaction from './models/Transaction.js';
+import Transaction from './modules/payments/transaction.model.js';
 import TrustEdge from './modules/trust/trustEdge.model.js';
 import { writeTrustEdgeFromRating, writeTrustEdgeFromReferral } from './modules/trust/trustPropagation.js';
 import { hashPin } from './modules/auth/pin.js';

@@ -29,12 +29,24 @@ export const areaLabel = labelFrom(AREAS);
 // What each job status means to the person looking at it.
 const STATUS_LABELS = {
   open: { client: 'Waiting for workers to respond', worker: 'Open' },
-  quote_accepted: { client: 'Worker chosen — waiting for them to start', worker: 'You were chosen — start when ready' },
-  escrow_held: { client: 'Payment held — worker can start', worker: 'Payment held — you can start' },
+  quote_accepted: { client: 'Worker chosen — pay into escrow so they can start', worker: 'You were chosen — waiting for the client to pay into escrow' },
+  escrow_held: { client: 'Payment held in escrow — worker can start', worker: 'Payment held in escrow — you can start' },
   in_progress: { client: 'In progress', worker: 'In progress' },
   awaiting_confirmation: { client: 'Worker says it is done — please confirm', worker: 'Waiting for the client to confirm' },
   completed: { client: 'Completed', worker: 'Completed' },
-  disputed: { client: 'Problem reported', worker: 'Problem reported' }
+  disputed: { client: 'Problem reported — payment locked until it is reviewed', worker: 'Problem reported — payment locked until it is reviewed' },
+  resolved: { client: 'Problem resolved', worker: 'Problem resolved' }
 };
 
 export const statusLabel = (status, role) => STATUS_LABELS[status]?.[role] ?? status;
+
+// Where the escrowed money is, in words, when that is worth showing.
+const ESCROW_LABELS = {
+  funding: { client: 'Waiting for you to approve the payment', worker: 'Waiting for the client to approve the payment' },
+  releasing: { client: 'Paying the worker…', worker: 'Payment to you is on its way' },
+  released: { client: 'Paid to the worker', worker: 'Paid to you' },
+  refunding: { client: 'Refund on its way', worker: 'Refunding the client' },
+  refunded: { client: 'Refunded to you', worker: 'Refunded to the client' }
+};
+
+export const escrowLabel = (escrow, role) => ESCROW_LABELS[escrow?.status]?.[role] ?? null;
