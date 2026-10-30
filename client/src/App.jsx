@@ -10,6 +10,7 @@ import MyJobs from './pages/MyJobs.jsx';
 import JobDetail from './pages/JobDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import ServerWaking from './components/ServerWaking.jsx';
+import SandboxBanner from './components/SandboxBanner.jsx';
 import { useAuth, homePathFor, RequireRole, RequireUser } from './auth.jsx';
 
 // Mobile-first: every screen is designed at 390px. From 768px up, PageLayout
@@ -18,6 +19,7 @@ export default function App() {
   const { user } = useAuth();
   return (
     <main className="min-h-dvh bg-canvas">
+      <SandboxBanner />
       <Routes>
         <Route path="/" element={user ? <Navigate to={homePathFor(user)} replace /> : <Landing />} />
         <Route path="/login" element={<Login />} />

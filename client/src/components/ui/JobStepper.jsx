@@ -1,7 +1,7 @@
-const STEPS = ['Accepted', 'Started', 'Done', 'Confirm'];
+const STEPS = ['Accepted', 'Paid', 'Started', 'Done', 'Confirm'];
 
 // How many steps a status has completed (Fig. 5 order).
-const COMPLETED = { quote_accepted: 1, escrow_held: 1, in_progress: 2, awaiting_confirmation: 3, completed: 4, disputed: 0 };
+const COMPLETED = { quote_accepted: 1, escrow_held: 2, in_progress: 3, awaiting_confirmation: 4, completed: 5, disputed: 0, resolved: 0 };
 
 function Check() {
   return (

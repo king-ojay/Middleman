@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { firstName } from '../greeting.js';
 import { formatRwf } from '../format.js';
-import { categoryLabel, areaLabel, statusLabel } from '../options.js';
+import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
   Avatar, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge
 } from '../components/ui/index.js';
@@ -18,6 +18,17 @@ export default function JobDetail() {
 
   const load = () => api(`/api/jobs/${id}`).then(setJob).catch(err => setError(err.message));
   useEffect(() => { load(); }, [id]);
+
+  // A payment or payout waiting on the provider: check on it every few
+  // seconds (the fallback when no callback arrives), then reload.
+  const pending = Boolean(job?.escrow?.pending);
+  useEffect(() => {
+    if (!pending) return;
+    const timer = setInterval(() => {
+      api(`/api/jobs/${id}/escrow/sync`, { method: 'POST' }).then(load).catch(() => {});
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [id, pending]);
 
   const isClient = user.role === 'client';
   const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
@@ -42,22 +53,29 @@ export default function JobDetail() {
   }
 
   const counterpart = isClient ? job.worker : job.client;
+  const paidOut = job.status === 'completed' && job.escrow?.status === 'released';
+  // The client confirms (releasing escrow) and rates on one screen; it stays
+  // until the rating is saved, which needs the payout to have gone through.
+  const confirming = isClient && (job.status === 'awaiting_confirmation'
+    || (job.status === 'completed' && !job.myRating && ['releasing', 'released'].includes(job.escrow?.status)));
+  const escrowNote = escrowLabel(job.escrow, user.role);
   return (
     <PageLayout {...layout} title={job.description} subtitle={[counterpart?.name, areaLabel(job.area)].filter(Boolean).join(' · ')}>
-      {job.status !== 'disputed' && <JobStepper status={job.status} />}
+      {!['disputed', 'resolved'].includes(job.status) && <JobStepper status={job.status} />}
 
-      {isClient && job.status === 'awaiting_confirmation' ? (
-        <ConfirmAndRate job={job} />
+      {confirming ? (
+        <ConfirmAndRate job={job} onChange={load} />
       ) : (
         <>
           <Card className="p-5">
             <p className="text-body font-medium text-heading">{statusLabel(job.status, user.role)}</p>
+            {escrowNote && <p className="text-body text-muted mt-1">{escrowNote}</p>}
             <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
             <p className="text-title text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
             {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
             <JobActions job={job} role={user.role} onChange={load} />
           </Card>
-          {!isClient && job.workerCompletedAt && <RateClient job={job} onRated={load} />}
+          {!isClient && paidOut && <RateClient job={job} onRated={load} />}
           {isClient && job.myRating && (
             <Card className="p-5 mt-3">
               <p className="text-body text-ink">You rated {firstName(job.worker)}</p>
@@ -131,7 +149,7 @@ function Offers({ job, onChosen }) {
 
 // Frame 08: the client confirms and rates in one step (FR-12). Rating is
 // required; vouching (FR-17) and a comment are optional.
-function ConfirmAndRate({ job }) {
+function ConfirmAndRate({ job, onChange }) {
   const navigate = useNavigate();
   const worker = firstName(job.worker);
   const [score, setScore] = useState(0);
@@ -139,14 +157,21 @@ function ConfirmAndRate({ job }) {
   const [comment, setComment] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const confirmed = job.status === 'completed';
+  const paying = job.escrow?.status === 'releasing';
 
+  // Confirming releases escrow to the worker; the rating is saved once the
+  // payout has gone through. While it is on its way the screen stays, and
+  // sending again (once it has arrived) saves the rating.
   const confirm = async () => {
     if (!score) return setError(`Choose how many stars to give ${worker}.`);
     setError('');
     setBusy(true);
     try {
-      await api(`/api/jobs/${job._id}/confirm`, { method: 'POST', body: JSON.stringify({ score, referred: vouch, comment }) });
-      navigate('/my-jobs');
+      const result = await api(`/api/jobs/${job._id}/confirm`, { method: 'POST', body: JSON.stringify({ score, referred: vouch, comment }) });
+      if (result.myRating) return navigate('/my-jobs');
+      setBusy(false);
+      onChange();
     } catch (err) {
       setError(err.message);
       setBusy(false);
@@ -154,7 +179,7 @@ function ConfirmAndRate({ job }) {
   };
 
   const reportProblem = async () => {
-    if (!window.confirm('Report a problem with this job? It will be held for review.')) return;
+    if (!window.confirm('Report a problem with this job? The payment stays locked until it is reviewed.')) return;
     setError('');
     setBusy(true);
     try {
@@ -169,8 +194,12 @@ function ConfirmAndRate({ job }) {
   return (
     <>
       <div className="bg-mint rounded-card p-5 mb-8">
-        <p className="text-card text-heading">{worker} marked this job complete</p>
-        <p className="text-body text-muted mt-1">Confirm to finish the job.</p>
+        <p className="text-card text-heading">{confirmed ? 'You confirmed this job' : `${worker} marked this job complete`}</p>
+        <p className="text-body text-muted mt-1">
+          {paying ? `Paying ${worker} from escrow… You can send your rating once the payment arrives.`
+            : confirmed ? `${worker} has been paid. Send your rating to finish.`
+            : `Confirming pays ${worker} from escrow.`}
+        </p>
         <p className="text-title text-heading mt-3">{formatRwf(job.agreedPrice)}</p>
         <p className="text-small text-muted">agreed price</p>
       </div>
@@ -192,15 +221,17 @@ function ConfirmAndRate({ job }) {
 
       {error && <p className="text-small text-danger mt-4" role="alert">{error}</p>}
       <div className="mt-6 space-y-2">
-        <Button onClick={confirm} disabled={busy}>{busy ? 'Confirming…' : 'Confirm job is done'}</Button>
-        <Button variant="plain" onClick={reportProblem} disabled={busy}>Report a problem</Button>
+        <Button onClick={confirm} disabled={busy || paying}>
+          {busy ? 'Sending…' : confirmed ? 'Send rating' : 'Confirm job is done'}
+        </Button>
+        {!confirmed && <Button variant="plain" onClick={reportProblem} disabled={busy}>Report a problem</Button>}
       </div>
     </>
   );
 }
 
-// The worker rates the client after marking complete, independently of the
-// client's own confirmation (FR-12b).
+// The worker rates the client (FR-12b) once the client has confirmed and the
+// escrow has been released to the worker.
 function RateClient({ job, onRated }) {
   const client = firstName(job.client);
   const [score, setScore] = useState(0);

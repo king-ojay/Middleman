@@ -2,22 +2,19 @@ import mongoose from 'mongoose';
 import Job from './job.model.js';
 import Quote from './quote.model.js';
 import { validateRatingInput, writeRating } from '../trust/ratings.js';
+import { HttpError } from '../httpError.js';
+import { recordDispute, release, sync } from '../payments/escrow.js';
 
-export class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
+export { HttpError };
 
-// Status moves after a response has been chosen (Fig. 5). Phase 1 has no
-// escrow, so the worker starts the job directly; Phase 3 replaces `start`
-// with escrow funding (quote_accepted -> escrow_held -> in_progress, FR-09).
+// Status moves that don't move money (Fig. 5). The worker can start only once
+// the client has paid into escrow (FR-09). Funding, confirming (which releases
+// escrow) and resolving disputes are in ../payments/escrow.js.
 const TRANSITIONS = {
-  start: { from: ['quote_accepted'], to: 'in_progress', actor: 'worker', stamp: 'startedAt' },
+  start: { from: ['escrow_held'], to: 'in_progress', actor: 'worker', stamp: 'startedAt' },
   complete: { from: ['in_progress'], to: 'awaiting_confirmation', actor: 'worker', stamp: 'workerCompletedAt' },
-  confirm: { from: ['awaiting_confirmation'], to: 'completed', actor: 'client', stamp: 'completedAt' },
-  dispute: { from: ['in_progress', 'awaiting_confirmation'], to: 'disputed', actor: 'either', stamp: 'disputedAt' }
+  // A dispute locks the escrowed money until an admin resolves it.
+  dispute: { from: ['escrow_held', 'in_progress', 'awaiting_confirmation'], to: 'disputed', actor: 'either', stamp: 'disputedAt' }
 };
 
 const actorFilter = (actor, userId) => {
@@ -53,7 +50,16 @@ export async function transition(jobId, action, user, session = null) {
   const isWorker = String(existing.worker) === String(user._id);
   const allowed = rule.actor === 'client' ? isClient : rule.actor === 'worker' ? isWorker : isClient || isWorker;
   if (!allowed) throw new HttpError(403, 'This is not your job');
-  throw new HttpError(409, `Can't ${action} a job that is ${existing.status.replace('_', ' ')}`);
+  throw new HttpError(409, `Can't ${action} a job that is ${existing.status.replaceAll('_', ' ')}`);
+}
+
+/** Either party reports a problem; the dispute and its ledger record are one unit. */
+export async function dispute(jobId, user) {
+  return mongoose.connection.transaction(async session => {
+    const job = await transition(jobId, 'dispute', user, session);
+    await recordDispute(job, user, session);
+    return job;
+  });
 }
 
 /**
@@ -135,32 +141,54 @@ const parseRating = body => {
   return input;
 };
 
+// Ratings need the job confirmed by the client AND its escrow released to
+// the worker. A payout still in flight is checked with the provider first.
+const settledJob = async (jobId, user, role) => {
+  if (!mongoose.isValidObjectId(jobId)) throw new HttpError(404, 'Job not found');
+  let job = await Job.findById(jobId).lean();
+  if (!job) throw new HttpError(404, 'Job not found');
+  if (String(job[role]) !== String(user._id)) throw new HttpError(403, 'This is not your job');
+  if (job.escrow?.pending) job = await sync(job._id);
+  return job;
+};
+const isSettled = job => job.status === 'completed' && job.escrow?.status === 'released';
+
 /**
  * Client confirms completion and rates the worker in one request (FR-12):
  * the rating is required, and "vouch" sets the referred flag (FR-17).
- * One transaction: if the rating or its trust edge can't be written, the job
- * stays awaiting confirmation and the client can simply try again.
+ * Confirming releases escrow to the worker; the rating is written once the
+ * payout has succeeded. Returns { job, myRating }: myRating is null while the
+ * payout is still in flight (send the same request again to rate). If the
+ * rating can't be written, the job stays confirmed and paid, and sending the
+ * request again writes it.
  */
 export async function confirmAndRate(jobId, client, body) {
   const { score, comment, referredFlag } = parseRating(body);
-  return mongoose.connection.transaction(async session => {
-    const job = await transition(jobId, 'confirm', client, session);
-    await writeRating({ job: job._id, fromUser: client._id, toUser: job.worker, score, referredFlag, comment, session });
-    return job;
-  });
+  let job = await settledJob(jobId, client, 'client');
+  if (job.status === 'awaiting_confirmation') job = await release(jobId, client);
+  if (!isSettled(job)) {
+    if (job.escrow?.status === 'releasing') return { job, myRating: null };
+    throw new HttpError(409, job.status === 'awaiting_confirmation'
+      ? "The payment to the worker didn't go through. The money is still held. Please try again."
+      : `Can't confirm a job that is ${job.status.replaceAll('_', ' ')}`);
+  }
+  try {
+    const myRating = await writeRating({ job: job._id, fromUser: client._id, toUser: job.worker, score, referredFlag, comment });
+    return { job, myRating };
+  } catch (err) {
+    if (err.code === 11000) throw new HttpError(409, 'You have already rated this worker for this job');
+    throw err;
+  }
 }
 
 /**
- * Worker rates the client, independently of the client's own confirmation,
- * any time after marking the job complete (FR-12b).
+ * Worker rates the client (FR-12b), once the client has confirmed and the
+ * escrow has been released to the worker.
  */
 export async function rateClient(jobId, worker, body) {
   const { score, comment } = parseRating(body);
-  if (!mongoose.isValidObjectId(jobId)) throw new HttpError(404, 'Job not found');
-  const job = await Job.findById(jobId).lean();
-  if (!job) throw new HttpError(404, 'Job not found');
-  if (String(job.worker) !== String(worker._id)) throw new HttpError(403, 'This is not your job');
-  if (!job.workerCompletedAt) throw new HttpError(409, 'Mark the job as complete before rating the client');
+  const job = await settledJob(jobId, worker, 'worker');
+  if (!isSettled(job)) throw new HttpError(409, 'You can rate the client once they have confirmed the job and the payment has been released to you');
   try {
     return await writeRating({ job: job._id, fromUser: worker._id, toUser: job.client, score, comment });
   } catch (err) {

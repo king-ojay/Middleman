@@ -30,3 +30,15 @@ services:
       # switch to twilio or africastalking (and add their keys) to send real SMS.
       - key: OTP_PROVIDER
         value: console
+      # Escrow. fake moves no money; switch to momo-sandbox once the six MOMO_*
+      # keys below are set in Render (never in this file). Sandbox only: the
+      # provider refuses any host but sandbox.momodeveloper.mtn.com.
+      - key: PAYMENT_PROVIDER
+        value: fake
+      # For momo-sandbox add (sync: false, values in Render only):
+      #   MOMO_COLLECTION_SUBSCRIPTION_KEY, MOMO_COLLECTION_USER_ID, MOMO_COLLECTION_API_KEY,
+      #   MOMO_DISBURSEMENT_SUBSCRIPTION_KEY, MOMO_DISBURSEMENT_USER_ID, MOMO_DISBURSEMENT_API_KEY,
+      #   MOMO_CALLBACK_URL=https://middleman-api-74zb.onrender.com/api/payments/momo/callback
+      # Shared secret for the dispute admin routes (X-Admin-Secret header).
+      - key: ADMIN_SECRET
+        generateValue: true

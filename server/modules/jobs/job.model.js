@@ -6,12 +6,42 @@ import { CATEGORIES } from '../../config/categories.js';
 export const JOB_STATUSES = [
   'open',                  // posted with a proposed price, collecting worker responses
   'quote_accepted',        // client picked a response; agreedPrice is fixed
-  'escrow_held',           // Phase 3: funded, worker may begin (FR-09)
+  'escrow_held',           // client paid the agreed price into escrow; worker may begin (FR-09)
   'in_progress',           // worker has started
-  'awaiting_confirmation', // worker marked complete; client to confirm (72h window in Phase 3)
-  'completed',             // client confirmed, terminal
-  'disputed'               // either party raised a problem, terminal until admin review
+  'awaiting_confirmation', // worker marked complete; client to confirm
+  'completed',             // client confirmed; escrow is released to the worker
+  'disputed',              // either party raised a problem; escrow is locked until an admin resolves it
+  'resolved'               // dispute settled: escrow released to the worker or refunded to the client
 ];
+
+// Where the escrowed money is (modules/payments/escrow.js). funding,
+// releasing and refunding mean a provider call is in flight (escrow.pending).
+export const ESCROW_STATUSES = ['none', 'funding', 'held', 'releasing', 'released', 'refunding', 'refunded'];
+
+const escrowSchema = new mongoose.Schema({
+  status: { type: String, enum: ESCROW_STATUSES, default: 'none' },
+  amount: { type: Number, default: null },
+  currency: { type: String, default: null },
+  provider: { type: String, default: null },
+  // The movement in flight: its kind, idempotency key, whether the provider
+  // accepted it, and the job status to move to when it succeeds or fails.
+  pending: {
+    type: new mongoose.Schema({
+      kind: { type: String, enum: ['fund', 'release', 'refund'], required: true },
+      ref: { type: String, required: true },
+      accepted: { type: Boolean, default: false },
+      doneStatus: { type: String, required: true },
+      backStatus: { type: String, required: true }
+    }, { _id: false }),
+    default: null
+  },
+  fundRef: { type: String, default: null },
+  releaseRef: { type: String, default: null },
+  refundRef: { type: String, default: null },
+  heldAt: { type: Date, default: null },
+  releasedAt: { type: Date, default: null },
+  refundedAt: { type: Date, default: null }
+}, { _id: false });
 
 const jobSchema = new mongoose.Schema({
   client: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -29,9 +59,12 @@ const jobSchema = new mongoose.Schema({
   workerCompletedAt: { type: Date, default: null }, // starts the confirmation window
   completedAt: { type: Date, default: null },
   disputedAt: { type: Date, default: null },
-  disputedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+  disputedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  resolvedAt: { type: Date, default: null },
+  escrow: { type: escrowSchema, default: () => ({}) }
 }, { timestamps: true });
 
 jobSchema.index({ status: 1, area: 1, category: 1 });
+jobSchema.index({ 'escrow.pending.ref': 1 }, { sparse: true });
 
 export default mongoose.model('Job', jobSchema);

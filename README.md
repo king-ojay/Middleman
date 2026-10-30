@@ -105,7 +105,7 @@ when you point them at a throwaway database:
 
 - **Data models** — match the ERD in Chapter 3 of the proposal: User, Job,
   Quote, Transaction, Rating, TrustEdge. Code is organised by domain module
-  (NFR-08): `server/modules/{auth,users,jobs,trust}`; payments join in Phase 3.
+  (NFR-08): `server/modules/{auth,users,jobs,trust,payments}`.
 - **Trust propagation algorithm** (`server/modules/trust/trustPropagation.js`) — the
   actual decay-weighted BFS traversal described in Section 3.2.3, including the
   `referredFlag` boost and bidirectional rating support.
@@ -134,12 +134,27 @@ when you point them at a throwaway database:
   counter-amount; the client sees every
   response ranked by trust and chooses one, which fixes the agreed price.
 - **Job lifecycle** (`server/modules/jobs/lifecycle.js`, Fig. 5) —
-  `open → quote_accepted → in_progress → awaiting_confirmation → completed`,
-  with `disputed` reachable from in progress or awaiting confirmation. The
-  worker starts and marks complete; the client confirms with a required rating
-  and an optional "vouch" (FR-12, FR-17); the worker rates the client
-  independently (FR-12b). Every rating writes a trust edge (FR-15). Until
-  escrow lands (Phase 3), the worker's "Start job" stands in for escrow funding.
+  `open → quote_accepted → escrow_held → in_progress → awaiting_confirmation → completed`,
+  with `disputed` reachable from escrow held, in progress or awaiting
+  confirmation, and `resolved` after an admin settles a dispute. The worker
+  starts (once paid) and marks complete; the client confirms with a required
+  rating and an optional "vouch" (FR-12, FR-17); the worker rates the client
+  (FR-12b). Both ratings need the job confirmed AND escrow released. Every
+  rating writes a trust edge (FR-15).
+- **Sandbox escrow** (`server/modules/payments/`, FR-09/13/14) — no real money,
+  ever. The client pays the agreed price into escrow; confirming releases it to
+  the worker; a dispute locks it until an admin releases or refunds it.
+  Payments go through a provider interface chosen by `PAYMENT_PROVIDER`:
+  `fake` (moves nothing; tests and local use) or `momo-sandbox` (MTN MoMo
+  sandbox: Collections `requestToPay` to fund, Disbursements `transfer` to
+  release or refund; it refuses any host but `sandbox.momodeveloper.mtn.com`).
+  Every call carries an idempotency key (`X-Reference-Id`); payments still
+  pending settle by callback (`/api/payments/momo/callback`, which re-checks
+  the status with MoMo rather than trusting the body) or by polling. Every
+  escrow state change writes a ledger record (`Transaction`), with no phone
+  numbers. Admin routes (`/api/admin/disputes`, `/api/admin/jobs/:id/{release,refund,ledger}`)
+  need the `X-Admin-Secret` header (`ADMIN_SECRET`). The app shows a
+  "Sandbox – no real money" banner on every screen.
 - **Profiles** — jobs done, average rating, vouches, "vouched for by" and recent
   ratings, plus the person's trust tier from the viewer's side.
 - **Screens** (Figma "Mobile v2", exports in `docs/designs/`) — mobile-first at
@@ -165,6 +180,12 @@ API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
    SMS and need the keys listed in `server/.env.example`). Check
    `https://<service>.onrender.com/api/health` returns `{"status":"ok"}`.
    Free services sleep when idle, so the first request can take ~50s.
+   Escrow uses `PAYMENT_PROVIDER=fake` until you switch it to `momo-sandbox`:
+   subscribe to Collections and Disbursements on momodeveloper.mtn.com, run
+   `node scripts/momoSandboxSetup.js` (in `server/`, see its header) to create
+   the API users and keys, put the six `MOMO_*` values and `MOMO_CALLBACK_URL`
+   in Render's Environment, then check them with
+   `node --env-file=.env scripts/momoSandboxCheck.js`.
 4. **Vercel** — Add New → Project → import this repo, set **Root Directory**
    to `client` (Vite is auto-detected), and add the environment variable
    `VITE_API_URL=https://<service>.onrender.com` (no trailing slash). Deploy.
@@ -227,7 +248,8 @@ commit and a hash of the experiment code.
 
 ## Not built yet (next steps)
 
-- Escrow through a payment provider sandbox (Phase 3)
+- 72-hour auto-release of escrow, and an admin screen (disputes are resolved
+  through the admin API for now)
 
 ## Design system
 
