@@ -191,7 +191,7 @@ node scripts/experiments/run.js --dataset bitcoinalpha
 
 Options: `--sample N` tests a seeded random sample of N edges; `--seed S`
 (default 1) fixes the sample and split; `--tune-split` also tunes lambda
-{0.25, 0.5, 1.0, 1.5, 2.0} and depth {2, 3, 4} (best RMSE) and fits a linear
+{0.25, 0.5, 1.0, 1.5, 2.0} and depth {1, 2, 3, 4} (best RMSE) and fits a linear
 calibration on a seeded 20% of the test edges, then reports every method on
 the other 80%, which tuning never sees; `--reciprocal` adds the
 "proposed + reciprocal" row (off by default: it uses the target's own rating

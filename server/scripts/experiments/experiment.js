@@ -12,7 +12,7 @@ export const MAIN = { lambda: 0.5, depth: 3 };
 export const MOLETRUST = { horizon: 3, threshold: 0.5 };
 export const COLD_START = { min: 1, max: 3 }; // targets with 1-3 ratings in the whole dataset
 // --tune-split: settings tried on the tuning share only.
-export const TUNE_GRID = { lambdas: [0.25, 0.5, 1.0, 1.5, 2.0], depths: [2, 3, 4] };
+export const TUNE_GRID = { lambdas: [0.25, 0.5, 1.0, 1.5, 2.0], depths: [1, 2, 3, 4] };
 export const TUNE_SHARE = 0.2;
 
 // Methods with their own prediction function; (e) and (f) come from the
