@@ -1,3 +1,4 @@
+// The design-system components (client/src/components/ui), exported from one place.
 export { default as Button, buttonClasses } from './Button.jsx';
 export { Chip, ChipRow } from './Chip.jsx';
 export { default as TierBadge, tierKey } from './TierBadge.jsx';

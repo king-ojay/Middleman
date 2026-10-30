@@ -1,3 +1,4 @@
+// /api/auth: PIN login with lockout, SMS one-time codes, registration and PIN reset.
 import express from 'express';
 import mongoose from 'mongoose';
 import User from '../users/user.model.js';

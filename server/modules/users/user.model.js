@@ -1,3 +1,5 @@
+// User: client or worker, with area, trades, verification, referrer and the
+// hashed PIN (never returned). Phone numbers are stored in E.164 (+250…).
 import mongoose from 'mongoose';
 import { AREAS } from '../../config/areas.js';
 import { CATEGORIES } from '../../config/categories.js';

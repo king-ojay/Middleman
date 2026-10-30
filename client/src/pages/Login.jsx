@@ -1,3 +1,4 @@
+// Daily login with phone number and 4-digit PIN (codes are only for signup and reset).
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { wakeApi } from '../api.js';

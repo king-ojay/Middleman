@@ -1,3 +1,4 @@
+// Role-based navigation: a bottom tab bar on phones, a top bar from 768px.
 import { Link, NavLink } from 'react-router-dom';
 import LogoMark from './LogoMark.jsx';
 

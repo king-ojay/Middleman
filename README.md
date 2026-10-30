@@ -1,56 +1,120 @@
 # Middleman
 
-Graph-based trust propagation platform for informal/blue-collar service discovery
-in Kigali, Rwanda. Built for the Mission Capstone project — see `/docs` for the
-full research proposal this implements.
+A web app that links informal and blue-collar workers with clients in four
+Kigali neighbourhoods (Kimironko, Kwa Nayinzira, Remera, Gikondo). Workers are
+ranked for each client by **personalised, graph-based trust propagation**:
+people the client trusts, and the people they trust, come first. Ratings go
+both ways, and payments run through a **sandboxed mobile-money escrow** (MTN
+MoMo sandbox, no real money). Responsive Progressive Web App target: phone,
+tablet and desktop. ALU BSc Software Engineering capstone.
 
-## Live demo
+- **Demo video:** `<VIDEO LINK PLACEHOLDER>`
+- **Final report:** `<REPORT LINK PLACEHOLDER>`
+
+## Live URLs
 
 - **App:** https://middleman-client.vercel.app
-- **API:** https://middleman-api-74zb.onrender.com/api/health (free tier, so the
-  first request after idle can take ~50s while it wakes up)
+- **API:** https://middleman-api-74zb.onrender.com/api/health
 
-Log in with a seeded phone number and the demo PIN **`1234`**:
+The live deployment runs the `main` branch. Escrow, worker job search, the
+redesigned My jobs screens and the required area picker are on `redesign-v2`
+(tag `v1.0.0-pilot` and later) and reach the live URLs when that branch is
+merged. The API is on Render's free tier, which sleeps when idle; Render
+documents a wake-up of up to about a minute.
+
+Demo accounts (seeded data, PIN **`1234`** for all):
 
 | Phone | Role | Who | What you'll see |
 |---|---|---|---|
 | `0788000001` | Client | Amina, Kimironko | My jobs → "Install ceiling fan": three responses ranked by trust, not price |
 | `0788000004` | Client | Jean Paul, Gikondo | Discover: same search, different personalised ranking |
-| `0788000101` | Worker | Eric, Kimironko electrician | Open jobs: accept or counter; the client's trust tier on each job |
+| `0788000101` | Worker | Eric, Kimironko electrician | Jobs: accept or counter; the client's trust tier on each job |
 | `0788000118` | Worker | Moses, Kimironko electrician | Area-trusted responder on Amina's job |
 | `0788000119` | Worker | Ange, Kimironko electrician | New worker, cheapest offer, still ranked last |
-| `0788000111` | Worker | Theoneste, Kimironko carpenter | My jobs: already chosen, can "Start job" |
+| `0788000111` | Worker | Theoneste, Kimironko carpenter | My work: already chosen, waiting for payment |
 
-To try registration, use a new number. With `OTP_PROVIDER=console` the SMS
-code is printed in the API log only outside production (e.g. when running
+To register, use a new `07…` number. With `OTP_PROVIDER=console` the SMS code
+is printed in the API log only outside production (for example when running
 locally); the production API never logs codes, so live signup needs
 `OTP_PROVIDER=africastalking`.
+
+## Features
+
+- **Registration and login** (FR-01–03): two screens (role, trades for workers,
+  name, phone, a required area picker with no default; then an SMS code, a
+  4-digit PIN and an optional "Who invited you?" that writes a referral edge).
+  Daily login is phone + PIN. Area can be changed later in Profile.
+- **Personalised trust ranking**: Discover ranks workers by trust from the
+  client's own graph (decay per hop, strongest path, referral boost, negative
+  evidence from 1–2★ ratings), then area trust ("Trusted in this area"), then a
+  verification floor. Only tiers are shown, never a number.
+- **Client-anchored bidding** (FR-04/05/05b): the client posts a job with a
+  price; workers accept it or send one counter-offer (optionally asking for a
+  materials amount); the client sees offers ranked by trust and chooses one.
+- **Worker job search**: by default jobs in the worker's area and trades;
+  filters for area, trade, free-text search and price sort; offers allowed in
+  any pilot area within the worker's own trades; "You responded" label.
+- **Job lifecycle and sandbox escrow** (FR-09/13/14): pay into escrow → worker
+  starts → marks complete → client confirms and rates, which releases the
+  money. Disputes lock the money until an admin releases or refunds it. Every
+  escrow change is written to an append-only ledger. "Sandbox – no real money"
+  banner on every screen.
+- **Bidirectional ratings and vouches** (FR-12, FR-12b, FR-15, FR-17): both
+  directions need the job confirmed and the money released; every rating
+  writes a trust edge.
+- **My jobs / My work**: jobs grouped by status in tabs, each card with a
+  status chip, where the money is, and the one next step.
+- **Profiles**: jobs done, average rating, vouches, recent ratings, the
+  viewer's trust tier, area setting, appearance (light/dark/system).
+- **Security**: scrypt-hashed PIN, OTP stored as HMAC-SHA256 (5-minute expiry,
+  5 attempts), HS256 sessions (12 h), helmet headers, CSP, CORS allow-list,
+  rate limits and login lockout, phone numbers masked in logs.
+
+## Tech stack (exact versions in `package-lock.json`)
+
+| Part | Versions |
+|---|---|
+| Runtime | Node.js 24.22.1 (pinned in `.nvmrc`, `render.yaml`, `engines: 24.x`) |
+| API | Express 4.22.3, Mongoose 8.24.4, helmet 8.3.0, cors 2.8.6, dotenv 16.6.1 |
+| Database | MongoDB 7/8 as a one-node replica set locally (transactions); MongoDB Atlas in production |
+| App | React 18.3.1, React Router 6.30.6, Vite 5.4.21, Tailwind CSS 3.4.19, PostCSS 8.5.28, Autoprefixer 10.6.1, @vitejs/plugin-react 4.7.0 |
+| Hosting | Render (API, free), Vercel (app, free), Atlas M0 (free) |
 
 ## Structure
 
 ```
-server/   Express + MongoDB API, including the trust propagation algorithm
-client/   React + Vite frontend
+server/   Express + MongoDB API
+  modules/auth       login, PIN, OTP (providers: console, twilio, africastalking), sessions, rate limits
+  modules/users      user model, profile, area change
+  modules/jobs       job and quote models, lifecycle, worker job feed
+  modules/trust      computeTrust (pure engine), graph loading and ranking, ratings
+  modules/payments   escrow, append-only ledger, payment providers (fake, momo-sandbox)
+  scripts/           experiments (Part A), ranking regression, MoMo sandbox setup/check, area report
+  test/              node:test unit and API tests
+client/   React + Vite app (pages/, components/, components/ui/ design-system components)
 shared/   Plain data both use: the pilot areas. Edit shared/areas.js, then run
           `npm run sync:shared` (copies it into server/ and client/, which deploy alone)
+scripts/  syncShared.mjs, makeSubmissionZip.sh
+docs/     RUNBOOK.md, designs/, screenshots/
+results/  committed Part A experiment results (aggregate metrics only)
 ```
 
-## Run it locally
+## Install and run locally
 
-You need Node.js 24 (see `.nvmrc`; `nvm use` picks it up) and Docker (for MongoDB). From the repo root:
+You need Node.js 24 (`nvm use` reads `.nvmrc`) and Docker (for MongoDB). From
+the repo root:
 
 ```bash
-# 1. MongoDB in Docker as a one-node replica set (ratings are written in
-#    transactions, which need one). First time only; later just `docker start mongo`.
+# 1. MongoDB as a one-node replica set (ratings and escrow use transactions).
+#    First time only; later just `docker start mongo`.
 docker run -d --name mongo -p 27017:27017 mongo:7 --replSet rs0
 docker exec mongo mongosh --quiet --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'localhost:27017'}]})"
 
 # 2. Install everything (server and client are npm workspaces)
 npm install
 
-# 3. Server settings
+# 3. Server settings: copy the example and set SESSION_SECRET to any long random string
 cp server/.env.example server/.env
-#    then set SESSION_SECRET in server/.env to any long random string
 
 # 4. Load the demo data and start the API on http://localhost:4000
 cd server
@@ -63,212 +127,125 @@ npm run dev
 ```
 
 > **`npm run seed` wipes the database `MONGO_URI` points at.** Passing
-> `MONGO_URI` on the command line as above keeps it on your local Docker
-> database even if `server/.env` points at Atlas.
+> `MONGO_URI` on the command line as above keeps it on your local database
+> even if `server/.env` points at Atlas.
 
-Open http://localhost:5173 and log in with any demo account below. **Every
-demo account's PIN is `1234`.**
+The seed creates 25 users (6 clients, 19 workers) across the four areas and 12
+trades, 16 completed and rated jobs, open jobs, offers and referrals. Every
+seeded account's PIN is `1234`; phone numbers are `0788000001`–`0788000006`
+(clients) and `0788000101`–`0788000119` (workers).
 
-| Phone | Role | Who |
-|---|---|---|
-| `0788000001` | Client | Amina Uwimana, Kimironko |
-| `0788000002` | Client | Patrick Nshimiyimana, Kimironko |
-| `0788000003` | Client | Grace Mukamana, Remera |
-| `0788000004` | Client | Jean Paul Habyarimana, Gikondo |
-| `0788000005` | Client | Olivier Mugisha, Gikondo |
-| `0788000006` | Client | Diane Ingabire, Kwa Nayinzira |
-| `0788000101` | Worker | Eric Habimana, electrician, Kimironko |
-| `0788000102` | Worker | Claudine Uwase, electrician, Remera |
-| `0788000103` | Worker | Jean Bosco Niyonzima, electrician, Gikondo |
-| `0788000104` | Worker | Emmanuel Twagirayezu, electrician, Kwa Nayinzira |
-| `0788000105` | Worker | Alice Mukeshimana, plumber, Kimironko |
-| `0788000106` | Worker | Fabrice Ndayisaba, plumber, Gikondo |
-| `0788000107` | Worker | Samuel Bizimana, mason, Remera |
-| `0788000108` | Worker | Josiane Umutoni, mason, Kimironko |
-| `0788000109` | Worker | Vestine Nyirahabimana, cleaner, Gikondo |
-| `0788000110` | Worker | Innocent Hakizimana, mechanic, Kwa Nayinzira |
-| `0788000111` | Worker | Theoneste Nkurunziza, carpenter, Kimironko |
-| `0788000112` | Worker | Aline Uwera, painter and tiler, Remera |
-| `0788000113` | Worker | Didier Mugabo, welder, Gikondo |
-| `0788000114` | Worker | Solange Iradukunda, tailor, Kwa Nayinzira |
-| `0788000115` | Worker | Kevin Ishimwe, phone repair, Kimironko |
-| `0788000116` | Worker | Yvonne Mutesi, hairdresser, Remera |
-| `0788000117` | Worker | Gilbert Ndikumana, carpenter and painter, Gikondo |
-| `0788000118` | Worker | Moses Habineza, electrician, Kimironko |
-| `0788000119` | Worker | Ange Uwamahoro, electrician, Kimironko |
+## Environment variables (names only; values go in `server/.env` or the host's settings, never in the repo)
 
-To register a new account locally, use any other `07…` number: with
-`OTP_PROVIDER=console` (the default) the 6-digit SMS code is printed in the
-API terminal.
+| Where | Names |
+|---|---|
+| API, required | `MONGO_URI`, `SESSION_SECRET` (the API refuses to start in production without it) |
+| API, production | `NODE_ENV`, `NODE_VERSION`, `CORS_ORIGINS`, `OTP_SECRET` (without it codes use a random key per process), `PORT` (set by the host) |
+| API, optional | `SESSION_TTL_HOURS` |
+| SMS codes | `OTP_PROVIDER` (`console`, `twilio`, `africastalking`); `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`; `AT_USERNAME`, `AT_API_KEY`, `AT_SENDER_ID` |
+| Escrow | `PAYMENT_PROVIDER` (`fake`, `momo-sandbox`); `MOMO_COLLECTION_SUBSCRIPTION_KEY`, `MOMO_COLLECTION_USER_ID`, `MOMO_COLLECTION_API_KEY`, `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`, `MOMO_DISBURSEMENT_USER_ID`, `MOMO_DISBURSEMENT_API_KEY`, `MOMO_CALLBACK_URL`; optional `MOMO_CURRENCY`, `MOMO_SANDBOX_MSISDN` |
+| Disputes | `ADMIN_SECRET` (header `X-Admin-Secret` on `/api/admin/*`) |
+| Tests | `TEST_MONGO_URI` (database name must contain "test") |
+| App (Vercel) | `VITE_API_URL` |
 
-**Tests:** `cd server && npm test` runs the unit tests. The API tests also run
-when you point them at a throwaway database:
-`TEST_MONGO_URI='mongodb://localhost:27017/middleman_test?directConnection=true' npm test` (against the replica set above).
+## Tests
 
-## What's built so far
+```bash
+cd server
+npm test                                    # unit + experiment tests; API tests skip
+TEST_MONGO_URI='mongodb://localhost:27017/middleman_test?directConnection=true' npm test   # everything
 
-- **Data models** — match the ERD in Chapter 3 of the proposal: User, Job,
-  Quote, Transaction, Rating, TrustEdge. Code is organised by domain module
-  (NFR-08): `server/modules/{auth,users,jobs,trust,payments}`.
-- **Trust propagation algorithm** (`server/modules/trust/trustPropagation.js`) — the
-  actual decay-weighted BFS traversal described in Section 3.2.3, including the
-  `referredFlag` boost and bidirectional rating support.
-- **Layered ranking** (`rankByTrust` in `server/modules/trust/trustPropagation.js`) —
-  users the viewer's graph can't reach are scored by ratings from their own
-  area, then the verification floor (path → area → floor, Section 3.2.3). The
-  same call ranks workers for a client and clients for a worker.
-- **Seed script** (`server/seed.js`) — 25 users across Kimironko, Kwa Nayinzira,
-  Remera and Gikondo and 12 trades, with 16 completed and rated jobs, 29 open
-  jobs, worker responses, one job with a worker already chosen, rating comments
-  and signup invitations. Every account's PIN is `1234`. Areas and trades are
-  defined once in `server/config/` (models) and `client/src/options.js`.
-- **Discover page** (`client/src/pages/Discover.jsx`) — trust-ranked worker
-  search.
-- **Registration and login** (FR-01–03) — sign up in 2 screens (role, trades
-  for workers, name, phone, area; then an SMS code, a 4-digit PIN and an
-  optional "Who invited you?" that writes a referral edge). Daily login is
-  phone + PIN (scrypt-hashed); SMS codes are only for signup and PIN reset.
-  Codes go through `sendOtp(phone, code)` with `OTP_PROVIDER` = `console`,
-  `twilio` or `africastalking`; they are stored hashed, expire in 5 minutes,
-  allow 5 attempts, and are rate-limited per phone and IP. Rwandan (+250)
-  numbers only. API calls carry a signed session token (HS256, 12 hours) in
-  `Authorization: Bearer`.
-- **Client-anchored bidding** (Section 3.3.3, FR-04/05/05b) — the client posts a
-  job with a proposed price; each matching worker accepts it or sends one
-  counter-amount; the client sees every
-  response ranked by trust and chooses one, which fixes the agreed price.
-  Workers see open jobs in their own area and trades by default, and can
-  filter by area (any pilot area or all), trade, search the descriptions and
-  sort by newest or price; they can respond in any pilot area, but only in
-  their own trades. The list carries no client phone numbers or other
-  personal data beyond the client's name, area and trust tier.
-- **Job lifecycle** (`server/modules/jobs/lifecycle.js`, Fig. 5) —
-  `open → quote_accepted → escrow_held → in_progress → awaiting_confirmation → completed`,
-  with `disputed` reachable from escrow held, in progress or awaiting
-  confirmation, and `resolved` after an admin settles a dispute. The worker
-  starts (once paid) and marks complete; the client confirms with a required
-  rating and an optional "vouch" (FR-12, FR-17); the worker rates the client
-  (FR-12b). Both ratings need the job confirmed AND escrow released. Every
-  rating writes a trust edge (FR-15).
-- **Sandbox escrow** (`server/modules/payments/`, FR-09/13/14) — no real money,
-  ever. The client pays the agreed price into escrow; confirming releases it to
-  the worker; a dispute locks it until an admin releases or refunds it.
-  Payments go through a provider interface chosen by `PAYMENT_PROVIDER`:
-  `fake` (moves nothing; tests and local use) or `momo-sandbox` (MTN MoMo
-  sandbox: Collections `requestToPay` to fund, Disbursements `transfer` to
-  release or refund; it refuses any host but `sandbox.momodeveloper.mtn.com`).
-  Every call carries an idempotency key (`X-Reference-Id`); payments still
-  pending settle by callback (`/api/payments/momo/callback`, which re-checks
-  the status with MoMo rather than trusting the body) or by polling. Every
-  escrow state change writes a ledger record (`Transaction`), with no phone
-  numbers. Admin routes (`/api/admin/disputes`, `/api/admin/jobs/:id/{release,refund,ledger}`)
-  need the `X-Admin-Secret` header (`ADMIN_SECRET`). The app shows a
-  "Sandbox – no real money" banner on every screen.
-- **Profiles** — jobs done, average rating, vouches, "vouched for by" and recent
-  ratings, plus the person's trust tier from the viewer's side.
-- **Screens** (Figma "Mobile v2", exports in `docs/designs/`) — mobile-first at
-  390px, centred 430px column on desktop, role-based bottom tab bar. Every core
-  flow is 4 steps or fewer (NFR-02).
+# 300-ranking regression (positive-only rankings must not change)
+MONGO_URI='mongodb://localhost:27017/middleman_regression?directConnection=true' node seed.js
+MONGO_URI='mongodb://localhost:27017/middleman_regression?directConnection=true' node scripts/rankingRegression.js
+```
 
-## Deployment
+132 tests at the time of writing: 63 unit, 49 API integration (need
+`TEST_MONGO_URI`), 20 experiment-code tests; plus the separate 300-ranking
+regression. See `docs/RUNBOOK.md` for details.
 
-API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
-
-1. **Atlas** — create a free M0 cluster and a database user. Under Network
-   Access, allow `0.0.0.0/0` (Render's free tier has no fixed IP). Copy the
-   connection string and add the database name before the `?`:
-   `mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/middleman?retryWrites=true&w=majority`
-2. **Seed Atlas** from your machine (one-off; wipes and reloads demo data):
-   ```bash
-   cd server && MONGO_URI="<atlas connection string>" npm run seed
-   ```
-3. **Render** — New + → Blueprint → select this repo. It reads `render.yaml`
-   and prompts for `MONGO_URI`; paste the Atlas string there. Under Environment,
-   also set `OTP_PROVIDER`: `console` never shows the code in production, so
-   signup and PIN reset only work there with `twilio` or `africastalking`
-   (keys listed in `server/.env.example`; `AT_USERNAME=sandbox` sends to
-   Africa's Talking's free simulator instead of real phones). Check
-   `https://<service>.onrender.com/api/health` returns `{"status":"ok"}`.
-   Free services sleep when idle, so the first request can take ~50s.
-   Escrow uses `PAYMENT_PROVIDER=fake` until you switch it to `momo-sandbox`:
-   subscribe to Collections and Disbursements on momodeveloper.mtn.com, run
-   `node scripts/momoSandboxSetup.js` (in `server/`, see its header) to create
-   the API users and keys, put the six `MOMO_*` values and `MOMO_CALLBACK_URL`
-   in Render's Environment, then check them with
-   `node --env-file=.env scripts/momoSandboxCheck.js`.
-4. **Vercel** — Add New → Project → import this repo, set **Root Directory**
-   to `client` (Vite is auto-detected), and add the environment variable
-   `VITE_API_URL=https://<service>.onrender.com` (no trailing slash). Deploy.
-   `client/vercel.json` makes deep links like `/discover` work. Its
-   Content-Security-Policy `connect-src` names the API host, so an API on any
-   other host must be added there, and the Vercel URL must be in the API's
-   `CORS_ORIGINS`.
-
-## Evaluation, Part A: public datasets
+## Evaluation, Part A: public datasets (Bitcoin OTC)
 
 `server/scripts/experiments/run.js` tests the trust engine's core (path
 propagation, decay, strongest path, the negative-evidence rule) on real public
-signed networks, with the leave-one-out protocol of Kumar et al. (2016), "Edge
+signed networks with the leave-one-out protocol of Kumar et al. (2016), "Edge
 weight prediction in weighted signed networks" (ICDM). No synthetic data.
 
+The data is not in the repo (`data/raw/` is gitignored). Download it from
+Stanford SNAP: https://snap.stanford.edu/data/soc-sign-bitcoin-otc.html
+
 ```bash
-# The data is not in the repo (data/raw/ is gitignored). Download once:
 mkdir -p data/raw
 curl -L -o data/raw/soc-sign-bitcoinotc.csv.gz https://snap.stanford.edu/data/soc-sign-bitcoinotc.csv.gz
 curl -L -o data/raw/soc-sign-bitcoinalpha.csv.gz https://snap.stanford.edu/data/soc-sign-bitcoinalpha.csv.gz  # optional replication
 
 cd server
-node scripts/experiments/run.js --dataset bitcoinotc --sample 2000   # quick check, ~20s
-node scripts/experiments/run.js --dataset bitcoinotc                 # every edge, a few minutes
-node scripts/experiments/run.js --dataset bitcoinalpha
+node scripts/experiments/run.js --dataset bitcoinotc --sample 2000            # quick check
+node scripts/experiments/run.js --dataset bitcoinotc                          # all 35,592 edges (~5.5 min)
+node scripts/experiments/run.js --dataset bitcoinotc --tune-split --seed 2    # held-out tuning
 ```
 
-Options: `--sample N` tests a seeded random sample of N edges; `--seed S`
-(default 1) fixes the sample and split; `--tune-split` also tunes lambda
-{0.25, 0.5, 1.0, 1.5, 2.0} and depth {1, 2, 3, 4} (best RMSE) and fits a linear
-calibration on a seeded 20% of the test edges, then reports every method on
-the other 80%, which tuning never sees; `--reciprocal` adds the
-"proposed + reciprocal" row (off by default: it uses the target's own rating
-of the source, which suits Bitcoin OTC's mutual ratings but not Middleman,
-where clients rank strangers). `.csv` and `.csv.gz` both work. The run logs the file's MD5 (OTC:
-`eeaf5cd1d29ab435505baeeb6816317b`), its line count (OTC: 35,592), the git
-commit and a hash of the experiment code.
+The run checks the file's MD5 (OTC `eeaf5cd1d29ab435505baeeb6816317b`) and
+line count (35,592), and writes `results/<dataset>_<timestamp>.json` and
+`.csv` with aggregate metrics only. `--sample N`, `--seed S`, `--tune-split`
+(tunes lambda {0.25, 0.5, 1.0, 1.5, 2.0} × depth {1, 2, 3, 4} on a seeded 20%
+and reports on the other 80%) and `--reciprocal` (OTC-only variant) are
+optional. Only Kumar et al.'s unsupervised Table IV is comparable.
 
-- **Graph**: weight = rating/10; a rating > 0 is positive evidence of
-  rating/10, a rating <= 0 negative evidence of |rating|/10; every member is
-  one node type. Referral boost, area trust and verification are off: the data
-  has none of them (they are evaluated in the pilot).
-- **Protocol**: for each test edge, the edge is hidden, predicted from the rest
-  of the graph, and put back. Prediction = positive − lambda × negative from
-  `computeTrust` (unchanged), clamped to [-1, 1]; with no evidence it is the
-  floor `computeTrust` returns (0.1). `test/experiments.test.js` checks that a
-  hidden edge never influences its own prediction.
-- **Compared on the same edges**: global average, flat average of the target's
-  other ratings, MoleTrust (horizon 3, threshold 0.5), TidalTrust, the
-  proposed model with lambda 0.5, and with lambda 0 (positive-only). Sweeps:
-  lambda 0.25/0.5/1.0 and depth 1–4. Experiment-only variants, each its own
-  row: "proposed + community fallback" (no evidence: the target's average of
-  its other ratings, the OTC analogue of the app's area-trust tier, else the
-  global average), the tuned and calibrated versions (with `--tune-split`)
-  and "proposed + reciprocal" (with `--reciprocal`). None of them changes
-  `computeTrust` or the app's defaults.
-- **Metrics**: RMSE and Pearson correlation (the paper's), MAE, sign accuracy
-  (overall and on negative ratings), coverage, precision@5/10, cold start
-  (targets with 1–3 ratings) and latency. Kumar et al.'s Table IV is printed
-  beside the results; only their unsupervised Table IV is comparable.
-- **Output**: a console report and `results/<dataset>_<timestamp>.json` and
-  `.csv` (aggregate metrics only, never the ratings).
+All 35,592 OTC edges (results file `results/bitcoinotc_2026-10-29T13-28-33-037Z.json`):
 
-## Not built yet (next steps)
+| Method | RMSE | PCC |
+|---|---|---|
+| Flat average of target (baseline) | 0.319 | 0.474 |
+| Proposed, lambda 0.5, depth 3 (app defaults) | 0.345 | 0.289 |
+| Proposed + community fallback | 0.335 | 0.382 |
+| Kumar et al. FxG (best unsupervised, Table IV) | 0.31 | 0.49 |
 
-- 72-hour auto-release of escrow, and an admin screen (disputes are resolved
-  through the admin API for now)
+Referral boost, area trust, verification and escrow cannot be tested on this
+data (it has no roles, areas, referrals or verification); they are evaluated
+in the pilot.
+
+## Deployment
+
+API on Render (`render.yaml` Blueprint, `rootDir: server`), app on Vercel
+(Root Directory `client`), database on Atlas. Neither host lets a build read
+files outside its folder, which is why `shared/` is copied in by
+`npm run sync:shared`. Step-by-step setup, the security checks and the pilot
+procedure are in [`docs/RUNBOOK.md`](docs/RUNBOOK.md). Free Atlas clusters
+need Network Access `0.0.0.0/0` (Render's free tier has no fixed IP). The
+app's CSP `connect-src` in `client/vercel.json` names the API host, and the
+Vercel URL must be in the API's `CORS_ORIGINS`.
+
+## Known limitations
+
+- **Live signup** needs a real SMS provider (`OTP_PROVIDER=africastalking`); it
+  is not switched on yet, so OTP signup and PIN reset do not work on the live
+  URL.
+- **Escrow** is sandbox only and has not been run against the real MTN sandbox
+  (no keys yet); the fake provider and stubbed request shapes are tested. One
+  payment covers the whole price (the materials amount is shown, not paid
+  separately); no 72-hour auto-release; disputes are settled through admin API
+  routes, with no admin screen.
+- **Pilot tooling** from the ethics form is not built yet: participant IDs,
+  event logs, a deletion script, in-app SUS and ranking-preference questions.
+- **Not installable as a PWA yet**: no web manifest, service worker or
+  favicon. No meta description; `/robots.txt` is served the app page.
+- **Render free tier**: one instance; rate limits are in memory and reset on
+  restart; the instance sleeps when idle.
+- **Trust defaults** are lambda 0.5, depth 3. Held-out tuning on Bitcoin OTC
+  chose lambda 1.5, depth 2; switching is a research decision.
 
 ## Design system
 
 Tokens (colour, Inter type scale, radii, shadows) live in
-`client/tailwind.config.js` and are the only source of styling values. Shared
-components are in `client/src/components/ui/` (Button, Chip, TierBadge, Card,
-FormField, Avatar, Switch, TabBar, PageLayout, Sheet, StarRating, ...); screens
-use only these. Text on the green `signal` colour uses `on-signal` (dark
-forest) rather than white, which fails contrast.
+`client/tailwind.config.js` and `client/src/styles/index.css` (dark mode swaps
+the CSS variables). Shared components are in `client/src/components/ui/`
+(Button, Chip, Badge, TierBadge, Card, FormField, Avatar, Switch, TabBar,
+PageLayout, Sheet, StarRating, ...). Text on the green `signal` colour uses
+`on-signal` rather than white, which fails contrast.
+
+## Submission archive
+
+```bash
+bash scripts/makeSubmissionZip.sh     # writes middleman-submission.zip without node_modules, .env, data/ or .git
+```
