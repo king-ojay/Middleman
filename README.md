@@ -127,8 +127,8 @@ when you point them at a throwaway database:
   Codes go through `sendOtp(phone, code)` with `OTP_PROVIDER` = `console`,
   `twilio` or `africastalking`; they are stored hashed, expire in 5 minutes,
   allow 5 attempts, and are rate-limited per phone and IP. Rwandan (+250)
-  numbers only. API calls still identify the user with an `x-user-id` header
-  until Phase 7 adds real sessions.
+  numbers only. API calls carry a signed session token (HS256, 12 hours) in
+  `Authorization: Bearer`.
 - **Client-anchored bidding** (Section 3.3.3, FR-04/05/05b) — the client posts a
   job with a proposed price; each matching worker accepts it or sends one
   counter-amount; the client sees every
@@ -175,9 +175,10 @@ API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
    ```
 3. **Render** — New + → Blueprint → select this repo. It reads `render.yaml`
    and prompts for `MONGO_URI`; paste the Atlas string there. Under Environment,
-   also set `OTP_SECRET` (any long random string) and `OTP_PROVIDER`
-   (`console` prints codes to the log; `twilio` or `africastalking` send real
-   SMS and need the keys listed in `server/.env.example`). Check
+   also set `OTP_PROVIDER`: `console` never shows the code in production, so
+   signup and PIN reset only work there with `twilio` or `africastalking`
+   (keys listed in `server/.env.example`; `AT_USERNAME=sandbox` sends to
+   Africa's Talking's free simulator instead of real phones). Check
    `https://<service>.onrender.com/api/health` returns `{"status":"ok"}`.
    Free services sleep when idle, so the first request can take ~50s.
    Escrow uses `PAYMENT_PROVIDER=fake` until you switch it to `momo-sandbox`:
@@ -189,7 +190,10 @@ API on Render, frontend on Vercel, database on MongoDB Atlas (all free tiers).
 4. **Vercel** — Add New → Project → import this repo, set **Root Directory**
    to `client` (Vite is auto-detected), and add the environment variable
    `VITE_API_URL=https://<service>.onrender.com` (no trailing slash). Deploy.
-   `client/vercel.json` makes deep links like `/discover` work.
+   `client/vercel.json` makes deep links like `/discover` work. Its
+   Content-Security-Policy `connect-src` names the API host, so an API on any
+   other host must be added there, and the Vercel URL must be in the API's
+   `CORS_ORIGINS`.
 
 ## Evaluation, Part A: public datasets
 
