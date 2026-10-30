@@ -135,6 +135,11 @@ when you point them at a throwaway database:
   job with a proposed price; each matching worker accepts it or sends one
   counter-amount; the client sees every
   response ranked by trust and chooses one, which fixes the agreed price.
+  Workers see open jobs in their own area and trades by default, and can
+  filter by area (any pilot area or all), trade, search the descriptions and
+  sort by newest or price; they can respond in any pilot area, but only in
+  their own trades. The list carries no client phone numbers or other
+  personal data beyond the client's name, area and trust tier.
 - **Job lifecycle** (`server/modules/jobs/lifecycle.js`, Fig. 5) —
   `open → quote_accepted → escrow_held → in_progress → awaiting_confirmation → completed`,
   with `disputed` reachable from escrow held, in progress or awaiting

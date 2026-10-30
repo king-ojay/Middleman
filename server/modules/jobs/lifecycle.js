@@ -71,8 +71,9 @@ export async function respond(jobId, worker, { amount, depositAmount = 0 }) {
   const job = await Job.findById(jobId).lean();
   if (!job) throw new HttpError(404, 'Job not found');
   if (job.status !== 'open') throw new HttpError(409, 'This job is no longer taking responses');
-  if (!(worker.skills || []).includes(job.category) || worker.area !== job.area) {
-    throw new HttpError(403, 'This job is outside your skills or area');
+  // Any pilot area (every job's area is one), but only the worker's own trades.
+  if (!(worker.skills || []).includes(job.category)) {
+    throw new HttpError(403, 'This job is outside your trades');
   }
 
   const price = Number(amount ?? job.proposedPrice);

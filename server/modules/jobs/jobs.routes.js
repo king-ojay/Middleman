@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import User from '../users/user.model.js';
 import Job from './job.model.js';
 import Quote from './quote.model.js';
+import { FEED_LIMIT, feedQuery } from './feed.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
 import Rating from '../trust/rating.model.js';
@@ -34,24 +35,39 @@ router.post('/', requireRole('client'), handle(async (req, res) => {
   res.status(201).json({ ...job.toObject(), matchingWorkers });
 }));
 
-// GET /api/jobs/feed — worker: open jobs matching their skills and area, each
-// with the client's trust tier from the worker's point of view (Section 3.2.3)
-// and the worker's own response if they already sent one.
+// GET /api/jobs/feed — worker: open jobs to browse (filters in feed.js; the
+// default is their own area and trades), each with the client's trust tier
+// from the worker's point of view (Section 3.2.3), the worker's own response
+// if they already sent one, and whether they may respond (own trades only).
+// Only what the card shows leaves the server: no phone numbers, verification,
+// referrer or other personal data of the client.
 router.get('/feed', requireRole('worker'), handle(async (req, res) => {
-  const jobs = await Job.find({ status: 'open', area: req.user.area, category: { $in: req.user.skills || [] } })
-    .sort({ createdAt: -1 })
+  const { filter, sort } = feedQuery(req.user, req.query);
+  const jobs = await Job.find(filter, 'category description area proposedPrice status createdAt client')
+    .sort(sort)
+    .limit(FEED_LIMIT)
+    // verifiedStatus feeds the trust fallback only; it is not sent.
     .populate('client', 'name area verifiedStatus')
     .lean();
 
   const clients = [...new Map(jobs.map(j => [String(j.client._id), j.client])).values()];
   const clientTier = tierById(await rankByTrust(req.user._id, clients));
-  const myQuotes = await Quote.find({ worker: req.user._id, job: { $in: jobs.map(j => j._id) } }).lean();
+  const myQuotes = await Quote.find({ worker: req.user._id, job: { $in: jobs.map(j => j._id) } }, 'job amount isCounter depositAmount').lean();
   const myQuoteByJob = new Map(myQuotes.map(q => [String(q.job), q]));
+  const skills = new Set(req.user.skills || []);
 
   res.json(jobs.map(job => ({
-    ...job,
+    _id: job._id,
+    category: job.category,
+    description: job.description,
+    area: job.area,
+    proposedPrice: job.proposedPrice,
+    status: job.status,
+    createdAt: job.createdAt,
+    client: { _id: job.client._id, name: job.client.name, area: job.client.area },
     clientTrust: clientTier.get(String(job.client._id)),
-    myResponse: myQuoteByJob.get(String(job._id)) || null
+    myResponse: myQuoteByJob.get(String(job._id)) || null,
+    canRespond: skills.has(job.category)
   })));
 }));
 
