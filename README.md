@@ -21,8 +21,10 @@ Log in with a seeded phone number and the demo PIN **`1234`**:
 | `0788000119` | Worker | Ange, Kimironko electrician | New worker, cheapest offer, still ranked last |
 | `0788000111` | Worker | Theoneste, Kimironko carpenter | My jobs: already chosen, can "Start job" |
 
-To try registration, use a new number: the SMS code appears in the API log
-while `OTP_PROVIDER=console` (Render → Logs).
+To try registration, use a new number. With `OTP_PROVIDER=console` the SMS
+code is printed in the API log only outside production (e.g. when running
+locally); the production API never logs codes, so live signup needs
+`OTP_PROVIDER=africastalking`.
 
 ## Structure
 
