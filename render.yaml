@@ -26,15 +26,22 @@ services:
         generateValue: true
       - key: OTP_SECRET
         generateValue: true
-      # console logs only a masked number in production (codes are not logged);
-      # switch to twilio or africastalking (and add their keys) to send real SMS.
+      # Set in the dashboard. console logs only a masked number in production
+      # (codes are not logged); africastalking sends real SMS with the keys below.
       - key: OTP_PROVIDER
-        value: console
-      # Escrow. fake moves no money; switch to momo-sandbox once the six MOMO_*
-      # keys below are set in Render (never in this file). Sandbox only: the
-      # provider refuses any host but sandbox.momodeveloper.mtn.com.
+        sync: false
+      - key: AT_USERNAME
+        sync: false
+      - key: AT_API_KEY
+        sync: false
+      - key: AT_SENDER_ID
+        sync: false
+      # Escrow, set in the dashboard: fake (the default when unset) moves no
+      # money; momo-sandbox once the six MOMO_* keys below are set in Render
+      # (never in this file). Sandbox only: the provider refuses any host but
+      # sandbox.momodeveloper.mtn.com.
       - key: PAYMENT_PROVIDER
-        value: fake
+        sync: false
       # For momo-sandbox add (sync: false, values in Render only):
       #   MOMO_COLLECTION_SUBSCRIPTION_KEY, MOMO_COLLECTION_USER_ID, MOMO_COLLECTION_API_KEY,
       #   MOMO_DISBURSEMENT_SUBSCRIPTION_KEY, MOMO_DISBURSEMENT_USER_ID, MOMO_DISBURSEMENT_API_KEY,
