@@ -1,3 +1,4 @@
+// Client posts a job: trade, description, area (defaults to their own) and price.
 import { useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';

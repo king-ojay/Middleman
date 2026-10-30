@@ -1,3 +1,4 @@
+// /api/users: referrer search at signup, profiles, and changing your own area.
 import express from 'express';
 import mongoose from 'mongoose';
 import User from './user.model.js';

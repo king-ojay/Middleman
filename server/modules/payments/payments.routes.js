@@ -1,3 +1,4 @@
+// /api/payments (MoMo callback) and /api/admin (dispute resolution, ledger).
 import express from 'express';
 import mongoose from 'mongoose';
 import { createHash, timingSafeEqual } from 'node:crypto';

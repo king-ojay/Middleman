@@ -1,3 +1,5 @@
+// One job: for the client, offers ranked by trust, escrow payment, and confirm
+// and rate; for the worker, their offer, start/complete, and rating the client.
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';

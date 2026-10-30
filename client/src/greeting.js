@@ -1,3 +1,4 @@
+// First name and time-of-day greeting for page headers.
 export const firstName = user => (user?.name || '').split(' ')[0];
 
 export function greeting(user, date = new Date()) {

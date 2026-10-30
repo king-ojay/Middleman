@@ -1,3 +1,4 @@
+// Public landing page: what Middleman does, and the way into signup and login.
 import { useEffect } from 'react';
 import { wakeApi } from '../api.js';
 import { Button, Card, LogoMark, PageLayout } from '../components/ui/index.js';

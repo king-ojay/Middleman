@@ -1,3 +1,5 @@
+// App shell: the sandbox banner, the routes for each screen (guarded by role),
+// and the notice shown while the free-tier API wakes up.
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';

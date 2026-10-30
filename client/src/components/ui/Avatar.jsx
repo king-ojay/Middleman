@@ -1,3 +1,5 @@
+// Round initials avatar. Its colour follows the person's trust tier (never a
+// number), so the tier reads at a glance in lists.
 import { tierKey } from './TierBadge.jsx';
 
 const SIZES = {

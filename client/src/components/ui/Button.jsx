@@ -1,3 +1,5 @@
+// The one button style for the app: primary, dark, soft, outline and plain
+// variants in two sizes; renders a router Link when given `to`.
 import { Link } from 'react-router-dom';
 
 const VARIANTS = {

@@ -1,3 +1,6 @@
+// /api/jobs: posting, the worker job feed, offers, choosing a worker, escrow
+// payment, the job lifecycle and ratings. Rules live in lifecycle.js, feed.js
+// and payments/escrow.js; these handlers only translate HTTP.
 import express from 'express';
 import mongoose from 'mongoose';
 import User from '../users/user.model.js';
