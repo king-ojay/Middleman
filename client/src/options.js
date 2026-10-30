@@ -50,3 +50,54 @@ const ESCROW_LABELS = {
 };
 
 export const escrowLabel = (escrow, role) => ESCROW_LABELS[escrow?.status]?.[role] ?? null;
+
+// My jobs / My work: jobs grouped by where they are (layout only; the job's
+// status decides the group). Workers are only on a job once chosen, so they
+// have no "Waiting for offers" group.
+export const JOB_GROUPS = [
+  { key: 'waiting', label: 'Waiting for offers', statuses: ['open'], roles: ['client'] },
+  { key: 'active', label: 'Active', statuses: ['quote_accepted', 'escrow_held', 'in_progress'], roles: ['client', 'worker'] },
+  { key: 'confirm', label: 'Awaiting confirmation', statuses: ['awaiting_confirmation'], roles: ['client', 'worker'] },
+  { key: 'completed', label: 'Completed', statuses: ['completed'], roles: ['client', 'worker'] },
+  { key: 'disputed', label: 'Disputed', statuses: ['disputed', 'resolved'], roles: ['client', 'worker'] }
+];
+
+// The short status chip on a job card: its words and tone (action = this
+// person has something to do; wait, done, problem).
+const STATUS_CHIPS = {
+  open: { client: ['Waiting for offers', 'wait'] },
+  quote_accepted: { client: ['Pay to start', 'action'], worker: ['Waiting for payment', 'wait'] },
+  escrow_held: { client: ['Ready to start', 'wait'], worker: ['Ready to start', 'action'] },
+  in_progress: { client: ['In progress', 'wait'], worker: ['In progress', 'action'] },
+  awaiting_confirmation: { client: ['Check the work', 'action'], worker: ['Waiting for client', 'wait'] },
+  completed: { client: ['Completed', 'done'], worker: ['Completed', 'done'] },
+  disputed: { client: ['Problem reported', 'problem'], worker: ['Problem reported', 'problem'] },
+  resolved: { client: ['Resolved', 'wait'], worker: ['Resolved', 'wait'] }
+};
+
+export function statusChip(job, role) {
+  if (job.escrow?.pending?.kind === 'fund') return { label: 'Payment pending', tone: 'wait' };
+  if (job.status === 'open' && role === 'client' && job.responseCount > 0) {
+    return { label: `${job.responseCount} offer${job.responseCount === 1 ? '' : 's'}`, tone: 'action' };
+  }
+  const [label, tone] = STATUS_CHIPS[job.status]?.[role] ?? [job.status, 'wait'];
+  return { label, tone };
+}
+
+// Where the money is, in one or two words, once a worker is chosen. Jobs
+// finished before escrow existed (no escrow record) show nothing.
+const MONEY = {
+  funding: { client: 'Payment pending', worker: 'Payment pending' },
+  held: { client: 'Paid · in escrow', worker: 'In escrow' },
+  releasing: { client: 'Releasing to worker', worker: 'On its way to you' },
+  released: { client: 'Released to worker', worker: 'Released · paid to you' },
+  refunding: { client: 'Refund on its way', worker: 'Refunding the client' },
+  refunded: { client: 'Refunded to you', worker: 'Refunded to the client' }
+};
+
+export function moneyLabel(job, role) {
+  const status = job.escrow?.status;
+  if (MONEY[status]) return MONEY[status][role];
+  if (job.status === 'quote_accepted') return 'Not paid yet';
+  return null;
+}

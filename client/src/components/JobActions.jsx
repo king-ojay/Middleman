@@ -24,10 +24,13 @@ const ACTIONS = {
 // While a payment waits for approval there is nothing to do but check on it.
 const CHECK_PAYMENT = [{ action: 'escrow/sync', label: 'Check payment' }];
 
-export default function JobActions({ job, role, onChange }) {
+// primaryOnly (job cards): just the one next step, no "Report a problem";
+// that stays on the job's own page.
+export default function JobActions({ job, role, onChange, primaryOnly = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const actions = job.escrow?.pending ? CHECK_PAYMENT : ACTIONS[role]?.[job.status] || [];
+  const all = job.escrow?.pending ? CHECK_PAYMENT : ACTIONS[role]?.[job.status] || [];
+  const actions = primaryOnly && all !== CHECK_PAYMENT ? all.filter(a => a.primary) : all;
   if (actions.length === 0) return null;
 
   const run = async action => {
@@ -46,12 +49,12 @@ export default function JobActions({ job, role, onChange }) {
   };
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className={primaryOnly ? 'space-y-3' : 'mt-4 space-y-3'}>
       {actions.map(({ action, to, label, primary }) =>
         to ? (
           <Button key={to} to={`/my-jobs/${job._id}`}>{label}</Button>
         ) : (
-          <Button key={action} variant={primary ? 'primary' : 'plain'} disabled={busy} onClick={() => run(action)}>
+          <Button key={action} variant={primary ? 'primary' : primaryOnly ? 'outline' : 'plain'} disabled={busy} onClick={() => run(action)}>
             {label}
           </Button>
         )

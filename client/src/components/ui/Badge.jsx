@@ -1,7 +1,9 @@
 const TONES = {
   signal: 'bg-signal text-on-signal',
   mint: 'bg-mint text-heading',
-  soft: 'bg-soft text-muted'
+  soft: 'bg-soft text-muted',
+  action: 'bg-accent-soft text-heading', // this person has something to do
+  problem: 'bg-soft text-danger'
 };
 
 // Small pill label. Always carries text, never colour alone.

@@ -71,7 +71,8 @@ router.get('/feed', requireRole('worker'), handle(async (req, res) => {
   })));
 }));
 
-// GET /api/jobs/mine — client: jobs they posted; worker: jobs assigned to them.
+// GET /api/jobs/mine — client: jobs they posted; worker: jobs assigned to them;
+// each with its number of responses and whether this user has rated it.
 router.get('/mine', handle(async (req, res) => {
   const filter = req.user.role === 'client' ? { client: req.user._id } : { worker: req.user._id };
   const jobs = await Job.find(filter)
@@ -85,7 +86,9 @@ router.get('/mine', handle(async (req, res) => {
     { $group: { _id: '$job', n: { $sum: 1 } } }
   ]);
   const countByJob = new Map(counts.map(c => [String(c._id), c.n]));
-  res.json(jobs.map(job => ({ ...job, responseCount: countByJob.get(String(job._id)) || 0 })));
+  // Whether this user has already rated each job, so the list can offer "Rate".
+  const rated = new Set((await Rating.find({ fromUser: req.user._id, job: { $in: jobs.map(j => j._id) } }, 'job').lean()).map(r => String(r.job)));
+  res.json(jobs.map(job => ({ ...job, responseCount: countByJob.get(String(job._id)) || 0, rated: rated.has(String(job._id)) })));
 }));
 
 // GET /api/jobs/:id — the job; for its client, every response ranked by trust

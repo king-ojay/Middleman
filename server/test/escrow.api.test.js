@@ -349,7 +349,11 @@ test('while the payout is pending nobody can rate; once released, the same confi
   const rated = await post(`/api/jobs/${job._id}/confirm`, 'client', { score: 5 });
   assert.equal(rated.status, 200);
   assert.equal(rated.data.job.escrow.status, 'released');
+  const mine = async as => (await call('GET', '/api/jobs/mine', { as })).data.find(j => String(j._id) === String(job._id));
+  assert.equal((await mine('client')).rated, true);
+  assert.equal((await mine('worker')).rated, false);
   assert.equal((await post(`/api/jobs/${job._id}/rate-client`, 'worker', { score: 5 })).status, 201);
+  assert.equal((await mine('worker')).rated, true);
   assert.equal(fake.calls.filter(c => c.op === 'transfer').length, 1);
 });
 
