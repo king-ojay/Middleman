@@ -4,8 +4,11 @@
 // The config test always runs; the API tests need TEST_MONGO_URI.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { AREAS as SHARED, AREA_VALUES } from '../../shared/areas.js';
+import { COPIES, SOURCE, generated } from '../../scripts/syncShared.mjs';
 import { AREAS as SERVER_AREAS } from '../config/areas.js';
 
 test('one shared list of exactly the four pilot areas feeds the server, the models and the app', async () => {
@@ -15,10 +18,36 @@ test('one shared list of exactly the four pilot areas feeds the server, the mode
   const { default: Job } = await import('../modules/jobs/job.model.js');
   assert.deepEqual(User.schema.path('area').enumValues, [...AREA_VALUES]);
   assert.deepEqual(Job.schema.path('area').enumValues, [...AREA_VALUES]);
-  // The app reads the same file instead of keeping its own copy.
+  // The app reads the generated copy instead of keeping its own list.
   const options = readFileSync(new URL('../../client/src/options.js', import.meta.url), 'utf8');
-  assert.match(options, /from '\.\.\/\.\.\/shared\/areas\.js'/);
+  assert.match(options, /from '\.\/areas\.shared\.js'/);
   assert.doesNotMatch(options, /value: 'kimironko'/);
+});
+
+test('the copies in server/ and client/ match shared/areas.js (run `npm run sync:shared` after editing it)', () => {
+  const root = new URL('../../', import.meta.url);
+  const expected = generated(readFileSync(new URL(SOURCE, root), 'utf8'));
+  for (const copy of COPIES) assert.equal(readFileSync(new URL(copy, root), 'utf8'), expected, `${copy} is out of date`);
+});
+
+test('nothing deployed from server/ or client/ imports from outside its own folder', () => {
+  const offenders = [];
+  const walk = dir => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (['node_modules', 'test', 'dist'].includes(entry.name)) continue;
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (/\.(js|jsx|mjs)$/.test(entry.name)) {
+        for (const [, spec] of readFileSync(path, 'utf8').matchAll(/(?:from|import\()\s*['"](\.[^'"]+)['"]/g)) {
+          const top = fileURLToPath(new URL(`../../${dir.includes('/client/') ? 'client' : 'server'}/`, import.meta.url));
+          if (!resolve(dirname(path), spec).startsWith(top)) offenders.push(`${path}: ${spec}`);
+        }
+      }
+    }
+  };
+  walk(fileURLToPath(new URL('../', import.meta.url)));
+  walk(fileURLToPath(new URL('../../client/src/', import.meta.url)));
+  assert.deepEqual(offenders, []);
 });
 
 test('signup has no preselected area and uses the shared picker', () => {

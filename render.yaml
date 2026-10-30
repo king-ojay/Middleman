@@ -7,6 +7,13 @@ services:
     runtime: node
     plan: free
     rootDir: server
+    # Deploy when the API or the shared lists change (paths from the repo
+    # root). The build only sees server/: shared/ reaches it as committed
+    # copies (npm run sync:shared), never by reading ../shared.
+    buildFilter:
+      paths:
+        - server/**
+        - shared/**
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health

@@ -31,7 +31,8 @@ locally); the production API never logs codes, so live signup needs
 ```
 server/   Express + MongoDB API, including the trust propagation algorithm
 client/   React + Vite frontend
-shared/   Plain data both use: the pilot areas (shared/areas.js; add an area here only)
+shared/   Plain data both use: the pilot areas. Edit shared/areas.js, then run
+          `npm run sync:shared` (copies it into server/ and client/, which deploy alone)
 ```
 
 ## Run it locally

@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import { AREAS } from '../options.js';
 
-// Pick one pilot area (shared/areas.js). Nothing is chosen until the person
+// Pick one pilot area (the list is edited in shared/areas.js). Nothing is chosen until the person
 // taps one: there is no default, and no GPS or device location is used.
 export default function AreaPicker({ value, onChange, label = 'Your area', error }) {
   const labelId = useId();
