@@ -6,6 +6,7 @@ import Rating from '../trust/rating.model.js';
 import TrustEdge from '../trust/trustEdge.model.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
 import { requireUser } from '../auth/currentUser.js';
+import { AREAS } from '../../config/areas.js';
 
 const router = express.Router();
 
@@ -29,6 +30,23 @@ router.get('/search', async (req, res) => {
       .limit(5)
       .lean();
     res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/users/me  Body: { area } — change your own area (Profile). Only
+// the area can be changed here, and only to a pilot area (shared/areas.js).
+// It takes effect at once: area trust, Discover and the job list read the
+// area from the database on every request.
+router.patch('/me', requireUser, async (req, res) => {
+  try {
+    const { area } = req.body || {};
+    if (!AREAS.includes(area)) return res.status(400).json({ error: 'Choose your area' });
+    const user = await User.findByIdAndUpdate(req.user._id, { area }, { new: true, runValidators: true }).lean();
+    if (!user) return res.status(401).json({ error: 'Please log in again' });
+    const { pinHash, sessionVersion, __v, ...rest } = user;
+    res.json({ user: rest });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

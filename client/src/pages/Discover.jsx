@@ -9,7 +9,8 @@ import { Avatar, Card, Chip, ChipRow, PageLayout, TierBadge } from '../component
 export default function Discover() {
   const { user } = useAuth();
   const [category, setCategory] = useState('electrician');
-  const [area, setArea] = useState('');
+  // Starts on the person's own area (chosen at signup or in Profile); "All areas" is one tap away.
+  const [area, setArea] = useState(user.area || '');
   const [changingArea, setChangingArea] = useState(false);
   const [query, setQuery] = useState('');
   const [searchHint, setSearchHint] = useState('');

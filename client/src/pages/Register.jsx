@@ -3,7 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
-import { AREAS, CATEGORIES, areaLabel } from '../options.js';
+import AreaPicker from '../components/AreaPicker.jsx';
+import { CATEGORIES, areaLabel } from '../options.js';
 import {
   Avatar, Button, Card, Chip, ChipRow, FormField, OptionCard, PageLayout, PinBoxes, StepBar, TextInput
 } from '../components/ui/index.js';
@@ -13,7 +14,7 @@ export default function Register() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [details, setDetails] = useState({ role: 'client', name: '', phone: '', area: 'kimironko', skills: [] });
+  const [details, setDetails] = useState({ role: 'client', name: '', phone: '', area: '', skills: [] });
   const [pin, setPin] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [sending, setSending] = useState(false);
@@ -32,6 +33,8 @@ export default function Register() {
     if (!details.name.trim()) return setError('Enter your full name.');
     if (!/^(\+?250|0)?7\d{8}$/.test(details.phone.replace(/[\s-]/g, ''))) return setError('Enter a mobile number like 078X XXX XXX.');
     if (details.role === 'worker' && details.skills.length === 0) return setError('Choose at least one kind of work you do.');
+    // No default area: the person picks one (it decides their area trust and default lists).
+    if (!details.area) return setError('Choose your area.');
     setError('');
     setSending(true);
     try {
@@ -114,16 +117,14 @@ export default function Register() {
           {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="tel" value={details.phone} onChange={e => set({ phone: e.target.value })} placeholder="078X XXX XXX" />}
         </FormField>
 
-        <div>
-          <p className="text-label text-ink mb-2">Area</p>
-          <ChipRow label="Area">
-            {AREAS.map(a => (
-              <Chip key={a.value} active={details.area === a.value} onClick={() => set({ area: a.value })}>{a.label}</Chip>
-            ))}
-          </ChipRow>
-        </div>
+        <AreaPicker
+          label="Your area"
+          value={details.area}
+          onChange={area => { set({ area }); if (error === 'Choose your area.') setError(''); }}
+          error={error === 'Choose your area.' ? error : ''}
+        />
 
-        {error && <p className="text-small text-danger" role="alert">{error}</p>}
+        {error && error !== 'Choose your area.' && <p className="text-small text-danger" role="alert">{error}</p>}
         <Button type="submit" disabled={sending}>{sending ? 'Sending code…' : 'Continue'}</Button>
       </form>
     </PageLayout>

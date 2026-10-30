@@ -25,12 +25,18 @@ export function AuthProvider({ children }) {
   const resetPin = async (phone, code, pin) =>
     start(await api('/api/auth/pin/reset', { method: 'POST', body: JSON.stringify({ phone, code, pin }) }));
 
+  // After the user changes their own details (Profile): same session, new user.
+  const updateUser = next => {
+    saveSession({ ...loadSession(), user: next });
+    setUser(next);
+  };
+
   const logout = () => {
     saveSession(null);
     setUser(null);
   };
 
-  return <AuthContext.Provider value={{ user, login, register, resetPin, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, login, register, resetPin, updateUser, logout }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);
