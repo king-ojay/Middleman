@@ -1,5 +1,7 @@
-// Dropdown options and display labels. Values must match the server's
-// config/areas.js and config/categories.js.
+import { AREAS } from '../../shared/areas.js';
+
+// Dropdown options and display labels. Trade values must match the server's
+// config/categories.js; areas come from shared/areas.js.
 export const CATEGORIES = [
   { value: 'electrician', label: 'Electrician' },
   { value: 'plumber', label: 'Plumber' },
@@ -15,12 +17,8 @@ export const CATEGORIES = [
   { value: 'phone_repair', label: 'Phone repair' }
 ];
 
-export const AREAS = [
-  { value: 'kimironko', label: 'Kimironko' },
-  { value: 'kwa_nayinzira', label: 'Kwa Nayinzira' },
-  { value: 'remera', label: 'Remera' },
-  { value: 'gikondo', label: 'Gikondo' }
-];
+// The pilot areas live in shared/areas.js, one list for the server and the app.
+export { AREAS };
 
 const labelFrom = list => value => list.find(o => o.value === value)?.label ?? value;
 export const categoryLabel = labelFrom(CATEGORIES);

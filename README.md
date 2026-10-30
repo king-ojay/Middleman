@@ -31,6 +31,7 @@ locally); the production API never logs codes, so live signup needs
 ```
 server/   Express + MongoDB API, including the trust propagation algorithm
 client/   React + Vite frontend
+shared/   Plain data both use: the pilot areas (shared/areas.js; add an area here only)
 ```
 
 ## Run it locally

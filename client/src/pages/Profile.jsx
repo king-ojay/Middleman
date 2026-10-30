@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
 import { THEMES, loadTheme, saveTheme } from '../theme.js';
+import AreaPicker from '../components/AreaPicker.jsx';
 import { Avatar, Badge, Button, Card, Chip, ChipRow, PageLayout, StarRating, TierBadge } from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
@@ -83,12 +84,64 @@ export default function Profile() {
         </ul>
       )}
 
+      {isOwn && <AreaSetting area={profile.area} onSaved={area => setProfile(p => ({ ...p, area }))} />}
       {isOwn && <Preferences />}
 
       {isOwn && (
         <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>Log out</Button>
       )}
     </PageLayout>
+  );
+}
+
+// Your own profile only. The area decides "Trusted in this area", which area
+// Discover and your job list start on, and the default area for new jobs.
+function AreaSetting({ area, onSaved }) {
+  const { updateUser } = useAuth();
+  const [editing, setEditing] = useState(false);
+  const [choice, setChoice] = useState(area);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const save = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      const { user } = await api('/api/users/me', { method: 'PATCH', body: JSON.stringify({ area: choice }) });
+      updateUser(user);
+      onSaved(user.area);
+      setEditing(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <h2 className="text-section text-ink mt-8 mb-3">Your area</h2>
+      <Card className="p-5">
+        {!editing ? (
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-body font-semibold text-ink">{areaLabel(area)}</p>
+              <p className="text-small text-muted mt-1">Where you live or work. It decides who counts as "in this area" and which jobs and workers you see first.</p>
+            </div>
+            <Button variant="outline" size="md" className="shrink-0" onClick={() => { setChoice(area); setEditing(true); }}>Change</Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <AreaPicker label="Choose your area" value={choice} onChange={setChoice} />
+            {error && <p className="text-small text-danger" role="alert">{error}</p>}
+            <div className="flex flex-wrap gap-3">
+              <Button size="md" onClick={save} disabled={saving || choice === area}>{saving ? 'Saving…' : 'Save area'}</Button>
+              <Button variant="outline" size="md" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button>
+            </div>
+          </div>
+        )}
+      </Card>
+    </>
   );
 }
 
