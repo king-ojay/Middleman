@@ -4,58 +4,153 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { firstName } from '../greeting.js';
 import { formatRwf, timeAgo } from '../format.js';
-import { categoryLabel, areaLabel } from '../options.js';
-import { Avatar, Button, Card, Chip, ChipRow, FormField, PageLayout, PriceInput, Sheet, Switch, TierBadge } from '../components/ui/index.js';
+import { AREAS, categoryLabel, areaLabel } from '../options.js';
+import { Avatar, Badge, Button, Card, Chip, ChipRow, FormField, PageLayout, PriceInput, Sheet, Switch, TierBadge } from '../components/ui/index.js';
 
-// Worker home: open jobs in the worker's area that match one of their skills.
-// Each job shows how trusted its client is from this worker's point of view,
-// and takes one response: accept the client's price, or counter (FR-05).
+const SORTS = [
+  { value: 'newest', label: 'Newest' },
+  { value: 'price_high', label: 'Highest price' },
+  { value: 'price_low', label: 'Lowest price' }
+];
+const DEFAULTS = { area: 'mine', trade: 'mine', sort: 'newest' };
+
+// Worker home: open jobs to browse. By default the worker's own area and
+// trades (as before); filters widen it to any pilot area or trade, search the
+// descriptions, and sort by price. Each job shows how trusted its client is
+// from this worker's point of view, and takes one response: accept the
+// client's price, or counter (FR-05). Responses are limited to the worker's
+// own trades, in any pilot area.
 export default function OpenJobs() {
   const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [filters, setFilters] = useState(DEFAULTS);
+  const [query, setQuery] = useState('');
+  const [q, setQ] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [reload, setReload] = useState(0);
 
-  const loadFeed = () =>
-    api('/api/jobs/feed')
-      .then(setJobs)
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
+  useEffect(() => {
+    // Only the latest filters may fill the list: a slow answer for filters
+    // the worker has already changed is ignored.
+    let current = true;
+    const params = new URLSearchParams({ ...filters, ...(q && { q }) });
+    setLoading(true);
+    setError('');
+    api(`/api/jobs/feed?${params}`)
+      .then(data => current && setJobs(data))
+      .catch(err => { if (current) { setJobs([]); setError(err.message); } })
+      .finally(() => current && setLoading(false));
+    return () => { current = false; };
+  }, [user, filters, q, reload]);
 
-  useEffect(() => { loadFeed(); }, [user]);
+  const set = patch => setFilters(f => ({ ...f, ...patch }));
+  const search = e => {
+    e.preventDefault();
+    setQ(query.trim());
+  };
+  const clearSearch = () => {
+    setQuery('');
+    setQ('');
+  };
+
+  const myTrades = (user.skills || []).map(categoryLabel).join(' or ').toLowerCase();
+  const areaText = filters.area === 'mine' ? areaLabel(user.area) : filters.area === 'all' ? 'All areas' : areaLabel(filters.area);
+  const tradeText = filters.trade === 'mine' ? 'My trades' : 'Any trade';
+  const sortText = SORTS.find(s => s.value === filters.sort).label;
+  const isDefault = !q && Object.entries(DEFAULTS).every(([k, v]) => filters[k] === v);
 
   return (
-    <PageLayout eyebrow={`Hello, ${firstName(user)}`} title="Jobs near you" tabBar role="worker">
-      {/* Workers respond to jobs in their own area only, so this row shows that area. */}
-      <ChipRow label="Area" className="mb-4">
-        <Chip active>{areaLabel(user.area)}</Chip>
-      </ChipRow>
-
-      {loading && <p className="text-body text-muted">Loading…</p>}
-      {error && <p className="text-body text-danger" role="alert">Couldn't load jobs: {error}</p>}
-      {!loading && !error && jobs.length === 0 && (
-        <p className="text-body text-muted">
-          No open {(user.skills || []).map(categoryLabel).join(' or ').toLowerCase()} jobs in {areaLabel(user.area)} right now.
+    <PageLayout eyebrow={`Hello, ${firstName(user)}`} title={isDefault ? 'Jobs near you' : 'Find jobs'} tabBar role="worker">
+      <form onSubmit={search} role="search" className="relative mb-2">
+        <label htmlFor="job-search" className="sr-only">Search jobs</label>
+        <input
+          id="job-search"
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          maxLength={100}
+          placeholder="Search jobs, e.g. tap"
+          className="w-full h-14 bg-surface rounded-full shadow-card pl-5 pr-16 text-body text-ink placeholder:text-faint focus:outline-none"
+        />
+        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-accent text-on-accent flex items-center justify-center">
+          <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
+            <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </form>
+      {q && (
+        <p className="text-small text-muted mb-2" role="status">
+          Showing jobs matching “{q}”.{' '}
+          <button type="button" onClick={clearSearch} className="font-semibold text-heading underline">Clear</button>
         </p>
       )}
 
+      <div className="flex items-center justify-between gap-3 mt-2">
+        <p className="text-body text-muted min-w-0">{areaText} · {tradeText} · {sortText}</p>
+        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(v => !v)} className="h-11 px-1 shrink-0 text-body font-semibold text-heading">
+          {showFilters ? 'Done' : 'Filters'}
+        </button>
+      </div>
+      {showFilters && (
+        <div className="space-y-3 mb-2">
+          <ChipRow label="Area">
+            <Chip active={filters.area === 'mine'} onClick={() => set({ area: 'mine' })}>My area · {areaLabel(user.area)}</Chip>
+            <Chip active={filters.area === 'all'} onClick={() => set({ area: 'all' })}>All areas</Chip>
+            {AREAS.filter(a => a.value !== user.area).map(a => (
+              <Chip key={a.value} active={filters.area === a.value} onClick={() => set({ area: a.value })}>{a.label}</Chip>
+            ))}
+          </ChipRow>
+          <ChipRow label="Trade">
+            <Chip active={filters.trade === 'mine'} onClick={() => set({ trade: 'mine' })}>My trades</Chip>
+            <Chip active={filters.trade === 'any'} onClick={() => set({ trade: 'any' })}>Any trade</Chip>
+          </ChipRow>
+          <ChipRow label="Sort">
+            {SORTS.map(s => (
+              <Chip key={s.value} active={filters.sort === s.value} onClick={() => set({ sort: s.value })}>{s.label}</Chip>
+            ))}
+          </ChipRow>
+          {!isDefault && (
+            <button type="button" onClick={() => { setFilters(DEFAULTS); clearSearch(); }} className="h-11 px-1 text-body font-semibold text-heading">
+              Back to jobs near you
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-4">
+        {loading && <p className="text-body text-muted">Loading…</p>}
+        {error && <p className="text-body text-danger" role="alert">Couldn't load jobs: {error}</p>}
+        {!loading && !error && jobs.length === 0 && (
+          <p className="text-body text-muted">
+            {isDefault
+              ? `No open ${myTrades} jobs in ${areaLabel(user.area)} right now. Try Filters to look in other areas.`
+              : 'No open jobs match. Try another area, trade or search.'}
+          </p>
+        )}
+      </div>
+
       <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
-        {jobs.map(job => (
+        {!loading && jobs.map(job => (
           <Card as="li" key={job._id} className="p-5">
-            <h2 className="text-card text-ink">{job.description}</h2>
+            {job.myResponse && <div className="mb-2"><Badge tone="mint">You responded</Badge></div>}
+            <h2 className="text-card text-ink break-words">{job.description}</h2>
             <p className="text-body text-muted mt-1">
               {categoryLabel(job.category)} · {areaLabel(job.area)} · posted {timeAgo(job.createdAt)}
             </p>
             <div className="flex items-center gap-3 mt-4">
               <Avatar name={job.client?.name} tier={job.clientTrust} size={44} />
               <div className="min-w-0">
-                <Link to={`/people/${job.client?._id}`} className="block text-body font-semibold text-ink hover:underline">{job.client?.name}</Link>
+                <Link to={`/people/${job.client?._id}`} className="block text-body font-semibold text-ink hover:underline truncate">{job.client?.name}</Link>
                 <TierBadge tier={job.clientTrust} />
               </div>
             </div>
             <p className="text-small text-muted mt-4">Client's price</p>
             <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
-            <ResponseControls job={job} onSent={loadFeed} />
+            {job.canRespond || job.myResponse
+              ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
+              : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
           </Card>
         ))}
       </ul>

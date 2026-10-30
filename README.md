@@ -21,8 +21,10 @@ Log in with a seeded phone number and the demo PIN **`1234`**:
 | `0788000119` | Worker | Ange, Kimironko electrician | New worker, cheapest offer, still ranked last |
 | `0788000111` | Worker | Theoneste, Kimironko carpenter | My jobs: already chosen, can "Start job" |
 
-To try registration, use a new number: the SMS code appears in the API log
-while `OTP_PROVIDER=console` (Render → Logs).
+To try registration, use a new number. With `OTP_PROVIDER=console` the SMS
+code is printed in the API log only outside production (e.g. when running
+locally); the production API never logs codes, so live signup needs
+`OTP_PROVIDER=africastalking`.
 
 ## Structure
 
@@ -133,6 +135,11 @@ when you point them at a throwaway database:
   job with a proposed price; each matching worker accepts it or sends one
   counter-amount; the client sees every
   response ranked by trust and chooses one, which fixes the agreed price.
+  Workers see open jobs in their own area and trades by default, and can
+  filter by area (any pilot area or all), trade, search the descriptions and
+  sort by newest or price; they can respond in any pilot area, but only in
+  their own trades. The list carries no client phone numbers or other
+  personal data beyond the client's name, area and trust tier.
 - **Job lifecycle** (`server/modules/jobs/lifecycle.js`, Fig. 5) —
   `open → quote_accepted → escrow_held → in_progress → awaiting_confirmation → completed`,
   with `disputed` reachable from escrow held, in progress or awaiting
