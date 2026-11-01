@@ -8,7 +8,7 @@ import { firstName } from '../greeting.js';
 import { formatRwf } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
-  Avatar, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge
+  Avatar, Badge, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 
@@ -137,7 +137,10 @@ function Offers({ job, onChosen }) {
                 <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
                 <div className="min-w-0">
                   <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
-                  <TierBadge tier={r.trustSource} />
+                  <div className="flex flex-wrap gap-2">
+                    <TierBadge tier={r.trustSource} />
+                    {r.worker.verifiedStatus === 'verified' && <Badge tone="signal">Verified</Badge>}
+                  </div>
                 </div>
               </div>
               <div className="flex items-end justify-between gap-4 mt-4">

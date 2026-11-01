@@ -49,6 +49,12 @@ locally); the production API never logs codes, so live signup needs
   client's own graph (decay per hop, strongest path, referral boost, negative
   evidence from 1–2★ ratings), then area trust ("Trusted in this area"), then a
   verification floor. Only tiers are shown, never a number.
+- **Verification**: the researcher checks a participant in person and marks
+  them verified (or revokes it) with `server/scripts/verifyUser.js`, which
+  calls an admin route protected by `ADMIN_SECRET`. It records who
+  (`researcher`), when and how (`in-person`); no documents or photos. Verified
+  workers get the higher trust floor (0.3 instead of 0.1) and a "Verified"
+  badge on Discover cards, offers and profiles.
 - **Client-anchored bidding** (FR-04/05/05b): the client posts a job with a
   price; workers accept it or send one counter-offer (optionally asking for a
   materials amount); the client sees offers ranked by trust and chooses one.

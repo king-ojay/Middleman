@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema({
     enum: ['unverified', 'pending', 'verified'],
     default: 'unverified'
   },
+  // Who verified the person, when and how. Set and revoked only by the
+  // researcher through the admin route (modules/users/verification.js); no
+  // documents or photos are collected. Never sent to other users.
+  verifiedBy: { type: String, enum: ['researcher', null], default: null },
+  verifiedAt: { type: Date, default: null },
+  verificationMethod: { type: String, enum: ['in-person', null], default: null },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // FR-03
   pinHash: { type: String, select: false }, // scrypt hash of the 4-digit login PIN, never returned
   sessionVersion: { type: Number, default: 0, select: false } // bump to end every session (e.g. PIN reset)

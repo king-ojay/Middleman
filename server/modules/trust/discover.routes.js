@@ -21,10 +21,14 @@ router.get('/', requireUser, async (req, res) => {
       ...(area ? { area } : {})
     }).lean();
 
-    // Order, tier and what the Discover card shows. The numeric score, phone
-    // numbers, referrer, verification and timestamps never go to other users.
+    // Order, tier and what the Discover card shows, including whether the
+    // worker is verified (the "Verified" badge). The numeric score, phone
+    // numbers, referrer, who verified them and when, and timestamps never go
+    // to other users.
     const ranked = await rankByTrust(req.user._id, candidates);
-    res.json(ranked.map(w => ({ _id: w._id, name: w.name, skills: w.skills, area: w.area, trustSource: w.trustSource })));
+    res.json(ranked.map(w => ({
+      _id: w._id, name: w.name, skills: w.skills, area: w.area, trustSource: w.trustSource, verified: w.verifiedStatus === 'verified'
+    })));
   } catch (err) {
     serverError(res, err, req);
   }

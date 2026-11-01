@@ -108,7 +108,17 @@ main**: repeat that flow on the live URLs once the merge has deployed.
      escrow; confirm the job is done and rate the worker.
    - Worker: find the job in Open jobs; accept or counter; start; mark complete;
      rate the client after payment.
-5. **Disputes** ("Report a problem", open to either side once the money is
+5. **Verification** (optional, in person): after checking a participant face to
+   face, mark them verified; revoke it the same way. No documents or photos.
+   ```bash
+   cd server
+   API_URL=$API ADMIN_SECRET=$ADMIN_SECRET node scripts/verifyUser.js --phone 07XXXXXXXX
+   API_URL=$API ADMIN_SECRET=$ADMIN_SECRET node scripts/verifyUser.js --phone 07XXXXXXXX --revoke
+   ```
+   It records `verifiedBy: researcher`, `verifiedAt` and
+   `verificationMethod: in-person`, and prints ids only. Verified workers get
+   the 0.3 trust floor (unverified 0.1) and a "Verified" badge.
+6. **Disputes** ("Report a problem", open to either side once the money is
    held) lock the money. Settle them with the admin routes:
    ```bash
    H="X-Admin-Secret: $ADMIN_SECRET"
@@ -124,7 +134,7 @@ main**: repeat that flow on the live URLs once the merge has deployed.
    back to "Pay into escrow" with "The payment didn't go through. Please try
    again." Payouts (release/refund) never expire; a stuck one is for MoMo or the
    admin routes above.
-6. SUS and the personalised-vs-flat ranking-preference questions on the paper
+7. SUS and the personalised-vs-flat ranking-preference questions on the paper
    or Google Form, keyed by participant ID only.
 
 ### After the pilot

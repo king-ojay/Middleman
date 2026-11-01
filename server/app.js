@@ -11,6 +11,7 @@ import discoverRouter from './modules/trust/discover.routes.js';
 import usersRouter from './modules/users/users.routes.js';
 import { adminRouter, callbackRouter } from './modules/payments/payments.routes.js';
 import { serverError } from './modules/serverError.js';
+import { verificationRouter } from './modules/users/verification.js';
 
 // The Express app without a database connection or a listening port, so
 // tests can start it on their own (see test/).
@@ -32,6 +33,7 @@ app.use('/api/discover', discoverRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/payments', callbackRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/admin', verificationRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
