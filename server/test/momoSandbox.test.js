@@ -49,18 +49,18 @@ test('requestToPay: token, then a collection request with the idempotency key an
   assert.equal(payReq.headers['X-Callback-Url'], `https://api.example.org/api/payments/momo/callback?ref=${request.referenceId}`);
   assert.deepEqual(payReq.body, {
     amount: '15000', currency: 'EUR', externalId: 'job1',
-    payer: { partyIdType: 'MSISDN', partyId: '46733123450' }, payerMessage: 'n', payeeNote: 'n'
+    payer: { partyIdType: 'MSISDN', partyId: '46733123480' }, payerMessage: 'n', payeeNote: 'n'
   });
 });
 
 test('transfer pays the sandbox test number, never a participant number, with the disbursement keys', async () => {
   const { requests, fetchImpl } = stubFetch();
-  const momo = createMomoSandboxProvider({ ...ENV, MOMO_SANDBOX_MSISDN: '46733123459' }, fetchImpl);
+  const momo = createMomoSandboxProvider({ ...ENV, MOMO_SANDBOX_MSISDN: '46733123481' }, fetchImpl);
   await momo.transfer({ ...request, party: { role: 'worker', userId: 'w1', phone: '+250788123456' } });
   const payReq = requests.at(-1);
   assert.equal(payReq.url, `https://${SANDBOX_HOST}/disbursement/v1_0/transfer`);
   assert.equal(payReq.headers['Ocp-Apim-Subscription-Key'], 'dis-sub');
-  assert.deepEqual(payReq.body.payee, { partyIdType: 'MSISDN', partyId: '46733123459' });
+  assert.deepEqual(payReq.body.payee, { partyIdType: 'MSISDN', partyId: '46733123481' });
   assert.equal(JSON.stringify(requests).includes('788123456'), false);
 });
 

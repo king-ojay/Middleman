@@ -2,18 +2,19 @@
 // answers like the sandbox does for its test payer numbers, as given for this
 // project:
 //   46733123450 failed, 46733123451 rejected, 46733123452 expired,
-//   46733123453 stays pending; any other number succeeds.
-// MTN's exact status bodies for these numbers were not checked against the
-// real sandbox (scripts/momoSandboxCheck.js does that with keys), so each
-// outcome comes in two encodings the provider must both handle:
-//   'reason': FAILED + a reason code (how MTN documents failures)
-//   'status': the outcome as its own status name (REJECTED, TIMEOUT, ONGOING)
+//   46733123453 stays pending; a number outside MTN's table (the default
+//   46733123480) succeeds.
+// Each outcome comes in two encodings the provider must both handle:
+//   'reason': FAILED + a reason code, which is what the real sandbox returned
+//             for these numbers (scripts/momoSandboxCheck.js, 2026-11-01)
+//   'status': the outcome as its own status name (REJECTED, TIMEOUT, ONGOING),
+//             kept so the provider copes if MTN reports it that way
 export const SANDBOX_NUMBERS = {
   failed: '46733123450',
   rejected: '46733123451',
   expired: '46733123452',
   pending: '46733123453',
-  success: '46733123459'
+  success: '46733123480'
 };
 
 const ANSWERS = {

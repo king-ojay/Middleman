@@ -143,7 +143,7 @@ seeded account's PIN is `1234`; phone numbers are `0788000001`–`0788000006`
 | API, production | `NODE_ENV`, `NODE_VERSION`, `CORS_ORIGINS`, `OTP_SECRET` (without it codes use a random key per process), `PORT` (set by the host) |
 | API, optional | `SESSION_TTL_HOURS` |
 | SMS codes | `OTP_PROVIDER` (`console`, `twilio`, `africastalking`); `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM`; `AT_USERNAME`, `AT_API_KEY`, `AT_SENDER_ID` |
-| Escrow | `PAYMENT_PROVIDER` (`fake`, `momo-sandbox`); `MOMO_COLLECTION_SUBSCRIPTION_KEY`, `MOMO_COLLECTION_USER_ID`, `MOMO_COLLECTION_API_KEY`, `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`, `MOMO_DISBURSEMENT_USER_ID`, `MOMO_DISBURSEMENT_API_KEY`, `MOMO_CALLBACK_URL`; optional `MOMO_CURRENCY`, `MOMO_SANDBOX_MSISDN` |
+| Escrow | `PAYMENT_PROVIDER` (`fake`, `momo-sandbox`); `MOMO_COLLECTION_SUBSCRIPTION_KEY`, `MOMO_COLLECTION_USER_ID`, `MOMO_COLLECTION_API_KEY`, `MOMO_DISBURSEMENT_SUBSCRIPTION_KEY`, `MOMO_DISBURSEMENT_USER_ID`, `MOMO_DISBURSEMENT_API_KEY`, `MOMO_CALLBACK_URL`; optional `MOMO_CURRENCY`, `MOMO_SANDBOX_MSISDN` (default `46733123480`, which succeeds; test numbers in `docs/RUNBOOK.md`) |
 | Disputes | `ADMIN_SECRET` (header `X-Admin-Secret` on `/api/admin/*`) |
 | Tests | `TEST_MONGO_URI` (database name must contain "test") |
 | App (Vercel) | `VITE_API_URL` |
@@ -222,8 +222,10 @@ Vercel URL must be in the API's `CORS_ORIGINS`.
   is not switched on yet, so OTP signup and PIN reset do not work on the live
   URL.
 - **Escrow** is sandbox only. The MoMo provider has been run against the real
-  MTN sandbox test numbers (failed, rejected, expired, pending: see
-  `docs/RUNBOOK.md`), but a successful sandbox payment has not been seen yet.
+  MTN sandbox (`scripts/momoSandboxCheck.js`): payments and payouts succeed
+  with the default sandbox number,
+  and the test numbers give failed, rejected, expired and pending (table in
+  `docs/RUNBOOK.md`).
   Failed, rejected or expired payments bring back "Pay into escrow" with a
   message; a payment still pending after 5 minutes expires. One
   payment covers the whole price (the materials amount is shown, not paid

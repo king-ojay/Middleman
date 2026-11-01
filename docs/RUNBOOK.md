@@ -152,18 +152,35 @@ script is not built yet (see below), so this must be built before the pilot.
 - Not installable as a PWA yet: no web manifest, service worker or favicon.
 
 **Escrow:**
-- Sandbox only, no real money. `scripts/momoSandboxCheck.js` was run against
-  the real MTN sandbox on 2026-11-01: 46733123450 → FAILED
-  (INTERNAL_PROCESSING_ERROR), 46733123451 → FAILED (APPROVAL_REJECTED),
-  46733123452 → FAILED (EXPIRED), 46733123453 → stays PENDING, for both
-  requestToPay and transfer. No successful sandbox payment yet: other numbers
-  returned INVALID_CALLBACK_URL_HOST (collection) and
-  NOT_ALLOWED_TARGET_ENVIRONMENT (disbursement) with the current sandbox API
-  user. The app's own escrow flow is tested with the fake provider and with a
-  stub that answers like those four numbers (`test/momoSandboxStub.js`).
-- The default `MOMO_SANDBOX_MSISDN` (46733123450) is the sandbox's failing
-  test number: set `MOMO_SANDBOX_MSISDN` to another number for payments that
-  should succeed.
+- Sandbox only, no real money. The payer/payee is always the sandbox number
+  in `MOMO_SANDBOX_MSISDN`; the default is **46733123480**, which is outside
+  MTN's test table, so payments and payouts succeed. Set another number from
+  the table below to see a failure.
+- Sandbox test numbers, as the real MTN sandbox answered
+  `scripts/momoSandboxCheck.js` on 2026-11-01 (status, reason):
+
+  | Number | requestToPay (payment in) | transfer (payout) |
+  |---|---|---|
+  | 46733123450 | FAILED, INTERNAL_PROCESSING_ERROR | FAILED, INTERNAL_PROCESSING_ERROR |
+  | 46733123451 | FAILED, APPROVAL_REJECTED | FAILED, APPROVAL_REJECTED |
+  | 46733123452 | FAILED, EXPIRED | FAILED, EXPIRED |
+  | 46733123453 | PENDING (still pending after 60 s) | PENDING |
+  | 46733123454 | PENDING, then SUCCESSFUL after about 55 s | PENDING, then SUCCESSFUL after about 55 s |
+  | 46733123455 | FAILED, PAYER_NOT_FOUND | FAILED, NOT_ENOUGH_FUNDS |
+  | 46733123456 | FAILED, PAYEE_NOT_ALLOWED_TO_RECEIVE | FAILED, PAYER_LIMIT_REACHED |
+  | 46733123457 | FAILED, NOT_ALLOWED | FAILED, PAYEE_NOT_FOUND |
+  | 46733123458 | FAILED, NOT_ALLOWED_TARGET_ENVIRONMENT | FAILED, NOT_ALLOWED |
+  | 46733123459 | FAILED, INVALID_CALLBACK_URL_HOST | FAILED, NOT_ALLOWED_TARGET_ENVIRONMENT |
+  | 46733123480 (default; any number outside the table) | SUCCESSFUL | SUCCESSFUL |
+
+  Every request was accepted (202) and a repeat of the same reference
+  returned `duplicate: true`. The rows are what the sandbox returned, not
+  copied from a published list. In the app, every FAILED row brings back "Pay into escrow" with
+  "The payment didn't go through. Please try again."; 46733123453 expires
+  after 5 minutes; 46733123454 settles by callback or polling.
+- The app's own escrow flow is tested with the fake provider and with a stub
+  that answers like 46733123450–53 and 46733123480 (`test/momoSandboxStub.js`);
+  no test calls the real sandbox.
 - A payment that expires after 5 minutes but that MoMo later reports as
   successful is not picked up again (its reference is no longer pending): in
   the sandbox nothing is charged, but the ledger would not show it.
