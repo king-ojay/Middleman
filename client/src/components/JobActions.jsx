@@ -24,14 +24,21 @@ const ACTIONS = {
 // While a payment waits for approval there is nothing to do but check on it.
 const CHECK_PAYMENT = [{ action: 'escrow/sync', label: 'Check payment' }];
 
+// A payment into escrow that failed, was rejected or expired: the job is back
+// at "Pay into escrow" and escrow.lastFailure says why.
+const PAYMENT_FAILED = "The payment didn't go through. Please try again.";
+
 // primaryOnly (job cards): just the one next step, no "Report a problem";
-// that stays on the job's own page.
-export default function JobActions({ job, role, onChange, primaryOnly = false }) {
+// that stays on the job's own page. stalled: the job page has stopped
+// checking a pending payment on its own (JobDetail POLL_FOR_MS).
+export default function JobActions({ job, role, onChange, primaryOnly = false, stalled = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const all = job.escrow?.pending ? CHECK_PAYMENT : ACTIONS[role]?.[job.status] || [];
   const actions = primaryOnly && all !== CHECK_PAYMENT ? all.filter(a => a.primary) : all;
   if (actions.length === 0) return null;
+  const paymentFailed = role === 'client' && job.status === 'quote_accepted' && !job.escrow?.pending
+    && job.escrow?.lastFailure?.kind === 'fund';
 
   const run = async action => {
     if (action === 'dispute' && !window.confirm('Report a problem with this job? The payment stays locked until it is reviewed.')) return;
@@ -50,6 +57,8 @@ export default function JobActions({ job, role, onChange, primaryOnly = false })
 
   return (
     <div className={primaryOnly ? 'space-y-3' : 'mt-4 space-y-3'}>
+      {paymentFailed && !error && <p className="text-small text-danger" role="alert">{PAYMENT_FAILED}</p>}
+      {stalled && job.escrow?.pending && <p className="text-body text-muted" role="status">Still waiting.</p>}
       {actions.map(({ action, to, label, primary }) =>
         to ? (
           <Button key={to} to={`/my-jobs/${job._id}`}>{label}</Button>

@@ -25,6 +25,9 @@ before(async () => {
   if (!/test/i.test(MONGO)) throw new Error('TEST_MONGO_URI must point at a database with "test" in its name');
   process.env.SESSION_SECRET = 'api-test-secret';
   process.env.CORS_ORIGINS = 'https://app.example.org';
+  // Never the real MoMo sandbox from a test, even when server/.env selects it
+  // (dotenv leaves variables that are already set alone).
+  process.env.PAYMENT_PROVIDER = 'fake';
 
   mongoose = (await import('mongoose')).default;
   ({ default: User } = await import('../modules/users/user.model.js'));

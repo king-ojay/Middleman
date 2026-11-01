@@ -16,7 +16,14 @@
 //   3. settle: when the provider says SUCCESSFUL or FAILED (straight away,
 //      by callback, or by polling), move the job on or back; the ledger gets
 //      `<kind>_succeeded` or `<kind>_failed`. Settling a movement twice does
-//      nothing the second time.
+//      nothing the second time. A failure is kept in escrow.lastFailure so
+//      the app can say the payment didn't go through.
+//
+// A payment into escrow that is still pending FUND_EXPIRY_MS after it
+// started (the payer never approved it) expires at the next status check:
+// it is settled as failed, so the job is not locked and the client can pay
+// again. Payouts never expire this way: the money may already be on its way,
+// and a second payout could pay twice; they wait for the provider or an admin.
 import { randomUUID } from 'node:crypto';
 import mongoose from 'mongoose';
 import Job from '../jobs/job.model.js';
@@ -29,6 +36,8 @@ const MOVES = {
   release: { api: 'disbursement', from: 'held', pending: 'releasing', done: 'released', back: 'held', stamp: 'releasedAt', fundsTo: 'worker' },
   refund: { api: 'disbursement', from: 'held', pending: 'refunding', done: 'refunded', back: 'held', stamp: 'refundedAt', fundsTo: 'client' }
 };
+
+export const FUND_EXPIRY_MS = 5 * 60 * 1000;
 
 // Jobs from before escrow existed have no escrow field at all.
 const escrowStatusIs = status => (status === 'none' ? { $in: ['none', null] } : status);
@@ -62,7 +71,8 @@ async function move(kind, { filter, jobStatus, doneStatus, backStatus, extra = {
         ...(jobStatus ? { status: jobStatus } : {}),
         ...extra,
         'escrow.status': m.pending,
-        'escrow.pending': { kind, ref, accepted: false, doneStatus, backStatus },
+        'escrow.pending': { kind, ref, accepted: false, startedAt: new Date(), doneStatus, backStatus },
+        'escrow.lastFailure': null,
         [`escrow.${kind}Ref`]: ref,
         ...(kind === 'fund' ? { 'escrow.amount': amount, 'escrow.currency': provider.currency, 'escrow.provider': provider.name } : {})
       },
@@ -104,7 +114,7 @@ async function move(kind, { filter, jobStatus, doneStatus, backStatus, extra = {
  * writes the ledger record, in one transaction. Does nothing when `ref` is
  * no longer pending, so repeated callbacks and racing polls are harmless.
  */
-export async function settle(jobId, ref, { status, reason = '' }) {
+export async function settle(jobId, ref, { status, reason = '', expired = false }) {
   const ok = status === 'SUCCESSFUL';
   return mongoose.connection.transaction(async session => {
     const job = await Job.findOne({ _id: jobId, 'escrow.pending.ref': ref }).session(session).lean();
@@ -124,6 +134,7 @@ export async function settle(jobId, ref, { status, reason = '' }) {
           status: p.backStatus,
           'escrow.status': m.back,
           'escrow.pending': null,
+          'escrow.lastFailure': { kind: p.kind, reason: expired ? 'expired' : 'failed', at: now },
           // a failed release after confirming: the job is not confirmed after all
           ...(p.backStatus === 'awaiting_confirmation' ? { completedAt: null } : {})
         };
@@ -151,17 +162,26 @@ export async function sync(jobId) {
   const job = await Job.findById(jobId).lean();
   const p = job?.escrow?.pending;
   if (!p) return job;
+  const expired = p.kind === 'fund' && Date.now() - new Date(p.startedAt ?? job.updatedAt).getTime() >= FUND_EXPIRY_MS;
   let result;
   try {
     result = await getPaymentProvider().getStatus(MOVES[p.kind].api, p.ref);
   } catch {
-    return job;
+    // Unreachable: an expired payment the provider never accepted can go;
+    // one it did accept waits until the provider answers.
+    return expired && !p.accepted ? expire(job, p) : job;
   }
   if (result.status === 'SUCCESSFUL' || result.status === 'FAILED') return settle(job._id, p.ref, result);
   // Never received (the call failed before arriving): nothing moved.
   if (result.status === 'NOT_FOUND' && !p.accepted) return settle(job._id, p.ref, { status: 'FAILED', reason: 'not received by the provider' });
-  return job;
+  return expired ? expire(job, p) : job;
 }
+
+const expire = (job, p) => settle(job._id, p.ref, {
+  status: 'FAILED',
+  reason: `expired: not approved within ${FUND_EXPIRY_MS / 60000} minutes`,
+  expired: true
+});
 
 // Settles whichever job has `ref` in flight (provider callbacks). The
 // callback's own body is never trusted: the status is fetched from the provider.
@@ -188,9 +208,16 @@ const escrowConflict = (job, action) => {
   return new HttpError(409, `Can't ${action} a job that is ${job.status.replaceAll('_', ' ')}`);
 };
 
-/** The client pays the agreed price into escrow (quote_accepted -> escrow_held). */
+/**
+ * The client pays the agreed price into escrow (quote_accepted -> escrow_held).
+ * A payment that fails or expires puts the job back to quote_accepted, with
+ * escrow.lastFailure set, and the client can pay again.
+ */
 export async function fund(jobId, client) {
-  await ownJob(jobId, client, 'client');
+  const current = await ownJob(jobId, client, 'client');
+  // An earlier payment still marked pending: check it first, so one that has
+  // failed or expired no longer blocks this attempt.
+  if (current.escrow?.pending?.kind === 'fund') await sync(current._id);
   const job = await move('fund', {
     filter: { _id: jobId, client: client._id, status: 'quote_accepted' },
     doneStatus: 'escrow_held',

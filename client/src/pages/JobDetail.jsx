@@ -12,6 +12,9 @@ import {
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 
+const POLL_EVERY_MS = 5000;
+const POLL_FOR_MS = 2 * 60 * 1000;
+
 export default function JobDetail() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -22,13 +25,23 @@ export default function JobDetail() {
   useEffect(() => { load(); }, [id]);
 
   // A payment or payout waiting on the provider: check on it every few
-  // seconds (the fallback when no callback arrives), then reload.
+  // seconds (the fallback when no callback arrives), then reload. After
+  // POLL_FOR_MS it stops and the person checks with a button instead; the
+  // server cancels a payment that is never approved (escrow.js FUND_EXPIRY_MS).
   const pending = Boolean(job?.escrow?.pending);
+  const [stalled, setStalled] = useState(false);
   useEffect(() => {
+    setStalled(false);
     if (!pending) return;
+    const started = Date.now();
     const timer = setInterval(() => {
+      if (Date.now() - started >= POLL_FOR_MS) {
+        clearInterval(timer);
+        setStalled(true);
+        return;
+      }
       api(`/api/jobs/${id}/escrow/sync`, { method: 'POST' }).then(load).catch(() => {});
-    }, 5000);
+    }, POLL_EVERY_MS);
     return () => clearInterval(timer);
   }, [id, pending]);
 
@@ -66,7 +79,7 @@ export default function JobDetail() {
       {!['disputed', 'resolved'].includes(job.status) && <JobStepper status={job.status} />}
 
       {confirming ? (
-        <ConfirmAndRate job={job} onChange={load} />
+        <ConfirmAndRate job={job} onChange={load} stalled={stalled} />
       ) : (
         <>
           <Card className="p-5">
@@ -75,7 +88,7 @@ export default function JobDetail() {
             <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
             <p className="text-title text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
             {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
-            <JobActions job={job} role={user.role} onChange={load} />
+            <JobActions job={job} role={user.role} onChange={load} stalled={stalled} />
           </Card>
           {!isClient && paidOut && <RateClient job={job} onRated={load} />}
           {isClient && job.myRating && (
@@ -151,7 +164,7 @@ function Offers({ job, onChosen }) {
 
 // Frame 08: the client confirms and rates in one step (FR-12). Rating is
 // required; vouching (FR-17) and a comment are optional.
-function ConfirmAndRate({ job, onChange }) {
+function ConfirmAndRate({ job, onChange, stalled }) {
   const navigate = useNavigate();
   const worker = firstName(job.worker);
   const [score, setScore] = useState(0);
@@ -161,6 +174,8 @@ function ConfirmAndRate({ job, onChange }) {
   const [error, setError] = useState('');
   const confirmed = job.status === 'completed';
   const paying = job.escrow?.status === 'releasing';
+  // A payout that failed while this screen was polling puts the job back here.
+  const payoutFailed = !confirmed && !job.escrow?.pending && job.escrow?.lastFailure?.kind === 'release';
 
   // Confirming releases escrow to the worker; the rating is saved once the
   // payout has gone through. While it is on its way the screen stays, and
@@ -221,11 +236,16 @@ function ConfirmAndRate({ job, onChange }) {
         {field => <TextArea {...field} value={comment} maxLength={500} onChange={e => setComment(e.target.value)} placeholder={`What should others know about ${worker}?`} />}
       </FormField>
 
-      {error && <p className="text-small text-danger mt-4" role="alert">{error}</p>}
+      {(error || payoutFailed) && (
+        <p className="text-small text-danger mt-4" role="alert">
+          {error || "The payment to the worker didn't go through. The money is still held. Please try again."}
+        </p>
+      )}
       <div className="mt-6 space-y-2">
         <Button onClick={confirm} disabled={busy || paying}>
           {busy ? 'Sending…' : confirmed ? 'Send rating' : 'Confirm job is done'}
         </Button>
+        {paying && stalled && <JobActions job={job} role="client" onChange={onChange} stalled />}
         {!confirmed && <Button variant="plain" onClick={reportProblem} disabled={busy}>Report a problem</Button>}
       </div>
     </>

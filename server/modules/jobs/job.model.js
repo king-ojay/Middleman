@@ -24,14 +24,28 @@ const escrowSchema = new mongoose.Schema({
   currency: { type: String, default: null },
   provider: { type: String, default: null },
   // The movement in flight: its kind, idempotency key, whether the provider
-  // accepted it, and the job status to move to when it succeeds or fails.
+  // accepted it, when it started (a payment still pending after
+  // FUND_EXPIRY_MS expires), and the job status to move to when it succeeds
+  // or fails.
   pending: {
     type: new mongoose.Schema({
       kind: { type: String, enum: ['fund', 'release', 'refund'], required: true },
       ref: { type: String, required: true },
       accepted: { type: Boolean, default: false },
+      startedAt: { type: Date, default: null },
       doneStatus: { type: String, required: true },
       backStatus: { type: String, required: true }
+    }, { _id: false }),
+    default: null
+  },
+  // The last movement that failed, so the app can say so; cleared when the
+  // next movement starts. reason: 'failed' (refused, declined, rejected, or
+  // expired at the provider) or 'expired' (no answer within FUND_EXPIRY_MS).
+  lastFailure: {
+    type: new mongoose.Schema({
+      kind: { type: String, enum: ['fund', 'release', 'refund'], required: true },
+      reason: { type: String, enum: ['failed', 'expired'], required: true },
+      at: { type: Date, required: true }
     }, { _id: false }),
     default: null
   },

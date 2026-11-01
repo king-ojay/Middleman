@@ -379,3 +379,138 @@ test('the ledger stores no phone numbers or names', { skip }, async () => {
   const text = JSON.stringify(await Transaction.find({ job: job._id }).lean());
   for (const s of ['0788400001', '0788400002', '788400001', 'Client Esc', 'Worker Esc']) assert.equal(text.includes(s), false);
 });
+
+// 6. Payments that fail, are rejected, expire or never finish: the job goes
+// back to "Pay into escrow" with escrow.lastFailure set, and paying again
+// works. The MoMo sandbox provider runs against a stub that answers like the
+// sandbox test numbers (test/momoSandboxStub.js); no network, no keys.
+
+const momoWith = async (number, encoding = 'reason') => {
+  const { createMomoSandboxProvider } = await import('../modules/payments/providers/momoSandbox.js');
+  const { sandboxFetch, SANDBOX_ENV } = await import('./momoSandboxStub.js');
+  const provider = createMomoSandboxProvider({ ...SANDBOX_ENV, MOMO_SANDBOX_MSISDN: number }, sandboxFetch(encoding).fetchImpl);
+  setPaymentProvider(provider);
+  return provider;
+};
+const { SANDBOX_NUMBERS } = await import('./momoSandboxStub.js');
+const { FUND_EXPIRY_MS } = await import('../modules/payments/escrow.js');
+// Pretends the payment in flight started longer ago than the expiry.
+const agePending = (jobId, ms = FUND_EXPIRY_MS + 1000) =>
+  Job.updateOne({ _id: jobId }, { 'escrow.pending.startedAt': new Date(Date.now() - ms) });
+
+for (const outcome of ['failed', 'rejected', 'expired']) {
+  test(`sandbox ${SANDBOX_NUMBERS[outcome]} (${outcome}): the job goes back with lastFailure, and paying again works`, { skip }, async () => {
+    for (const encoding of ['reason', 'status']) {
+      const job = await acceptedJob();
+      await momoWith(SANDBOX_NUMBERS[outcome], encoding);
+      const failed = await post(`/api/jobs/${job._id}/fund`, 'client');
+      assert.equal(failed.status, 200);
+      assert.equal(failed.data.status, 'quote_accepted');
+      assert.equal(failed.data.escrow.status, 'none');
+      assert.equal(failed.data.escrow.pending, null);
+      assert.equal(failed.data.escrow.lastFailure.kind, 'fund');
+      assert.equal(failed.data.escrow.lastFailure.reason, 'failed');
+      // The job page shows it to the client.
+      assert.equal((await call('GET', `/api/jobs/${job._id}`, { as: 'client' })).data.escrow.lastFailure.kind, 'fund');
+      const failure = await Transaction.findOne({ job: job._id, event: 'fund_failed' }).lean();
+      assert.ok(failure.reason, `${encoding}: the ledger keeps the provider's reason`);
+
+      await momoWith(SANDBOX_NUMBERS.success);
+      const retried = await post(`/api/jobs/${job._id}/fund`, 'client');
+      assert.equal(retried.status, 200, encoding);
+      assert.equal(retried.data.status, 'escrow_held');
+      assert.equal(retried.data.escrow.lastFailure, null);
+      assert.deepEqual(await ledger(job._id), ['fund_requested', 'fund_failed', 'fund_requested', 'fund_succeeded']);
+    }
+  });
+}
+
+test(`sandbox ${SANDBOX_NUMBERS.pending} (stays pending): locked until it expires, then cancelled with reason "expired", and paying again works`, { skip }, async () => {
+  for (const encoding of ['reason', 'status']) {
+    const job = await acceptedJob();
+    await momoWith(SANDBOX_NUMBERS.pending, encoding);
+    const res = await post(`/api/jobs/${job._id}/fund`, 'client');
+    assert.equal(res.status, 202);
+    assert.equal(res.data.escrow.status, 'funding');
+    assert.ok(res.data.escrow.pending.startedAt);
+
+    // Before the expiry: polling changes nothing and a second payment is refused.
+    assert.equal((await post(`/api/jobs/${job._id}/escrow/sync`, 'client')).data.escrow.status, 'funding');
+    const early = await post(`/api/jobs/${job._id}/fund`, 'client');
+    assert.equal(early.status, 409);
+    assert.match(early.data.error, /already waiting for approval/);
+
+    // After it: the next check cancels it.
+    await agePending(job._id);
+    const expired = await post(`/api/jobs/${job._id}/escrow/sync`, 'client');
+    assert.equal(expired.data.status, 'quote_accepted');
+    assert.equal(expired.data.escrow.status, 'none');
+    assert.deepEqual(expired.data.escrow.lastFailure && { kind: expired.data.escrow.lastFailure.kind, reason: expired.data.escrow.lastFailure.reason }, { kind: 'fund', reason: 'expired' });
+    const failure = await Transaction.findOne({ job: job._id, event: 'fund_failed' }).lean();
+    assert.match(failure.reason, /^expired/);
+    assert.equal(failure.actorRole, 'system');
+
+    await momoWith(SANDBOX_NUMBERS.success);
+    const retried = await post(`/api/jobs/${job._id}/fund`, 'client');
+    assert.equal(retried.status, 200, encoding);
+    assert.equal(retried.data.status, 'escrow_held');
+  }
+});
+
+test('paying again straight after the expiry works without a status check first', { skip }, async () => {
+  const job = await acceptedJob();
+  await momoWith(SANDBOX_NUMBERS.pending);
+  const first = await post(`/api/jobs/${job._id}/fund`, 'client');
+  await agePending(job._id);
+  await momoWith(SANDBOX_NUMBERS.success);
+  const retried = await post(`/api/jobs/${job._id}/fund`, 'client');
+  assert.equal(retried.status, 200);
+  assert.equal(retried.data.status, 'escrow_held');
+  assert.notEqual(retried.data.escrow.fundRef, first.data.escrow.fundRef);
+  assert.deepEqual(await ledger(job._id), ['fund_requested', 'fund_failed', 'fund_requested', 'fund_succeeded']);
+});
+
+test('expiry when the provider cannot be reached: only a payment it never accepted is cancelled', { skip }, async () => {
+  // Accepted by the provider, then unreachable: it may still go through, so it waits.
+  const accepted = await acceptedJob();
+  fake.failNext('requestToPay', 'pending');
+  await post(`/api/jobs/${accepted._id}/fund`, 'client');
+  await agePending(accepted._id);
+  fake.failNext('getStatus', 'timeout');
+  assert.equal((await post(`/api/jobs/${accepted._id}/escrow/sync`, 'client')).data.escrow.status, 'funding');
+
+  // Never accepted (the request timed out) and still unreachable: cancelled.
+  const unsent = await acceptedJob();
+  fake.failNext('requestToPay', 'timeout');
+  await post(`/api/jobs/${unsent._id}/fund`, 'client');
+  await agePending(unsent._id);
+  fake.failNext('getStatus', 'timeout');
+  const synced = await post(`/api/jobs/${unsent._id}/escrow/sync`, 'client');
+  assert.equal(synced.data.escrow.status, 'none');
+  assert.equal(synced.data.escrow.lastFailure.reason, 'expired');
+});
+
+test('a payout never expires: an old pending release stays pending for the provider or an admin', { skip }, async () => {
+  const job = await awaitingJob();
+  fake.failNext('transfer', 'pending');
+  await post(`/api/jobs/${job._id}/confirm`, 'client', { score: 5 });
+  await agePending(job._id, 24 * 60 * 60 * 1000);
+  const synced = await post(`/api/jobs/${job._id}/escrow/sync`, 'client');
+  assert.equal(synced.data.escrow.status, 'releasing');
+  assert.equal(synced.data.escrow.lastFailure, null);
+});
+
+test('a failed payout is kept in lastFailure too, and cleared by the next attempt', { skip }, async () => {
+  const job = await awaitingJob();
+  fake.failNext('transfer', 'fail');
+  const failed = await post(`/api/jobs/${job._id}/confirm`, 'client', { score: 4 });
+  assert.equal(failed.status, 409);
+  assert.match(failed.data.error, /didn't go through/);
+  const after = await reload(job._id);
+  assert.equal(after.status, 'awaiting_confirmation');
+  assert.equal(after.escrow.status, 'held');
+  assert.equal(after.escrow.lastFailure.kind, 'release');
+  const retried = await post(`/api/jobs/${job._id}/confirm`, 'client', { score: 4 });
+  assert.equal(retried.data.job.escrow.status, 'released');
+  assert.equal(retried.data.job.escrow.lastFailure, null);
+});

@@ -15,6 +15,12 @@ import { ProviderError } from './errors.js';
 export const SANDBOX_HOST = 'sandbox.momodeveloper.mtn.com';
 const TIMEOUT_MS = 15000;
 const PATHS = { collection: 'requesttopay', disbursement: 'transfer' };
+// Statuses that mean it is over and nothing moved. MTN reports most failures
+// as FAILED with a reason (APPROVAL_REJECTED, EXPIRED, …), but the sandbox
+// test numbers have been described with their own status names too.
+// Anything else (PENDING, ONGOING, CREATED, unknown) is still pending: a
+// payment into escrow that never finishes expires (escrow.js FUND_EXPIRY_MS).
+const FINAL_FAILURES = ['FAILED', 'REJECTED', 'TIMEOUT', 'EXPIRED', 'CANCELLED'];
 
 export function createMomoSandboxProvider(env = process.env, fetchImpl = globalThis.fetch) {
   const base = (env.MOMO_BASE_URL || `https://${SANDBOX_HOST}`).replace(/\/+$/, '');
@@ -113,9 +119,10 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
       if (res.status === 404) return { status: 'NOT_FOUND', reason: '' };
       if (!res.ok) throw await failure(res, `${PATHS[api]} status`);
       const body = await res.json();
-      const status = body.status === 'SUCCESSFUL' || body.status === 'PENDING' ? body.status : 'FAILED';
-      const reason = typeof body.reason === 'string' ? body.reason : body.reason?.message || body.reason?.code || '';
-      return { status, reason };
+      const raw = String(body.status || '').toUpperCase();
+      const status = raw === 'SUCCESSFUL' ? 'SUCCESSFUL' : FINAL_FAILURES.includes(raw) ? 'FAILED' : 'PENDING';
+      const given = typeof body.reason === 'string' ? body.reason : body.reason?.message || body.reason?.code || '';
+      return { status, reason: given || (status === 'FAILED' ? raw : '') };
     }
   };
 }
