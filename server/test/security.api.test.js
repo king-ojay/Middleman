@@ -209,3 +209,33 @@ test('rating + trust edge is one unit: a failed edge write stores no rating, so 
   assert.equal(await Rating.countDocuments({ job: job._id, fromUser: users.worker._id }), 1);
   assert.equal(await edges(), before + 1);
 });
+
+test('an unknown server error answers "Something went wrong. Please try again." and logs no phone or id', { skip }, async () => {
+  const token = await tokenFor('0788200001');
+  const original = User.findById;
+  // call 1 is requireUser loading the session user (middleware, so the app's
+  // fallback handler answers); call 2 is the profile route's own lookup.
+  for (const failOnCall of [1, 2]) {
+    let calls = 0;
+    User.findById = function (...args) {
+      if (++calls === failOnCall) throw new Error('lookup failed at 0788200002');
+      return original.apply(this, args);
+    };
+    const lines = [];
+    const log = console.error;
+    console.error = (...args) => lines.push(args.join(' '));
+    let res;
+    try {
+      res = await call('GET', `/api/users/${users.worker._id}/profile?ref=0788200002`, { token });
+    } finally {
+      console.error = log;
+      User.findById = original;
+    }
+    assert.equal(res.status, 500, `call ${failOnCall}`);
+    assert.deepEqual(res.data, { error: 'Something went wrong. Please try again.' });
+    const line = lines.join('\n');
+    assert.match(line, /\[error\] GET \/api\/users\/:id\/profile Error: lookup failed at \*{5}002/);
+    assert.equal(line.includes('0788200002'), false);
+    assert.equal(line.includes(String(users.worker._id)), false);
+  }
+});

@@ -10,6 +10,7 @@ import jobsRouter from './modules/jobs/jobs.routes.js';
 import discoverRouter from './modules/trust/discover.routes.js';
 import usersRouter from './modules/users/users.routes.js';
 import { adminRouter, callbackRouter } from './modules/payments/payments.routes.js';
+import { serverError } from './modules/serverError.js';
 
 // The Express app without a database connection or a listening port, so
 // tests can start it on their own (see test/).
@@ -36,5 +37,13 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
 // Unknown API routes answer in JSON like everything else.
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
+
+// Anything thrown outside a route's own error handling: client errors (bad
+// JSON, too large) keep Express's answer; anything else gets the generic
+// message, and the real error is logged without personal data.
+app.use((err, req, res, next) => {
+  if (res.headersSent || (err.status && err.status < 500)) return next(err);
+  serverError(res, err, req);
+});
 
 export default app;

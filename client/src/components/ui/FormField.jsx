@@ -3,7 +3,9 @@ import { useId, useRef } from 'react';
 const INPUT = 'w-full bg-surface border border-line rounded-field px-4 text-body text-ink placeholder:text-faint focus:border-heading focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0';
 
 // Label above, helper or error below. Children receive the generated id via
-// render prop so the label is always wired to the input.
+// render prop so the label is always wired to the input. An error replaces
+// the helper as a new role="alert" element (its own key), so screen readers
+// announce it when it appears, e.g. a wrong PIN on Login.
 export default function FormField({ label, helper, error, children, className = '' }) {
   const id = useId();
   const describedBy = error || helper ? `${id}-hint` : undefined;
@@ -11,9 +13,11 @@ export default function FormField({ label, helper, error, children, className = 
     <div className={className}>
       {label && <label htmlFor={id} className="block text-label text-ink mb-2">{label}</label>}
       {children({ id, 'aria-describedby': describedBy, 'aria-invalid': error ? true : undefined })}
-      {(error || helper) && (
-        <p id={`${id}-hint`} className={`text-small mt-2 ${error ? 'text-danger' : 'text-muted'}`}>{error || helper}</p>
-      )}
+      {error ? (
+        <p key="error" id={`${id}-hint`} role="alert" className="text-small mt-2 text-danger">{error}</p>
+      ) : helper ? (
+        <p key="helper" id={`${id}-hint`} className="text-small mt-2 text-muted">{helper}</p>
+      ) : null}
     </div>
   );
 }
