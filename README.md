@@ -221,8 +221,11 @@ Vercel URL must be in the API's `CORS_ORIGINS`.
 - **Live signup** needs a real SMS provider (`OTP_PROVIDER=africastalking`); it
   is not switched on yet, so OTP signup and PIN reset do not work on the live
   URL.
-- **Escrow** is sandbox only and has not been run against the real MTN sandbox
-  (no keys yet); the fake provider and stubbed request shapes are tested. One
+- **Escrow** is sandbox only. The MoMo provider has been run against the real
+  MTN sandbox test numbers (failed, rejected, expired, pending: see
+  `docs/RUNBOOK.md`), but a successful sandbox payment has not been seen yet.
+  Failed, rejected or expired payments bring back "Pay into escrow" with a
+  message; a payment still pending after 5 minutes expires. One
   payment covers the whole price (the materials amount is shown, not paid
   separately); no 72-hour auto-release; disputes are settled through admin API
   routes, with no admin screen.

@@ -23,7 +23,10 @@ TEST_MONGO_URI='mongodb://localhost:27017/middleman_test?directConnection=true' 
   security files use their own suffixed copies).
 - Expected at release: 112 tests, 112 pass, 0 skipped.
 - Escrow runs on the fake payment provider in tests; `test/momoSandbox.test.js`
-  checks the MoMo request shapes against a stubbed `fetch` (no network).
+  checks the MoMo request shapes against a stubbed `fetch` (no network), and
+  `test/momoSandboxStub.js` answers like the sandbox test numbers (failed,
+  rejected, expired, pending) for the payment-failure tests. No test ever
+  calls the real sandbox, even when `server/.env` selects it.
 
 Ranking regression (positive-only rankings must not change, 300 rankings):
 
@@ -115,7 +118,12 @@ main**: repeat that flow on the live URLs once the merge has deployed.
    curl -s -X POST -H "$H" $API/api/admin/jobs/<jobId>/refund    # repay the client
    ```
    A payment that stays "pending" settles when MoMo calls back or when the job
-   page polls (every 5 s while it is open).
+   page polls (every 5 s for 2 minutes while it is open; after that it shows
+   "Still waiting." and a Check payment button). A payment into escrow still
+   pending 5 minutes after it started expires at the next check: the job goes
+   back to "Pay into escrow" with "The payment didn't go through. Please try
+   again." Payouts (release/refund) never expire; a stuck one is for MoMo or the
+   admin routes above.
 6. SUS and the personalised-vs-flat ranking-preference questions on the paper
    or Google Form, keyed by participant ID only.
 
@@ -144,8 +152,21 @@ script is not built yet (see below), so this must be built before the pilot.
 - Not installable as a PWA yet: no web manifest, service worker or favicon.
 
 **Escrow:**
-- Sandbox only, no real money. Never tested against the real MTN sandbox (no
-  keys at release); the fake provider and stubbed request shapes are tested.
+- Sandbox only, no real money. `scripts/momoSandboxCheck.js` was run against
+  the real MTN sandbox on 2026-11-01: 46733123450 → FAILED
+  (INTERNAL_PROCESSING_ERROR), 46733123451 → FAILED (APPROVAL_REJECTED),
+  46733123452 → FAILED (EXPIRED), 46733123453 → stays PENDING, for both
+  requestToPay and transfer. No successful sandbox payment yet: other numbers
+  returned INVALID_CALLBACK_URL_HOST (collection) and
+  NOT_ALLOWED_TARGET_ENVIRONMENT (disbursement) with the current sandbox API
+  user. The app's own escrow flow is tested with the fake provider and with a
+  stub that answers like those four numbers (`test/momoSandboxStub.js`).
+- The default `MOMO_SANDBOX_MSISDN` (46733123450) is the sandbox's failing
+  test number: set `MOMO_SANDBOX_MSISDN` to another number for payments that
+  should succeed.
+- A payment that expires after 5 minutes but that MoMo later reports as
+  successful is not picked up again (its reference is no longer pending): in
+  the sandbox nothing is charged, but the ledger would not show it.
 - Every MoMo payer and payee is the sandbox test number
   (`MOMO_SANDBOX_MSISDN`), never a participant's phone; amounts go as EUR, the
   sandbox currency.

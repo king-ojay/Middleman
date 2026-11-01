@@ -4,6 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMomoSandboxProvider, SANDBOX_HOST } from '../modules/payments/providers/momoSandbox.js';
+import { SANDBOX_ENV, SANDBOX_NUMBERS, sandboxFetch } from './momoSandboxStub.js';
 
 const ENV = {
   MOMO_COLLECTION_SUBSCRIPTION_KEY: 'col-sub', MOMO_COLLECTION_USER_ID: 'col-user', MOMO_COLLECTION_API_KEY: 'col-key',
@@ -75,11 +76,13 @@ test('a repeated reference (409) is accepted without a second movement; 4xx is a
   await assert.rejects(offline.transfer(request), err => err.definite === false);
 });
 
-test('getStatus maps SUCCESSFUL, PENDING, anything else to FAILED, and 404 to NOT_FOUND; the token is reused', async () => {
+test('getStatus: SUCCESSFUL, final failures to FAILED, everything else still PENDING, 404 to NOT_FOUND; the token is reused', async () => {
   const answers = [
     Response.json({ status: 'SUCCESSFUL' }),
     Response.json({ status: 'PENDING' }),
     Response.json({ status: 'REJECTED', reason: 'APPROVAL_REJECTED' }),
+    Response.json({ status: 'ONGOING' }),
+    Response.json({ status: 'SOMETHING_NEW' }),
     new Response(null, { status: 404 })
   ];
   const { requests, fetchImpl } = stubFetch(() => answers.shift());
@@ -87,7 +90,24 @@ test('getStatus maps SUCCESSFUL, PENDING, anything else to FAILED, and 404 to NO
   assert.equal((await momo.getStatus('collection', request.referenceId)).status, 'SUCCESSFUL');
   assert.equal((await momo.getStatus('collection', request.referenceId)).status, 'PENDING');
   assert.deepEqual(await momo.getStatus('disbursement', request.referenceId), { status: 'FAILED', reason: 'APPROVAL_REJECTED' });
+  // Not over yet: a payment that never finishes expires in escrow.js instead.
+  assert.equal((await momo.getStatus('collection', request.referenceId)).status, 'PENDING');
+  assert.equal((await momo.getStatus('collection', request.referenceId)).status, 'PENDING');
   assert.equal((await momo.getStatus('disbursement', request.referenceId)).status, 'NOT_FOUND');
   assert.equal(requests.filter(r => r.url.endsWith('/token/')).length, 2); // one per product
   assert.equal(requests.at(-1).url, `https://${SANDBOX_HOST}/disbursement/v1_0/transfer/${request.referenceId}`);
+});
+
+test('sandbox test numbers: 450 failed, 451 rejected, 452 expired end FAILED; 453 stays PENDING; in both encodings', async () => {
+  for (const encoding of ['reason', 'status']) {
+    for (const [outcome, expected] of [['failed', 'FAILED'], ['rejected', 'FAILED'], ['expired', 'FAILED'], ['pending', 'PENDING'], ['success', 'SUCCESSFUL']]) {
+      const { fetchImpl, requests } = sandboxFetch(encoding);
+      const momo = createMomoSandboxProvider({ ...SANDBOX_ENV, MOMO_SANDBOX_MSISDN: SANDBOX_NUMBERS[outcome] }, fetchImpl);
+      await momo.requestToPay(request);
+      assert.equal(requests.at(-1).body.payer.partyId, SANDBOX_NUMBERS[outcome]);
+      const result = await momo.getStatus('collection', request.referenceId);
+      assert.equal(result.status, expected, `${encoding} ${outcome}`);
+      if (expected === 'FAILED') assert.ok(result.reason, `${encoding} ${outcome} keeps a reason for the ledger`);
+    }
+  }
 });
