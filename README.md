@@ -16,11 +16,12 @@ tablet and desktop. ALU BSc Software Engineering capstone.
 - **App:** https://middleman-client.vercel.app
 - **API:** https://middleman-api-74zb.onrender.com/api/health
 
-The live deployment runs the `main` branch. Escrow, worker job search, the
-redesigned My jobs screens and the required area picker are on `redesign-v2`
-(tag `v1.0.0-pilot` and later) and reach the live URLs when that branch is
-merged. The API is on Render's free tier, which sleeps when idle; Render
-documents a wake-up of up to about a minute.
+The live deployment runs the `main` branch, which has `redesign-v2` merged in
+(pull request #7, 2026-10-30): escrow, worker job search, the redesigned My
+jobs screens and the required area picker are live. Work committed to
+`redesign-v2` after that merge reaches the live URLs when it is merged again.
+The API is on Render's free tier, which sleeps when idle; Render documents a
+wake-up of up to about a minute (22.8 s was measured on 2026-11-01).
 
 Demo accounts (seeded data, PIN **`1234`** for all):
 
