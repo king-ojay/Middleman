@@ -234,8 +234,9 @@ Vercel URL must be in the API's `CORS_ORIGINS`.
   routes, with no admin screen.
 - **Pilot tooling** from the ethics form is not built yet: participant IDs,
   event logs, a deletion script, in-app SUS and ranking-preference questions.
-- **Not installable as a PWA yet**: no web manifest, service worker or
-  favicon. No meta description; `/robots.txt` is served the app page.
+- **Not installable as a PWA yet**: no web manifest or service worker (the
+  favicon, meta description and `robots.txt` are in `client/public/` and
+  `client/index.html`).
 - **Render free tier**: one instance; rate limits are in memory and reset on
   restart; the instance sleeps when idle.
 - **Trust defaults** are lambda 0.5, depth 3. Held-out tuning on Bitcoin OTC

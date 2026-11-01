@@ -149,7 +149,7 @@ script is not built yet (see below), so this must be built before the pilot.
 - The app's CSP (`client/vercel.json`) allows only
   `https://middleman-api-74zb.onrender.com`. A preview or second API host must
   be added to `connect-src`, and the Vercel URL to the API's `CORS_ORIGINS`.
-- Not installable as a PWA yet: no web manifest, service worker or favicon.
+- Not installable as a PWA yet: no web manifest or service worker.
 
 **Escrow:**
 - Sandbox only, no real money. The payer/payee is always the sandbox number
