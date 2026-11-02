@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
-import { Button, FormField, PageLayout, PinBoxes, StepBar, TextInput } from '../components/ui/index.js';
+import AuthLayout from '../components/AuthLayout.jsx';
+import { Button, FormField, PinBoxes, StepBar, TextInput } from '../components/ui/index.js';
 
 // Forgot PIN: phone -> code by SMS + new PIN. The only time codes are used
 // after signup; daily login is phone + PIN.
@@ -46,7 +47,7 @@ export default function ResetPin() {
 
   if (step === 2) {
     return (
-      <PageLayout back={() => { setError(''); setStep(1); }} right="Step 2 of 2">
+      <AuthLayout back={() => { setError(''); setStep(1); }} right="Step 2 of 2">
         <StepBar step={2} />
         <h1 className="text-display tracking-tight text-ink">Choose a new PIN</h1>
         <p className="text-body text-muted mt-2 mb-6">If this number has an account, we sent it a code.</p>
@@ -59,12 +60,12 @@ export default function ResetPin() {
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <Button type="submit" disabled={busy || code.length !== 6 || pin.length !== 4}>{busy ? 'Saving…' : 'Save PIN and log in'}</Button>
         </form>
-      </PageLayout>
+      </AuthLayout>
     );
   }
 
   return (
-    <PageLayout back="/login" right="Step 1 of 2">
+    <AuthLayout back="/login" right="Step 1 of 2">
       <StepBar step={1} />
       <h1 className="text-display tracking-tight text-ink">Forgot your PIN?</h1>
       <p className="text-body text-muted mt-2 mb-6">We will text a code to your phone.</p>
@@ -74,6 +75,6 @@ export default function ResetPin() {
         </FormField>
         <Button type="submit" disabled={busy}>{busy ? 'Sending code…' : 'Send code'}</Button>
       </form>
-    </PageLayout>
+    </AuthLayout>
   );
 }

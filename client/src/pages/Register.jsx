@@ -3,10 +3,11 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
+import AuthLayout from '../components/AuthLayout.jsx';
 import AreaPicker from '../components/AreaPicker.jsx';
 import { CATEGORIES, areaLabel } from '../options.js';
 import {
-  Avatar, Button, Card, Chip, ChipRow, FormField, OptionCard, PageLayout, PinBoxes, StepBar, TextInput
+  Avatar, Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, StepBar, TextInput
 } from '../components/ui/index.js';
 
 // Two steps (FR-01, FR-02, FR-03): who you are, then a PIN and who invited you.
@@ -65,7 +66,7 @@ export default function Register() {
 
   if (step === 2) {
     return (
-      <PageLayout back={() => { setError(''); setStep(1); }} right="Step 2 of 2">
+      <AuthLayout back={() => { setError(''); setStep(1); }} right="Step 2 of 2">
         <StepBar step={2} />
         <h1 className="text-display tracking-tight text-ink">Set your PIN</h1>
         <p className="text-body text-muted mt-2 mb-6">First enter the code we sent by SMS, then choose the PIN you will log in with.</p>
@@ -79,12 +80,12 @@ export default function Register() {
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6}>{submitting ? 'Creating account…' : 'Create account'}</Button>
         </form>
-      </PageLayout>
+      </AuthLayout>
     );
   }
 
   return (
-    <PageLayout back="/login" right="Step 1 of 2">
+    <AuthLayout back="/login" right="Step 1 of 2">
       <StepBar step={1} />
       <h1 className="text-display tracking-tight text-ink">Create your account</h1>
       <p className="text-body text-muted mt-2 mb-6">Tell us who you are.</p>
@@ -127,7 +128,7 @@ export default function Register() {
         {error && error !== 'Choose your area.' && <p className="text-small text-danger" role="alert">{error}</p>}
         <Button type="submit" disabled={sending}>{sending ? 'Sending code…' : 'Continue'}</Button>
       </form>
-    </PageLayout>
+    </AuthLayout>
   );
 }
 

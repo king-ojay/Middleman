@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { wakeApi } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
-import { Avatar, Button, FormField, LogoMark, PageLayout, TextInput } from '../components/ui/index.js';
+import { Avatar, Button, FormField, LogoMark, TextInput } from '../components/ui/index.js';
+import AuthLayout from '../components/AuthLayout.jsx';
 
 export default function Login() {
   const { user, login } = useAuth();
@@ -31,8 +32,9 @@ export default function Login() {
   };
 
   return (
-    <PageLayout>
-      <div className="flex items-center gap-3 mb-12">
+    <AuthLayout>
+      {/* from 1024px the logo and the trust card are on the side panel */}
+      <div className="flex items-center gap-3 mb-12 lg:hidden">
         <LogoMark size={36} />
         <span className="text-title text-heading">Middleman</span>
       </div>
@@ -77,7 +79,7 @@ export default function Login() {
         <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-heading hover:underline">New here? Create an account</Link>
       </div>
 
-      <section className="mt-12 bg-brand rounded-hero p-6">
+      <section className="mt-12 bg-brand rounded-hero p-6 lg:hidden">
         <h2 className="text-title text-on-brand-soft">Find someone trusted by people you trust.</h2>
         <p className="text-body text-white mt-2">See the workers your network already trusts.</p>
         <div className="mt-5 flex items-center gap-3 bg-white/10 rounded-card p-3">
@@ -88,6 +90,6 @@ export default function Login() {
           </div>
         </div>
       </section>
-    </PageLayout>
+    </AuthLayout>
   );
 }
