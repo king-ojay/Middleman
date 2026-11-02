@@ -73,8 +73,8 @@ export default function Login() {
         <Button type="submit" disabled={submitting}>{submitting ? 'Logging in…' : 'Log in'}</Button>
       </form>
       <div className="flex flex-col items-center mt-4">
-        <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted">Forgot your PIN?</Link>
-        <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-heading">New here? Create an account</Link>
+        <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted hover:text-heading hover:underline">Forgot your PIN?</Link>
+        <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-heading hover:underline">New here? Create an account</Link>
       </div>
 
       <section className="mt-12 bg-brand rounded-hero p-6">

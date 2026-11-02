@@ -19,7 +19,7 @@ export default function AreaPicker({ value, onChange, label = 'Your area', error
               aria-checked={selected}
               onClick={() => onChange(a.value)}
               className={`min-h-[52px] px-3 rounded-field text-body font-medium text-center transition-colors ${
-                selected ? 'bg-accent-soft border-2 border-accent text-heading' : 'bg-surface border border-line text-ink'
+                selected ? 'bg-accent-soft border-2 border-accent text-heading' : 'bg-surface border border-line text-ink hover:border-heading'
               }`}
             >
               {a.label}

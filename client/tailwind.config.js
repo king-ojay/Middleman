@@ -5,6 +5,9 @@ const v = name => `rgb(var(--${name}) / <alpha-value>)`;
 
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  // hover: styles only where a real pointer can hover (mouse, trackpad), so a
+  // tap on a phone never leaves a button looking stuck in its hover state.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       // Each colour is a CSS variable (src/styles/index.css) holding RGB

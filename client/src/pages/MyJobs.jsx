@@ -73,7 +73,7 @@ export default function MyJobs() {
                   aria-controls="job-group"
                   onClick={() => showTab(g.key)}
                   className={`inline-flex items-center gap-2 h-11 shrink-0 px-4 rounded-full text-label whitespace-nowrap transition-colors ${
-                    selected ? 'bg-brand text-white' : 'bg-surface border border-line text-ink'
+                    selected ? 'bg-brand text-white' : 'bg-surface border border-line text-ink hover:border-heading'
                   }`}
                 >
                   {g.label}
