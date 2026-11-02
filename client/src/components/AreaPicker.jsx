@@ -3,12 +3,15 @@ import { AREAS } from '../options.js';
 
 // Pick one pilot area (the list is edited in shared/areas.js). Nothing is chosen until the person
 // taps one: there is no default, and no GPS or device location is used.
+// Chips size to their label, never split it, and wrap onto the next row; each row stretches to fill
+// the width. The selected chip's thicker edge is an inset ring, so selecting never changes a chip's
+// size or reflows the rows.
 export default function AreaPicker({ value, onChange, label = 'Your area', error }) {
   const labelId = useId();
   return (
     <div>
       <p id={labelId} className="text-label text-ink mb-2">{label}</p>
-      <div role="radiogroup" aria-labelledby={labelId} aria-required="true" aria-invalid={error ? true : undefined} className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div role="radiogroup" aria-labelledby={labelId} aria-required="true" aria-invalid={error ? true : undefined} className="flex flex-wrap gap-3">
         {AREAS.map(a => {
           const selected = value === a.value;
           return (
@@ -18,8 +21,8 @@ export default function AreaPicker({ value, onChange, label = 'Your area', error
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(a.value)}
-              className={`min-h-[52px] px-3 rounded-field text-body font-medium text-center transition-colors ${
-                selected ? 'bg-accent-soft border-2 border-accent text-heading' : 'bg-surface border border-line text-ink hover:border-heading'
+              className={`grow shrink-0 min-h-[52px] px-4 rounded-field border text-body font-medium text-center whitespace-nowrap transition-colors ${
+                selected ? 'bg-accent-soft border-accent ring-1 ring-inset ring-accent text-heading' : 'bg-surface border-line text-ink hover:border-heading'
               }`}
             >
               {a.label}
