@@ -71,7 +71,7 @@ export default function Profile() {
       {profile.recentRatings.length === 0 ? (
         <p className="text-body text-muted">No ratings yet.</p>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 items-start">
+        <ul className="grid gap-3 md:grid-cols-2">
           {profile.recentRatings.map(r => (
             <Card as="li" key={r._id} className="p-5">
               <div className="flex items-center gap-3">

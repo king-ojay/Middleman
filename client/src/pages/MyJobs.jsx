@@ -89,7 +89,7 @@ export default function MyJobs() {
             {current.jobs.length === 0
               ? <GroupEmpty group={current.key} role={role} groups={groups} showTab={showTab} />
               : (
-                <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
+                <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                   {current.jobs.map(job => <JobCard key={job._id} job={job} role={role} onChange={load} />)}
                 </ul>
               )}
@@ -124,7 +124,8 @@ function JobCard({ job, role, onChange }) {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      {/* mt-auto: in a row of cards, prices and buttons line up at the bottom */}
+      <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
           <p className="text-small text-muted">{job.agreedPrice != null ? 'Agreed price' : 'Your price'}</p>
           <p className="text-section text-ink whitespace-nowrap">{formatRwf(price)}</p>

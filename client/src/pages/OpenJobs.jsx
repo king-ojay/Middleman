@@ -132,9 +132,9 @@ export default function OpenJobs() {
         )}
       </div>
 
-      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {!loading && jobs.map(job => (
-          <Card as="li" key={job._id} className="p-5">
+          <Card as="li" key={job._id} className="p-5 flex flex-col">
             {job.myResponse && <div className="mb-2"><Badge tone="mint">You responded</Badge></div>}
             <h2 className="text-card text-ink break-words">{job.description}</h2>
             <p className="text-body text-muted mt-1">
@@ -147,11 +147,14 @@ export default function OpenJobs() {
                 <TierBadge tier={job.clientTrust} />
               </div>
             </div>
-            <p className="text-small text-muted mt-4">Client's price</p>
-            <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
-            {job.canRespond || job.myResponse
-              ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
-              : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
+            {/* mt-auto: in a row of cards, prices and actions line up at the bottom */}
+            <div className="mt-auto">
+              <p className="text-small text-muted mt-4">Client's price</p>
+              <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
+              {job.canRespond || job.myResponse
+                ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
+                : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
+            </div>
           </Card>
         ))}
       </ul>

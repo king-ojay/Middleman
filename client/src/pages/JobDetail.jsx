@@ -58,9 +58,12 @@ export default function JobDetail() {
           <div className="min-w-0">
             <h2 className="text-card text-heading">{job.description}</h2>
             <p className="text-body text-muted">{categoryLabel(job.category)} · {areaLabel(job.area)}</p>
-            <p className="text-small text-muted mt-1">Your price</p>
           </div>
-          <p className="text-section text-heading shrink-0">{formatRwf(job.proposedPrice)}</p>
+          {/* the label sits with the amount it describes */}
+          <div className="shrink-0 text-right">
+            <p className="text-small text-muted">Your price</p>
+            <p className="text-section text-heading whitespace-nowrap">{formatRwf(job.proposedPrice)}</p>
+          </div>
         </div>
         <Offers job={job} onChosen={load} />
       </PageLayout>
@@ -128,11 +131,11 @@ function Offers({ job, onChosen }) {
     <>
       <p className="text-body text-muted mb-3">Ranked by trust in your network</p>
       {error && <p className="text-body text-danger mb-3" role="alert">{error}</p>}
-      <ul className="grid gap-3 md:grid-cols-2 items-start">
+      <ul className="grid gap-3 md:grid-cols-2">
         {job.responses.map(r => {
           const difference = r.amount - job.proposedPrice;
           return (
-            <Card as="li" key={r._id} className="p-5">
+            <Card as="li" key={r._id} className="p-5 flex flex-col">
               <div className="flex items-center gap-3">
                 <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
                 <div className="min-w-0">
@@ -143,7 +146,7 @@ function Offers({ job, onChosen }) {
                   </div>
                 </div>
               </div>
-              <div className="flex items-end justify-between gap-4 mt-4">
+              <div className="flex items-end justify-between gap-4 mt-auto pt-4">
                 <div className="min-w-0">
                   <p className="text-title text-ink">{formatRwf(r.amount)}</p>
                   <p className="text-body font-medium text-heading">
