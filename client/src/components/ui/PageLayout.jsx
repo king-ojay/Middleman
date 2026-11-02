@@ -26,11 +26,11 @@ function BackButton({ back }) {
 }
 
 // Content width from 768px up. Phones always use the full width.
-//   narrow: forms and sign-in (a centred column)
+//   narrow: forms and sign-in (a centred column; the form half of AuthLayout from 1024px)
 //   medium: single-column pages such as a profile or a job
 //   wide:   lists and dashboards (cards flow into columns)
 const WIDTHS = {
-  narrow: 'max-w-md',
+  narrow: 'max-w-md md:max-w-xl lg:max-w-lg',
   medium: 'max-w-3xl',
   wide: 'max-w-[1280px]'
 };
