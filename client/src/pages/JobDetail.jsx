@@ -8,7 +8,7 @@ import { firstName } from '../greeting.js';
 import { formatRwf } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
-  Avatar, Badge, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge
+  Avatar, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge, VerifiedBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 
@@ -142,7 +142,7 @@ function Offers({ job, onChosen }) {
                   <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
                   <div className="flex flex-wrap gap-2">
                     <TierBadge tier={r.trustSource} />
-                    {r.worker.verifiedStatus === 'verified' && <Badge tone="signal">Verified</Badge>}
+                    {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
                   </div>
                 </div>
               </div>

@@ -5,7 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
 import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import AreaPicker from '../components/AreaPicker.jsx';
-import { Avatar, Badge, Button, Card, Chip, ChipRow, PageLayout, StarRating, TierBadge } from '../components/ui/index.js';
+import { Avatar, Button, Card, Chip, ChipRow, PageLayout, StarRating, TierBadge, VerifiedBadge } from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
 
@@ -46,7 +46,7 @@ export default function Profile() {
         <h1 className="text-title text-ink mt-4">{profile.name}</h1>
         <p className="text-body text-muted mt-1">{role} · {areaLabel(profile.area)}</p>
         <div className="flex flex-wrap justify-center gap-2 mt-3">
-          {profile.verifiedStatus === 'verified' && <Badge tone="signal">Verified</Badge>}
+          {profile.verifiedStatus === 'verified' && <VerifiedBadge />}
           {!isOwn && <TierBadge tier={profile.trustSource} />}
         </div>
       </div>

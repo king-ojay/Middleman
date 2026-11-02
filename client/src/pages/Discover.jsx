@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { greeting } from '../greeting.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
-import { Avatar, Badge, Card, Chip, ChipRow, PageLayout, TierBadge } from '../components/ui/index.js';
+import { Avatar, Card, Chip, ChipRow, PageLayout, TierBadge, VerifiedBadge } from '../components/ui/index.js';
 
 export default function Discover() {
   const { user } = useAuth();
@@ -105,7 +105,7 @@ export default function Discover() {
                 <p className="text-body text-muted">{(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)}</p>
                 <div className="flex flex-wrap gap-2 mt-2">
                   <TierBadge tier={w.trustSource} />
-                  {w.verified && <Badge tone="signal">Verified</Badge>}
+                  {w.verified && <VerifiedBadge />}
                 </div>
               </div>
               <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true" className="shrink-0">

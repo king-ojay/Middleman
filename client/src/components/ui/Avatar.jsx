@@ -9,10 +9,12 @@ const SIZES = {
   88: 'w-[88px] h-[88px] text-title'
 };
 
+// "new" is a light grey with muted initials: white on the faint grey was
+// only 2.4:1, below the 4.5:1 text contrast minimum.
 const TIER_FILL = {
   network: 'bg-brand text-white',
   area: 'bg-signal text-on-signal',
-  new: 'bg-faint text-white'
+  new: 'bg-soft text-muted'
 };
 
 export const initials = name =>
