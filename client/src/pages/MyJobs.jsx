@@ -6,6 +6,7 @@ import { formatRwf } from '../format.js';
 import { JOB_GROUPS, categoryLabel, areaLabel, moneyLabel, statusChip } from '../options.js';
 import { Badge, Button, Card, PageLayout } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
+import LoadError from '../components/LoadError.jsx';
 
 // Client: the jobs they posted. Worker: the jobs they were chosen for.
 // Grouped by status in tabs; each card shows where the job and its money
@@ -15,14 +16,20 @@ export default function MyJobs() {
   const { user } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
   const [params, setParams] = useSearchParams();
 
   const load = () =>
     api('/api/jobs/mine')
-      .then(setJobs)
-      .catch(err => setError(err.message))
+      .then(data => { setJobs(data); setError(null); })
+      .catch(setError)
       .finally(() => setLoading(false));
+  // "Try again" re-runs the same request; the error stays up while it runs.
+  const tryAgain = () => {
+    setRetrying(true);
+    load().finally(() => setRetrying(false));
+  };
 
   useEffect(() => { load(); }, [user]);
 
@@ -45,7 +52,7 @@ export default function MyJobs() {
       role={role}
     >
       {loading && <p className="text-body text-muted">Loading…</p>}
-      {error && <p className="text-body text-danger" role="alert">Couldn't load jobs: {error}</p>}
+      {error && <LoadError prefix="Couldn't load jobs" error={error} retrying={retrying} onRetry={tryAgain} />}
 
       {!loading && !error && jobs.length === 0 && (
         isClient

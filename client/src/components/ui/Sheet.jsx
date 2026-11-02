@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef } from 'react';
 
-// Bottom sheet dialog on phones, a centred dialog from 768px. Closes on Escape or a tap outside; focus moves into
-// the sheet when it opens and back to where it was when it closes.
+// Bottom sheet dialog on phones, a centred dialog from 768px. Closes with its Close button, Escape or a tap
+// outside; focus moves into the sheet's first field when it opens and back to where it was (the button on the
+// card that opened it) when it closes.
 export default function Sheet({ open, title, onClose, children }) {
   const titleId = useId();
   const panel = useRef(null);
@@ -13,7 +14,7 @@ export default function Sheet({ open, title, onClose, children }) {
   useEffect(() => {
     if (!open) return undefined;
     const previous = document.activeElement;
-    panel.current?.querySelector('input, button, textarea')?.focus();
+    panel.current?.querySelector('input, button:not([data-sheet-close]), textarea')?.focus();
     const onKey = e => { if (e.key === 'Escape') close.current(); };
     document.addEventListener('keydown', onKey);
     // The page behind stays put while the sheet is open (phones scroll it otherwise).
@@ -38,7 +39,17 @@ export default function Sheet({ open, title, onClose, children }) {
         className="relative w-full md:max-w-[520px] max-h-[90dvh] overflow-y-auto overscroll-contain bg-surface rounded-t-hero md:rounded-hero px-screen pt-3 md:pt-6 pb-[max(env(safe-area-inset-bottom),24px)] shadow-tabbar"
       >
         <span aria-hidden="true" className="block mx-auto w-10 h-1 rounded-full bg-line mb-5 md:hidden" />
-        <h2 id={titleId} className="text-section text-ink mb-4">{title}</h2>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <h2 id={titleId} className="text-section text-ink">{title}</h2>
+          <button
+            type="button"
+            data-sheet-close
+            onClick={onClose}
+            className="shrink-0 h-11 -mr-3 px-3 rounded-full text-body font-semibold text-heading transition-colors hover:bg-soft active:bg-soft"
+          >
+            Close
+          </button>
+        </div>
         {children}
       </div>
     </div>
