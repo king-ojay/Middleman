@@ -8,7 +8,7 @@ both ways, and payments run through a **sandboxed mobile-money escrow** (MTN
 MoMo sandbox, no real money). Responsive Progressive Web App target: phone,
 tablet and desktop. ALU BSc Software Engineering capstone.
 
-- **Demo video:** `<VIDEO LINK PLACEHOLDER>`
+- **Demo video:** `https://drive.google.com/drive/folders/1K7CRX8qr2KmPWfdzVf0VZdmyfAkxGjuk?usp=sharing`
 - **Final report:** `<REPORT LINK PLACEHOLDER>`
 
 ## Live URLs
