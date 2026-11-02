@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { greeting } from '../greeting.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
+import LoadError from '../components/LoadError.jsx';
 import { Avatar, Card, Chip, ChipRow, PageLayout, TierBadge, VerifiedBadge } from '../components/ui/index.js';
 
 export default function Discover() {
@@ -16,7 +17,11 @@ export default function Discover() {
   const [searchHint, setSearchHint] = useState('');
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  // "Try again" re-runs the same request; the error stays up while it runs.
+  const [attempt, setAttempt] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+  const tryAgain = () => { setRetrying(true); setAttempt(n => n + 1); };
 
   useEffect(() => {
     // Only the latest trade/area may fill the list: a slow answer for a trade
@@ -24,13 +29,13 @@ export default function Discover() {
     let current = true;
     const params = new URLSearchParams({ category, ...(area && { area }) });
     setLoading(true);
-    setError('');
+    if (!retrying) setError(null);
     api(`/api/discover?${params}`)
-      .then(data => current && setWorkers(data))
-      .catch(err => { if (current) { setWorkers([]); setError(err.message); } })
-      .finally(() => current && setLoading(false));
+      .then(data => { if (current) { setWorkers(data); setError(null); } })
+      .catch(err => { if (current) { setWorkers([]); setError(err); } })
+      .finally(() => { if (current) { setLoading(false); setRetrying(false); } });
     return () => { current = false; };
-  }, [user, category, area]);
+  }, [user, category, area, attempt]);
 
   // Matches the typed text against trade names only. Free-text job
   // descriptions ("leaking tap") are Phase 6.
@@ -89,8 +94,8 @@ export default function Discover() {
       <h2 className="text-section text-ink mt-6">Ranked by your network</h2>
       <p className="text-body text-muted mb-4">People you trust, and the people they trust, come first.</p>
 
-      {error && <p className="text-body text-danger" role="alert">Couldn't load workers: {error}</p>}
-      {loading && <p className="text-body text-muted">Loading…</p>}
+      {error && <LoadError prefix="Couldn't load workers" error={error} retrying={retrying} onRetry={tryAgain} />}
+      {loading && !retrying && <p className="text-body text-muted">Loading…</p>}
       {!loading && !error && workers.length === 0 && (
         <p className="text-body text-muted">No {categoryLabel(category).toLowerCase()} workers{area ? ` in ${areaLabel(area)}` : ''} yet.</p>
       )}

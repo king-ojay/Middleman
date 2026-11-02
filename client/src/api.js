@@ -44,7 +44,9 @@ export async function api(path, options = {}) {
     });
   } catch {
     // fetch only throws when there is no answer at all (offline, DNS, CORS).
-    throw new Error("Can't reach Middleman. Check your internet connection and try again.");
+    const err = new Error("Can't reach Middleman. Check your internet connection and try again.");
+    err.retryable = true;
+    throw err;
   } finally {
     clearTimeout(timer);
     if (slow) setSlow(-1);
@@ -56,6 +58,11 @@ export async function api(path, options = {}) {
     saveSession(null);
     window.location.assign('/login');
   }
-  if (!res.ok) throw new Error(data?.error || `Request failed (${res.status})`);
+  if (!res.ok) {
+    const err = new Error(data?.error || `Request failed (${res.status})`);
+    // A server error (5xx) may pass if asked again; a refusal (4xx) won't.
+    err.retryable = res.status >= 500;
+    throw err;
+  }
   return data;
 }

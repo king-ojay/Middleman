@@ -11,6 +11,7 @@ import {
   Avatar, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge, VerifiedBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
+import LoadError from '../components/LoadError.jsx';
 
 const POLL_EVERY_MS = 5000;
 const POLL_FOR_MS = 2 * 60 * 1000;
@@ -19,10 +20,16 @@ export default function JobDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const [job, setJob] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
 
-  const load = () => api(`/api/jobs/${id}`).then(setJob).catch(err => setError(err.message));
+  const load = () => api(`/api/jobs/${id}`).then(data => { setJob(data); setError(null); }).catch(setError);
   useEffect(() => { load(); }, [id]);
+  // "Try again" re-runs the same request; the error stays up while it runs.
+  const tryAgain = () => {
+    setRetrying(true);
+    load().finally(() => setRetrying(false));
+  };
 
   // A payment or payout waiting on the provider: check on it every few
   // seconds (the fallback when no callback arrives), then reload. After
@@ -48,7 +55,7 @@ export default function JobDetail() {
   const isClient = user.role === 'client';
   const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
-  if (error) return <PageLayout {...layout} title="Job"><p className="text-body text-danger" role="alert">Couldn't load this job: {error}</p></PageLayout>;
+  if (error) return <PageLayout {...layout} title="Job"><LoadError prefix="Couldn't load this job" error={error} retrying={retrying} onRetry={tryAgain} /></PageLayout>;
   if (!job) return <PageLayout {...layout} title="Job"><p className="text-body text-muted">Loading…</p></PageLayout>;
 
   if (isClient && job.status === 'open') {
