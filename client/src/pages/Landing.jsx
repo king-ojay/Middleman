@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { wakeApi } from '../api.js';
 import { Button, Card, LogoMark, PageLayout } from '../components/ui/index.js';
-import TrustGraphMark from '../components/TrustGraphMark.jsx';
+import { TrustExample } from '../components/TrustGraphMark.jsx';
 
 const steps = [
   { title: 'Post what you need done', body: 'Describe the job and name your price. Takes under a minute.' },
@@ -31,11 +31,7 @@ export default function Landing() {
         </div>
 
         <section className="mt-10 lg:mt-0 bg-brand rounded-hero p-6 md:p-8">
-          <TrustGraphMark className="w-full max-w-lg mx-auto h-auto" />
-          <p className="text-body text-white mt-4">
-            You invited Amina. Amina hired Eric and rated him highly.
-          </p>
-          <p className="text-small text-on-brand-soft mt-1">Eric now ranks higher for you, even though you have never met him.</p>
+          <TrustExample markClassName="max-w-lg mx-auto" />
         </section>
       </div>
 

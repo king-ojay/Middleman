@@ -1,10 +1,10 @@
 import { LogoMark, PageLayout } from './ui/index.js';
-import TrustGraphMark from './TrustGraphMark.jsx';
+import { TrustExample } from './TrustGraphMark.jsx';
 
 // Log in, sign up and PIN reset. Phones and tablets: one column. From 1024px
 // the page fills the screen: the trust picture on a brand panel on the left
 // (it stays in place while a long form scrolls) and the form on the right.
-// The panel repeats the landing page's words; it adds no new copy.
+// The panel repeats the landing page's words and trust example.
 export default function AuthLayout({ children, ...layout }) {
   return (
     <div className="lg:grid lg:grid-cols-2 lg:items-start">
@@ -21,9 +21,7 @@ export default function AuthLayout({ children, ...layout }) {
           <p className="text-body text-on-brand-soft mt-3">Agree a fair price and pay safely when the job is done.</p>
         </div>
         <div className="max-w-lg">
-          <TrustGraphMark className="w-full h-auto" />
-          <p className="text-body text-white mt-4">You invited Amina. Amina hired Eric and rated him highly.</p>
-          <p className="text-small text-on-brand-soft mt-1">Eric now ranks higher for you, even though you have never met him.</p>
+          <TrustExample />
         </div>
       </aside>
       <div className="lg:min-h-dvh lg:flex lg:flex-col lg:justify-center">
