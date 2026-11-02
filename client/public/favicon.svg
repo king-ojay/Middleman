@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <!-- The LogoMark (src/components/ui/LogoMark.jsx) on a white tile, so it reads on light and dark tabs. -->
+  <rect width="32" height="32" rx="7" fill="#FFFFFF"/>
+  <g transform="translate(2.4 2.4) scale(0.85)">
+    <path d="M8 7h16" stroke="#14254A" stroke-width="2.6"/>
+    <path d="M24 7 13 25" stroke="#14254A" stroke-width="2.6"/>
+    <path d="M8 7l5 18" stroke="#20BA58" stroke-width="2.6" stroke-dasharray="2.5 3"/>
+    <circle cx="8" cy="7" r="4" fill="#FFFFFF" stroke="#14254A" stroke-width="2.6"/>
+    <circle cx="24" cy="7" r="4" fill="#FFFFFF" stroke="#14254A" stroke-width="2.6"/>
+    <circle cx="13" cy="25" r="5" fill="#14254A"/>
+  </g>
+</svg>

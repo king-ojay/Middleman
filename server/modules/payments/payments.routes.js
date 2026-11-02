@@ -1,18 +1,19 @@
 // /api/payments (MoMo callback) and /api/admin (dispute resolution, ledger).
 import express from 'express';
 import mongoose from 'mongoose';
-import { createHash, timingSafeEqual } from 'node:crypto';
 import Job from '../jobs/job.model.js';
 import Transaction from './transaction.model.js';
 import { HttpError } from '../httpError.js';
 import { resolveDispute, syncByRef } from './escrow.js';
+import { serverError } from '../serverError.js';
+import { requireAdmin } from '../adminAuth.js';
 
 const handle = fn => async (req, res) => {
   try {
     await fn(req, res);
   } catch (err) {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 };
 
@@ -31,13 +32,7 @@ callbackRouter.all('/momo/callback', async (req, res) => {
 // Admin routes for dispute resolution (FR-14), protected by a shared secret
 // in the X-Admin-Secret header (ADMIN_SECRET env var). Off when it is unset.
 export const adminRouter = express.Router();
-const digest = value => createHash('sha256').update(String(value)).digest();
-adminRouter.use((req, res, next) => {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) return res.status(503).json({ error: 'Admin routes are off (set ADMIN_SECRET)' });
-  if (!timingSafeEqual(digest(req.get('x-admin-secret') || ''), digest(secret))) return res.status(401).json({ error: 'Not allowed' });
-  next();
-});
+adminRouter.use(requireAdmin);
 
 // GET /api/admin/disputes — disputed jobs with their escrow state (ids only, no names or phones).
 adminRouter.get('/disputes', handle(async (_req, res) => {

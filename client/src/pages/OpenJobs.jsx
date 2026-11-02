@@ -75,7 +75,7 @@ export default function OpenJobs() {
           placeholder="Search jobs, e.g. tap"
           className="w-full h-14 bg-surface rounded-full shadow-card pl-5 pr-16 text-body text-ink placeholder:text-faint focus:outline-none"
         />
-        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-accent text-on-accent flex items-center justify-center">
+        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-accent text-on-accent flex items-center justify-center transition-[filter] hover:brightness-95 active:brightness-90">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
             <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -90,7 +90,7 @@ export default function OpenJobs() {
 
       <div className="flex items-center justify-between gap-3 mt-2">
         <p className="text-body text-muted min-w-0">{areaText} · {tradeText} · {sortText}</p>
-        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(v => !v)} className="h-11 px-1 shrink-0 text-body font-semibold text-heading">
+        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(v => !v)} className="h-11 px-1 shrink-0 text-body font-semibold text-heading hover:underline">
           {showFilters ? 'Done' : 'Filters'}
         </button>
       </div>
@@ -113,7 +113,7 @@ export default function OpenJobs() {
             ))}
           </ChipRow>
           {!isDefault && (
-            <button type="button" onClick={() => { setFilters(DEFAULTS); clearSearch(); }} className="h-11 px-1 text-body font-semibold text-heading">
+            <button type="button" onClick={() => { setFilters(DEFAULTS); clearSearch(); }} className="h-11 px-1 text-body font-semibold text-heading hover:underline">
               Back to jobs near you
             </button>
           )}
@@ -132,9 +132,9 @@ export default function OpenJobs() {
         )}
       </div>
 
-      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {!loading && jobs.map(job => (
-          <Card as="li" key={job._id} className="p-5">
+          <Card as="li" key={job._id} className="p-5 flex flex-col">
             {job.myResponse && <div className="mb-2"><Badge tone="mint">You responded</Badge></div>}
             <h2 className="text-card text-ink break-words">{job.description}</h2>
             <p className="text-body text-muted mt-1">
@@ -147,11 +147,14 @@ export default function OpenJobs() {
                 <TierBadge tier={job.clientTrust} />
               </div>
             </div>
-            <p className="text-small text-muted mt-4">Client's price</p>
-            <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
-            {job.canRespond || job.myResponse
-              ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
-              : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
+            {/* mt-auto: in a row of cards, prices and actions line up at the bottom */}
+            <div className="mt-auto">
+              <p className="text-small text-muted mt-4">Client's price</p>
+              <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
+              {job.canRespond || job.myResponse
+                ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
+                : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
+            </div>
           </Card>
         ))}
       </ul>

@@ -12,6 +12,7 @@ import { rankByTrust } from '../trust/trustPropagation.js';
 import Rating from '../trust/rating.model.js';
 import { HttpError, confirmAndRate, dispute, rateClient, respond, selectResponse, transition } from './lifecycle.js';
 import { fund, sync } from '../payments/escrow.js';
+import { serverError } from '../serverError.js';
 
 const router = express.Router();
 router.use(requireUser);
@@ -23,7 +24,7 @@ const handle = fn => async (req, res) => {
   } catch (err) {
     if (err instanceof HttpError) return res.status(err.status).json({ error: err.message });
     if (err.name === 'ValidationError') return res.status(400).json({ error: err.message });
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 };
 

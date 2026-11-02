@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { greeting } from '../greeting.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
-import { Avatar, Card, Chip, ChipRow, PageLayout, TierBadge } from '../components/ui/index.js';
+import { Avatar, Card, Chip, ChipRow, PageLayout, TierBadge, VerifiedBadge } from '../components/ui/index.js';
 
 export default function Discover() {
   const { user } = useAuth();
@@ -57,7 +57,7 @@ export default function Discover() {
           placeholder="e.g. electrician, plumber"
           className="w-full h-14 bg-surface rounded-full shadow-card pl-5 pr-16 text-body text-ink placeholder:text-faint focus:outline-none"
         />
-        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-accent text-on-accent flex items-center justify-center">
+        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-accent text-on-accent flex items-center justify-center transition-[filter] hover:brightness-95 active:brightness-90">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
             <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -73,7 +73,7 @@ export default function Discover() {
 
       <div className="flex items-center justify-between mt-4">
         <p className="text-body text-muted">Area · {area ? areaLabel(area) : 'All areas'}</p>
-        <button type="button" onClick={() => setChangingArea(v => !v)} className="h-11 px-1 text-body font-semibold text-heading">
+        <button type="button" onClick={() => setChangingArea(v => !v)} className="h-11 px-1 text-body font-semibold text-heading hover:underline">
           {changingArea ? 'Done' : 'Change'}
         </button>
       </div>
@@ -95,15 +95,18 @@ export default function Discover() {
         <p className="text-body text-muted">No {categoryLabel(category).toLowerCase()} workers{area ? ` in ${areaLabel(area)}` : ''} yet.</p>
       )}
 
-      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 items-start">
+      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {!loading && workers.map(w => (
           <Card as="li" key={w._id} className="p-0">
-            <Link to={`/people/${w._id}`} className="flex items-center gap-4 p-4 rounded-card">
+            <Link to={`/people/${w._id}`} className="h-full flex items-center gap-4 p-4 rounded-card transition-colors hover:bg-soft/60">
               <Avatar name={w.name} tier={w.trustSource} size={52} />
               <div className="min-w-0 flex-1">
                 <h3 className="text-card text-ink">{w.name}</h3>
                 <p className="text-body text-muted">{(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)}</p>
-                <div className="mt-2"><TierBadge tier={w.trustSource} /></div>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <TierBadge tier={w.trustSource} />
+                  {w.verified && <VerifiedBadge />}
+                </div>
               </div>
               <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true" className="shrink-0">
                 <path d="m1.5 1.5 5 5.5-5 5.5" className="stroke-faint" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

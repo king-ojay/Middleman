@@ -8,7 +8,7 @@ export default function OptionCard({ selected, title, description, onSelect }) {
       aria-checked={selected}
       onClick={onSelect}
       className={`text-left rounded-card p-4 min-h-[96px] transition-colors ${
-        selected ? 'bg-accent-soft border-2 border-accent' : 'bg-surface border border-line'
+        selected ? 'bg-accent-soft border-2 border-accent' : 'bg-surface border border-line hover:border-heading'
       }`}
     >
       <span aria-hidden="true" className={`block w-8 h-8 rounded-full mb-3 ${selected ? 'bg-accent' : 'bg-soft'}`} />

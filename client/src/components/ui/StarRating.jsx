@@ -28,7 +28,7 @@ export default function StarRating({ value = 0, onChange, readOnly = false, labe
           aria-checked={value === n}
           aria-label={`${n} star${n > 1 ? 's' : ''}`}
           onClick={() => onChange(n)}
-          className="w-12 h-12 flex items-center justify-center"
+          className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-110"
         >
           <Star filled={n <= value} size={40} />
         </button>

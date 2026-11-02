@@ -11,6 +11,7 @@ import { issueOtp, OtpError, verifyOtp } from './otp/otp.js';
 import { maskPhonesIn } from './otp/providers.js';
 import { clearFailures, hit, lockedFor, recordFailure } from './rateLimit.js';
 import { createSessionToken } from './session.js';
+import { serverError } from '../serverError.js';
 
 const router = express.Router();
 
@@ -63,7 +64,7 @@ router.post('/login', async (req, res) => {
     clearFailures(phoneKey);
     res.json(session(user));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 });
 
@@ -117,7 +118,7 @@ router.post('/pin/reset', async (req, res) => {
     res.json(session(user));
   } catch (err) {
     if (err instanceof OtpError) return res.status(err.status).json({ error: err.message });
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 });
 
@@ -170,7 +171,7 @@ router.post('/register', async (req, res) => {
   } catch (err) {
     if (err instanceof OtpError) return res.status(err.status).json({ error: err.message });
     if (err.code === 11000) return res.status(409).json({ error: 'An account with this phone number already exists. Log in instead.' });
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 });
 

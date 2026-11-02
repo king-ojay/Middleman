@@ -2,6 +2,7 @@
 export { default as Button, buttonClasses } from './Button.jsx';
 export { Chip, ChipRow } from './Chip.jsx';
 export { default as TierBadge, tierKey } from './TierBadge.jsx';
+export { default as VerifiedBadge } from './VerifiedBadge.jsx';
 export { default as Card } from './Card.jsx';
 export { default as FormField, TextInput, TextArea, PriceInput, PinBoxes } from './FormField.jsx';
 export { default as Avatar } from './Avatar.jsx';

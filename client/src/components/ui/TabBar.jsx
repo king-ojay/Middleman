@@ -81,7 +81,7 @@ export default function TabBar({ role }) {
         className="hidden md:block sticky top-0 z-20 bg-surface shadow-card"
       >
         <div className="mx-auto max-w-[1280px] px-6 lg:px-10 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3" aria-label="Middleman home">
+          <Link to="/" className="flex items-center gap-3 rounded-full transition-opacity hover:opacity-80" aria-label="Middleman home">
             <LogoMark size={32} />
             <span className="text-section text-heading">Middleman</span>
           </Link>
@@ -93,7 +93,7 @@ export default function TabBar({ role }) {
                   <NavLink
                     to={tab.to}
                     className={({ isActive }) =>
-                      `h-11 px-4 rounded-full inline-flex items-center gap-2 text-body ${isActive ? 'bg-accent-soft text-heading font-semibold' : 'text-muted font-medium hover:text-heading'}`
+                      `h-11 px-4 rounded-full inline-flex items-center gap-2 text-body ${isActive ? 'bg-accent-soft text-heading font-semibold' : 'text-muted font-medium hover:text-heading hover:bg-soft'}`
                     }
                   >
                     {Icon && <Icon />}

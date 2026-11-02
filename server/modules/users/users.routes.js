@@ -8,6 +8,7 @@ import TrustEdge from '../trust/trustEdge.model.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
 import { requireUser } from '../auth/currentUser.js';
 import { AREAS } from '../../config/areas.js';
+import { serverError } from '../serverError.js';
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.get('/search', async (req, res) => {
       .lean();
     res.json(users);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 });
 
@@ -49,7 +50,7 @@ router.patch('/me', requireUser, async (req, res) => {
     const { pinHash, sessionVersion, __v, ...rest } = user;
     res.json({ user: rest });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 });
 
@@ -95,7 +96,7 @@ router.get('/:id/profile', requireUser, async (req, res) => {
       }))
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err, req);
   }
 });
 

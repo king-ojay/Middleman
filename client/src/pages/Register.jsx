@@ -171,7 +171,7 @@ function ReferrerSearch({ selected, onSelect }) {
                     role="option"
                     aria-selected={isSelected}
                     onClick={() => { onSelect(isSelected ? null : person); setQuery(isSelected ? '' : person.name); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 min-h-[72px] text-left"
+                    className="w-full flex items-center gap-3 px-4 py-3 min-h-[72px] text-left transition-colors hover:bg-soft"
                   >
                     <Avatar name={person.name} tier={isSelected ? 'network' : 'new'} size={52} />
                     <span className="min-w-0 flex-1">

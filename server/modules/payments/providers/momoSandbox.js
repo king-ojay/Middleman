@@ -4,7 +4,9 @@
 //   MOMO_COLLECTION_SUBSCRIPTION_KEY, MOMO_COLLECTION_USER_ID, MOMO_COLLECTION_API_KEY
 //   MOMO_DISBURSEMENT_SUBSCRIPTION_KEY, MOMO_DISBURSEMENT_USER_ID, MOMO_DISBURSEMENT_API_KEY
 // Optional: MOMO_CURRENCY (EUR, the sandbox currency), MOMO_SANDBOX_MSISDN
-// (the sandbox test number used as payer/payee), MOMO_CALLBACK_URL.
+// (the sandbox test number used as payer/payee, default 46733123480: a number
+// outside MTN's test table, so payments succeed; 46733123450–3 give failed,
+// rejected, expired and pending, see docs/RUNBOOK.md), MOMO_CALLBACK_URL.
 // scripts/momoSandboxSetup.js creates the user ids and API keys.
 //
 // No real money, ever: this refuses any host but the sandbox and any target
@@ -13,6 +15,8 @@
 import { ProviderError } from './errors.js';
 
 export const SANDBOX_HOST = 'sandbox.momodeveloper.mtn.com';
+// Outside MTN's sandbox test-number table, so requests to it succeed.
+export const DEFAULT_SANDBOX_MSISDN = '46733123480';
 const TIMEOUT_MS = 15000;
 const PATHS = { collection: 'requesttopay', disbursement: 'transfer' };
 // Statuses that mean it is over and nothing moved. MTN reports most failures
@@ -41,7 +45,7 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
   };
   const products = { collection: product('collection'), disbursement: product('disbursement') };
   const currency = env.MOMO_CURRENCY || 'EUR';
-  const msisdn = env.MOMO_SANDBOX_MSISDN || '46733123450';
+  const msisdn = env.MOMO_SANDBOX_MSISDN || DEFAULT_SANDBOX_MSISDN;
   const callbackUrl = env.MOMO_CALLBACK_URL || '';
 
   const send = async (url, init) => {

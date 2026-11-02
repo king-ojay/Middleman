@@ -16,7 +16,7 @@ function BackButton({ back }) {
       type="button"
       onClick={goBack}
       aria-label="Back"
-      className="-ml-3 w-11 h-11 inline-flex items-center justify-center rounded-full text-ink"
+      className="-ml-3 w-11 h-11 inline-flex items-center justify-center rounded-full text-ink transition-colors hover:bg-soft"
     >
       <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
         <path d="M10 2 2 10l8 8" className="stroke-current" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
