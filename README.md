@@ -43,8 +43,9 @@ locally); the production API never logs codes, so live signup needs
 
 - **Registration and login** (FR-01–03): two screens (role, trades for workers,
   name, phone, a required area picker with no default; then an SMS code, a
-  4-digit PIN and an optional "Who invited you?" that writes a referral edge).
-  Daily login is phone + PIN. Area can be changed later in Profile.
+  4-digit PIN and an optional "Who invited you?": the inviter's phone number,
+  looked up by exact match and confirmed by the person before it writes a
+  referral edge, never a name search). Daily login is phone + PIN. Area can be changed later in Profile.
 - **Personalised trust ranking**: Discover ranks workers by trust from the
   client's own graph (decay per hop, strongest path, referral boost, negative
   evidence from 1–2★ ratings), then area trust ("Trusted in this area"), then a

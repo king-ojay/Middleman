@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
@@ -7,8 +7,11 @@ import AuthLayout from '../components/AuthLayout.jsx';
 import AreaPicker from '../components/AreaPicker.jsx';
 import { CATEGORIES, areaLabel } from '../options.js';
 import {
-  Avatar, Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, StepBar, TextInput
+  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, StepBar, TextInput
 } from '../components/ui/index.js';
+
+// Rwandan mobile number, as typed: 078X XXX XXX, with or without +250.
+const isPhone = value => /^(\+?250|0)?7\d{8}$/.test(value.replace(/[\s-]/g, ''));
 
 // Two steps (FR-01, FR-02, FR-03): who you are, then a PIN and who invited you.
 export default function Register() {
@@ -19,7 +22,7 @@ export default function Register() {
   const [pin, setPin] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [sending, setSending] = useState(false);
-  const [referrer, setReferrer] = useState(null);
+  const [inviter, setInviter] = useState(null); // { phone, person } once confirmed
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,7 +35,7 @@ export default function Register() {
   const continueToPin = async e => {
     e.preventDefault();
     if (!details.name.trim()) return setError('Enter your full name.');
-    if (!/^(\+?250|0)?7\d{8}$/.test(details.phone.replace(/[\s-]/g, ''))) return setError('Enter a mobile number like 078X XXX XXX.');
+    if (!isPhone(details.phone)) return setError('Enter a mobile number like 078X XXX XXX.');
     if (details.role === 'worker' && details.skills.length === 0) return setError('Choose at least one kind of work you do.');
     // No default area: the person picks one (it decides their area trust and default lists).
     if (!details.area) return setError('Choose your area.');
@@ -56,7 +59,7 @@ export default function Register() {
     setError('');
     setSubmitting(true);
     try {
-      const u = await register({ ...details, pin, otpCode, referrerId: referrer?._id });
+      const u = await register({ ...details, pin, otpCode, referrerPhone: inviter?.phone });
       navigate(homePathFor(u), { replace: true });
     } catch (err) {
       setError(err.message);
@@ -76,7 +79,7 @@ export default function Register() {
             <p className="text-label text-ink mb-2">Choose a 4-digit PIN</p>
             <PinBoxes value={pin} onChange={setPin} />
           </div>
-          <ReferrerSearch selected={referrer} onSelect={setReferrer} />
+          <InviterPhone confirmed={inviter} onConfirm={setInviter} />
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6}>{submitting ? 'Creating account…' : 'Create account'}</Button>
         </form>
@@ -133,63 +136,99 @@ export default function Register() {
 }
 
 // "Who invited you?" — optional, creates the referral edge on signup (FR-03).
-function ReferrerSearch({ selected, onSelect }) {
-  const [query, setQuery] = useState(selected?.name || '');
-  const [results, setResults] = useState([]);
+// The inviter is found by their exact phone number, never by name (two people
+// can share a name), and only counts once the person confirms the match.
+function InviterPhone({ confirmed, onConfirm }) {
+  const [phone, setPhone] = useState(confirmed?.phone || '');
+  const [found, setFound] = useState(null);
+  const [error, setError] = useState(null);
+  const [looking, setLooking] = useState(false);
+  const latest = useRef(0);
+  const inputId = useRef(null);
 
-  useEffect(() => {
-    if (query.trim().length < 2 || query === selected?.name) return undefined;
-    const timer = setTimeout(() => {
-      api(`/api/users/search?q=${encodeURIComponent(query.trim())}`).then(setResults).catch(() => setResults([]));
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [query, selected]);
+  const lookup = async number => {
+    const ticket = ++latest.current;
+    setLooking(true);
+    setError(null);
+    setFound(null);
+    try {
+      const person = await api('/api/users/lookup', { method: 'POST', body: JSON.stringify({ phone: number }) });
+      if (ticket === latest.current) setFound(person);
+    } catch (err) {
+      if (ticket === latest.current) setError(err);
+    } finally {
+      if (ticket === latest.current) setLooking(false);
+    }
+  };
 
-  const shown = selected && !results.some(r => r._id === selected._id) ? [selected, ...results] : results;
+  const change = value => {
+    setPhone(value);
+    latest.current += 1; // drop any lookup still on its way
+    setFound(null);
+    setError(null);
+    setLooking(false);
+    if (isPhone(value)) lookup(value);
+  };
+
+  const startOver = () => {
+    onConfirm(null);
+    change('');
+    // after the input is back on screen
+    setTimeout(() => document.getElementById(inputId.current)?.focus());
+  };
+
+  const summary = person =>
+    `${person.name} · ${areaLabel(person.area)} · ${person.role === 'worker' ? 'Worker' : 'Client'} · phone ending ${person.phoneEnding}`;
+
+  if (confirmed) {
+    return (
+      <div>
+        <p className="text-label text-ink mb-2">Who invited you?</p>
+        <Card className="flex items-center gap-3">
+          <p className="min-w-0 flex-1 text-body text-ink">Invited by {summary(confirmed.person)}</p>
+          <Button variant="outline" size="md" onClick={startOver}>Change</Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div>
-      <FormField label="Who invited you? (optional)" helper="Being vouched for helps you get found faster. You can skip this.">
-        {field => (
-          <TextInput
-            {...field}
-            value={query}
-            onChange={e => { setQuery(e.target.value); if (selected) onSelect(null); }}
-            placeholder="Start typing a name"
-            autoComplete="off"
-          />
-        )}
+      <FormField label="Inviter's phone number (optional)" helper="Being vouched for helps you get found faster. You can skip this.">
+        {field => {
+          inputId.current = field.id;
+          return (
+            <TextInput
+              {...field}
+              type="tel"
+              inputMode="tel"
+              autoComplete="off"
+              value={phone}
+              onChange={e => change(e.target.value)}
+              placeholder="078X XXX XXX"
+            />
+          );
+        }}
       </FormField>
-      {query.trim().length >= 2 && shown.length > 0 && (
-        <Card className="mt-3 p-0 overflow-hidden">
-          <ul role="listbox" aria-label="People who might have invited you" className="divide-y divide-line">
-            {shown.map(person => {
-              const isSelected = selected?._id === person._id;
-              return (
-                <li key={person._id}>
-                  <button
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => { onSelect(isSelected ? null : person); setQuery(isSelected ? '' : person.name); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 min-h-[72px] text-left transition-colors hover:bg-soft"
-                  >
-                    <Avatar name={person.name} tier={isSelected ? 'network' : 'new'} size={52} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-card text-ink">{person.name}</span>
-                      <span className="block text-body text-muted capitalize">{person.role} · {areaLabel(person.area)}</span>
-                    </span>
-                    {isSelected && (
-                      <svg width="20" height="16" viewBox="0 0 20 16" fill="none" aria-hidden="true">
-                        <path d="m2 8 6 6L18 2" className="stroke-signal" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
+      <div aria-live="polite">
+        {looking && <p className="text-small text-muted mt-3">Looking up this number…</p>}
+        {found && (
+          <Card className="mt-3">
+            <p className="text-body text-ink">{summary(found)}. Is this who invited you?</p>
+            <div className="flex flex-wrap gap-3 mt-4">
+              <Button size="md" onClick={() => onConfirm({ phone, person: found })}>Confirm</Button>
+              <Button variant="outline" size="md" onClick={startOver}>Change</Button>
+            </div>
+          </Card>
+        )}
+      </div>
+      {error && (
+        <div className="mt-3">
+          <p className="text-small text-danger" role="alert">{error.message}</p>
+          {(error.retryable || error.status === 429) && (
+            <Button variant="outline" size="md" className="mt-3" onClick={() => lookup(phone)}>Try again</Button>
+          )}
+        </div>
       )}
     </div>
   );

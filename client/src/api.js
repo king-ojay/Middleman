@@ -60,6 +60,7 @@ export async function api(path, options = {}) {
   }
   if (!res.ok) {
     const err = new Error(data?.error || `Request failed (${res.status})`);
+    err.status = res.status;
     // A server error (5xx) may pass if asked again; a refusal (4xx) won't.
     err.retryable = res.status >= 500;
     throw err;
