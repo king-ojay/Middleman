@@ -1,8 +1,8 @@
 // /api/auth: PIN login with lockout, SMS one-time codes, registration and PIN reset.
 import express from 'express';
-import mongoose from 'mongoose';
 import User from '../users/user.model.js';
 import { normalisePhone } from '../users/phone.js';
+import { LOOKUP_LIMITED, LOOKUP_NOT_FOUND, lookupAllowed } from '../users/users.routes.js';
 import { writeTrustEdgeFromReferral } from '../trust/trustPropagation.js';
 import { AREAS } from '../../config/areas.js';
 import { CATEGORIES } from '../../config/categories.js';
@@ -123,13 +123,14 @@ router.post('/pin/reset', async (req, res) => {
 });
 
 // POST /api/auth/register
-// Body: { role, name, phone, area, skills?, pin, otpCode, referrerId? }   (FR-01, FR-02, FR-03)
+// Body: { role, name, phone, area, skills?, pin, otpCode, referrerPhone? }   (FR-01, FR-02, FR-03)
 // The phone number must be confirmed with the code sent by POST /otp.
 // A referrer creates a signup_referral edge from them to the new user: they
-// vouch for the person they invited.
+// vouch for the person they invited. The inviter is found by exact phone
+// number (unique), never by name, which two people can share.
 router.post('/register', async (req, res) => {
   try {
-    const { role, name, area, skills = [], pin, referrerId } = req.body;
+    const { role, name, area, skills = [], pin } = req.body;
     const phone = normalisePhone(req.body.phone);
 
     if (!['client', 'worker'].includes(role)) return res.status(400).json({ error: 'Choose client or worker' });
@@ -142,10 +143,12 @@ router.post('/register', async (req, res) => {
     if (!isValidPin(pin)) return res.status(400).json({ error: 'Your PIN must be 4 digits' });
 
     let referrer = null;
-    if (referrerId) {
-      if (!mongoose.isValidObjectId(referrerId)) return res.status(400).json({ error: 'Unknown referrer' });
-      referrer = await User.findById(referrerId).lean();
-      if (!referrer) return res.status(400).json({ error: 'Unknown referrer' });
+    if (req.body.referrerPhone) {
+      const referrerPhone = normalisePhone(req.body.referrerPhone);
+      if (referrerPhone && referrerPhone === phone) return res.status(400).json({ error: "You can't invite yourself." });
+      if (!lookupAllowed(req)) return res.status(429).json({ error: LOOKUP_LIMITED });
+      referrer = referrerPhone && await User.findOne({ phone: referrerPhone }, '_id').lean();
+      if (!referrer) return res.status(400).json({ error: LOOKUP_NOT_FOUND });
     }
 
     if (await User.exists({ phone })) {

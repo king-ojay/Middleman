@@ -1,6 +1,7 @@
 // The pilot area: one shared list (shared/areas.js), required at signup with
 // no default, changeable in Profile, validated on the server, and the area a
-// person chose is the one area trust ("Trusted in this area") uses.
+// person chose is the one area trust ("Trusted in this area") uses. Also
+// "Who invited you?" at signup: the inviter is found by exact phone number.
 // The config test always runs; the API tests need TEST_MONGO_URI.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
@@ -112,19 +113,24 @@ after(async () => {
   await mongoose.disconnect();
 });
 
-const call = async (method, path, { as, body } = {}) => {
+const call = async (method, path, { as, body, ip } = {}) => {
   const res = await fetch(base + path, {
     method,
-    headers: { 'content-type': 'application/json', ...(as ? { authorization: `Bearer ${tokens[as]}` } : {}) },
+    headers: {
+      'content-type': 'application/json',
+      ...(as ? { authorization: `Bearer ${tokens[as]}` } : {}),
+      ...(ip ? { 'x-forwarded-for': ip } : {}) // its own IP, so per-IP limits don't leak between tests
+    },
     body: body ? JSON.stringify(body) : undefined
   });
   return { status: res.status, data: await res.json().catch(() => null) };
 };
 
-const signup = async (phone, extra) => {
-  assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' } })).status, 200);
+const signup = async (phone, extra, ip) => {
+  assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' }, ip })).status, 200);
   return call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone, pin: '2468', otpCode: codes.get(phone.slice(-3)), ...extra }
+    body: { role: 'client', name: 'New Person', phone, pin: '2468', otpCode: codes.get(phone.slice(-3)), ...extra },
+    ip
   });
 };
 
@@ -183,4 +189,117 @@ test('the chosen area is the worker\'s default job view', { skip }, async () => 
   assert.deepEqual(await feed(), ['Gikondo tap']);
   await call('PATCH', '/api/users/me', { as: 'worker', body: { area: 'remera' } });
   assert.deepEqual(await feed(), ['Remera tap']);
+});
+
+// "Who invited you?": the inviter is identified by exact phone number, never
+// by name, so a shared name can't attach the referral edge to the wrong person.
+
+const NOT_FOUND = "We couldn't find that phone number. Check it or skip this step.";
+
+// Two people with the same name, in different areas.
+const sameName = async () => {
+  const existing = await User.find({ name: 'Amina Uwase' }).sort({ phone: 1 }).lean();
+  if (existing.length) return existing;
+  return User.create([
+    { name: 'Amina Uwase', phone: '0788600101', role: 'worker', area: 'kimironko', skills: ['tiler'] },
+    { name: 'Amina Uwase', phone: '0788600102', role: 'client', area: 'remera' }
+  ]);
+};
+
+// Everything console.log / console.error print while fn runs.
+const logged = async fn => {
+  const lines = [];
+  const { log, error } = console;
+  console.log = (...args) => { lines.push(args.join(' ')); log(...args); };
+  console.error = (...args) => lines.push(args.join(' '));
+  try { await fn(); } finally { Object.assign(console, { log, error }); }
+  return lines.join('\n');
+};
+
+test('a referral attaches to the person whose phone was given, even when two people share a name', { skip }, async () => {
+  const [first, second] = await sameName();
+  const logs = await logged(async () => {
+    const a = await signup('0788600111', { area: 'gikondo', referrerPhone: '0788 600 102' }, '10.70.1.1');
+    assert.equal(a.status, 201);
+    const b = await signup('0788600112', { area: 'gikondo', referrerPhone: '+250788600101' }, '10.70.1.2');
+    assert.equal(b.status, 201);
+
+    for (const [res, inviter, other] of [[a, second, first], [b, first, second]]) {
+      const id = res.data.user._id;
+      assert.equal(String((await User.findById(id).lean()).referredBy), String(inviter._id));
+      const edges = await TrustEdge.find({ toUser: id }).lean();
+      assert.equal(edges.length, 1);
+      assert.equal(String(edges[0].fromUser), String(inviter._id)); // from the inviter to the new user
+      assert.equal(edges[0].type, 'signup_referral');
+      assert.equal(edges[0].weight, 1.0);
+      assert.equal(await TrustEdge.exists({ fromUser: other._id, toUser: id }), null);
+    }
+  });
+  assert.doesNotMatch(logs, /7886001\d\d/); // no phone number in any log line
+});
+
+test('signup refuses an unknown, partial or own inviter phone and creates nobody', { skip }, async () => {
+  await sameName();
+  const register = (phone, referrerPhone) => call('POST', '/api/auth/register', {
+    body: { role: 'client', name: 'New Person', phone, area: 'remera', pin: '2468', otpCode: '000000', referrerPhone },
+    ip: '10.70.2.1'
+  });
+  for (const referrerPhone of ['0788600999', '0788600', '600102', 'Amina Uwase']) {
+    const res = await register('0788600121', referrerPhone);
+    assert.equal(res.status, 400, referrerPhone);
+    assert.equal(res.data.error, NOT_FOUND);
+  }
+  const own = await register('0788600122', '+250 788 600 122');
+  assert.equal(own.status, 400);
+  assert.equal(own.data.error, "You can't invite yourself.");
+  assert.equal(await User.exists({ phone: { $in: ['0788600121', '0788600122'] } }), null);
+});
+
+test('the old referrerId is ignored: no referral is made from an id', { skip }, async () => {
+  const [first] = await sameName();
+  const res = await signup('0788600123', { area: 'remera', referrerId: String(first._id) }, '10.70.2.2');
+  assert.equal(res.status, 201);
+  assert.equal(res.data.user.referredBy, null);
+  assert.equal(await TrustEdge.exists({ toUser: res.data.user._id }), null);
+});
+
+test('the inviter lookup matches a full number exactly and returns only name, area, role and the last 3 digits', { skip }, async () => {
+  const [, second] = await sameName();
+  const ip = '10.70.3.1';
+  const res = await call('POST', '/api/users/lookup', { body: { phone: '0788 600 102' }, ip });
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.data, { name: 'Amina U.', area: 'remera', role: 'client', phoneEnding: '102' });
+  const raw = JSON.stringify(res.data);
+  assert.doesNotMatch(raw, /788600102/);
+  assert.doesNotMatch(raw, new RegExp(String(second._id)));
+
+  // partial numbers and names: no match and no list
+  for (const phone of ['0788600', '078860010', '600102', 'Amina', '', null, { $ne: '' }]) {
+    const partial = await call('POST', '/api/users/lookup', { body: { phone }, ip: '10.70.3.2' });
+    assert.equal(partial.status, 400, JSON.stringify(phone));
+    assert.deepEqual(Object.keys(partial.data), ['error']);
+  }
+  const unknown = await call('POST', '/api/users/lookup', { body: { phone: '0788600999' }, ip });
+  assert.equal(unknown.status, 404);
+  assert.deepEqual(unknown.data, { error: NOT_FOUND });
+  // the old name search is gone
+  assert.equal((await call('GET', '/api/users/search?q=Amina', { ip })).status, 404);
+});
+
+test('inviter lookups are limited to 30 per IP per 15 minutes, and signup shares the limit', { skip }, async () => {
+  await sameName();
+  const ip = '10.70.4.1';
+  for (let i = 0; i < 30; i++) {
+    assert.equal((await call('POST', '/api/users/lookup', { body: { phone: '0788600101' }, ip })).status, 200, `lookup ${i + 1}`);
+  }
+  const limited = await call('POST', '/api/users/lookup', { body: { phone: '0788600101' }, ip });
+  assert.equal(limited.status, 429);
+  assert.deepEqual(limited.data, { error: 'Too many lookups. Please wait 15 minutes and try again.' });
+  const viaSignup = await call('POST', '/api/auth/register', {
+    body: { role: 'client', name: 'New Person', phone: '0788600131', area: 'remera', pin: '2468', otpCode: '000000', referrerPhone: '0788600101' },
+    ip
+  });
+  assert.equal(viaSignup.status, 429);
+  // another IP is unaffected
+  assert.equal((await call('POST', '/api/users/lookup', { body: { phone: '0788600101' }, ip: '10.70.4.2' })).status, 200);
 });

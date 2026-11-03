@@ -102,7 +102,12 @@ main**: repeat that flow on the live URLs once the merge has deployed.
    P-002, … from your paper consent list; see the limitations below).
 3. The participant opens https://middleman-client.vercel.app on their own
    phone, registers (role, trades, name, phone, area, SMS code, PIN, optional
-   "Who invited you?"). Point out the yellow "Sandbox – no real money" banner.
+   "Who invited you?"). For the invite step they type the inviter's full phone
+   number and confirm the name shown (short name, area, role, last 3 digits);
+   lookups are limited to 30 per IP per 15 minutes (each sign-up uses about
+   2–3), which covers about 10 participants signing up on one shared Wi-Fi
+   network; with more, space out the sign-ups or skip the step and note the
+   inviter on paper. Point out the yellow "Sandbox – no real money" banner.
 4. Tasks (record time and success on paper against the participant ID):
    - Client: find a worker in Discover; post a job; choose an offer; pay into
      escrow; confirm the job is done and rate the worker.
