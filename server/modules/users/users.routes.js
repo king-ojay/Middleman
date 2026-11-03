@@ -1,4 +1,4 @@
-// /api/users: referrer search at signup, profiles, and changing your own area.
+// /api/users: inviter lookup at signup, profiles, and changing your own area.
 import express from 'express';
 import mongoose from 'mongoose';
 import User from './user.model.js';
@@ -7,6 +7,8 @@ import Rating from '../trust/rating.model.js';
 import TrustEdge from '../trust/trustEdge.model.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
 import { requireUser } from '../auth/currentUser.js';
+import { hit } from '../auth/rateLimit.js';
+import { normalisePhone } from './phone.js';
 import { AREAS } from '../../config/areas.js';
 import { serverError } from '../serverError.js';
 
@@ -18,20 +20,28 @@ const shortName = name => {
   return rest.length ? `${first} ${rest[rest.length - 1][0]}.` : first;
 };
 
-const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Inviter lookups: 30 per IP per 15 minutes (pilot sessions share one Wi-Fi
+// network, so one IP), shared with the register route so it can't be used to
+// get round the limit.
+export const LOOKUP_LIMIT = Object.freeze({ perIp: 30, windowMs: 15 * 60 * 1000 });
+export const LOOKUP_NOT_FOUND = "We couldn't find that phone number. Check it or skip this step.";
+export const LOOKUP_LIMITED = 'Too many lookups. Please wait 15 minutes and try again.';
+export const lookupAllowed = req => hit(`lookup:ip:${req.ip}`, LOOKUP_LIMIT.perIp, LOOKUP_LIMIT.windowMs).allowed;
 
-// GET /api/users/search?q=ami — "Who invited you?" at signup (FR-03). Public,
-// because the person isn't registered yet, so it returns only name, role and
-// area (never phone numbers), needs 2+ characters and caps at 5 results.
-router.get('/search', async (req, res) => {
+// POST /api/users/lookup  Body: { phone } — "Who invited you?" at signup
+// (FR-03). Public, because the person isn't registered yet. Exact match on a
+// complete phone number only (no partial or name matching, never a list), so
+// nobody can browse members. Returns just enough to confirm the right person:
+// short name, area, role and the last 3 digits — never the full number or id.
+// The number travels in the body, so it stays out of URLs and request logs.
+router.post('/lookup', async (req, res) => {
   try {
-    const q = String(req.query.q || '').trim();
-    if (q.length < 2) return res.json([]);
-    const users = await User.find({ name: new RegExp(escapeRegex(q), 'i') }, 'name role area')
-      .sort({ name: 1 })
-      .limit(5)
-      .lean();
-    res.json(users);
+    if (!lookupAllowed(req)) return res.status(429).json({ error: LOOKUP_LIMITED });
+    const phone = normalisePhone(req.body?.phone);
+    if (!phone) return res.status(400).json({ error: 'Enter the full phone number, e.g. 0788 123 456' });
+    const user = await User.findOne({ phone }, 'name role area').lean();
+    if (!user) return res.status(404).json({ error: LOOKUP_NOT_FOUND });
+    res.json({ name: shortName(user.name), area: user.area, role: user.role, phoneEnding: phone.slice(-3) });
   } catch (err) {
     serverError(res, err, req);
   }
