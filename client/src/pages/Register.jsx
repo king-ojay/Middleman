@@ -7,7 +7,7 @@ import AuthLayout from '../components/AuthLayout.jsx';
 import AreaPicker from '../components/AreaPicker.jsx';
 import { CATEGORIES, areaLabel } from '../options.js';
 import {
-  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, StepBar, TextInput
+  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, SlowNotice, StepBar, TextInput
 } from '../components/ui/index.js';
 
 // Rwandan mobile number, as typed: 078X XXX XXX, with or without +250.
@@ -81,7 +81,10 @@ export default function Register() {
           </div>
           <InviterPhone confirmed={inviter} onConfirm={setInviter} />
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
-          <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6}>{submitting ? 'Creating account…' : 'Create account'}</Button>
+          <div>
+            <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6} aria-busy={submitting}>{submitting ? 'Creating account…' : 'Create account'}</Button>
+            <SlowNotice active={submitting} className="mt-3 text-center" />
+          </div>
         </form>
       </AuthLayout>
     );
@@ -129,7 +132,10 @@ export default function Register() {
         />
 
         {error && error !== 'Choose your area.' && <p className="text-small text-danger" role="alert">{error}</p>}
-        <Button type="submit" disabled={sending}>{sending ? 'Sending code…' : 'Continue'}</Button>
+        <div>
+          <Button type="submit" disabled={sending} aria-busy={sending}>{sending ? 'Sending code…' : 'Continue'}</Button>
+          <SlowNotice active={sending} className="mt-3 text-center" />
+        </div>
       </form>
     </AuthLayout>
   );

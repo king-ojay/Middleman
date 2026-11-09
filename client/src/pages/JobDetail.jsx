@@ -8,7 +8,8 @@ import { firstName } from '../greeting.js';
 import { formatRwf } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
-  Avatar, Button, Card, FormField, JobStepper, PageLayout, StarRating, Switch, TextArea, TierBadge, VerifiedBadge
+  Avatar, Button, Card, FormField, JobStepper, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, Switch, TextArea, TierBadge,
+  VerifiedBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 import LoadError from '../components/LoadError.jsx';
@@ -56,7 +57,7 @@ export default function JobDetail() {
   const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
   if (error) return <PageLayout {...layout} title="Job"><LoadError prefix="Couldn't load this job" error={error} retrying={retrying} onRetry={tryAgain} /></PageLayout>;
-  if (!job) return <PageLayout {...layout} title="Job"><p className="text-body text-muted">Loading…</p></PageLayout>;
+  if (!job) return <PageLayout {...layout}><JobSkeleton /></PageLayout>;
 
   if (isClient && job.status === 'open') {
     return (
@@ -110,6 +111,34 @@ export default function JobDetail() {
         </>
       )}
     </PageLayout>
+  );
+}
+
+// The shape of a job page before we know which one it is: title, who and
+// where, the progress steps, and the status card with its price and action.
+function JobSkeleton() {
+  return (
+    <LoadingState label="Loading job">
+      <div className="mb-6">
+        <SkeletonText size="display" on="canvas" className="w-3/4" />
+        <SkeletonText on="canvas" className="w-1/2 mt-2" />
+      </div>
+      <div className="flex mb-6">
+        {[0, 1, 2, 3, 4].map(i => (
+          <div key={i} className="flex-1 flex flex-col items-center">
+            <Skeleton on="canvas" className="w-6 h-6 rounded-full" />
+            <SkeletonText size="small" on="canvas" className="w-12 mt-2" />
+          </div>
+        ))}
+      </div>
+      <Card className="p-5">
+        <SkeletonText className="w-2/3" />
+        <SkeletonText className="w-1/2 mt-1" />
+        <SkeletonText size="small" className="w-24 mt-3" />
+        <SkeletonText size="title" className="w-36" />
+        <Skeleton className="h-14 w-full mt-4 rounded-full" />
+      </Card>
+    </LoadingState>
   );
 }
 

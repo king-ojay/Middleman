@@ -5,7 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { greeting } from '../greeting.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
 import LoadError from '../components/LoadError.jsx';
-import { Avatar, Card, Chip, ChipRow, PageLayout, TierBadge, VerifiedBadge } from '../components/ui/index.js';
+import { Avatar, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, TierBadge, VerifiedBadge } from '../components/ui/index.js';
 
 export default function Discover() {
   const { user } = useAuth();
@@ -95,7 +95,13 @@ export default function Discover() {
       <p className="text-body text-muted mb-4">People you trust, and the people they trust, come first.</p>
 
       {error && <LoadError prefix="Couldn't load workers" error={error} retrying={retrying} onRetry={tryAgain} />}
-      {loading && !retrying && <p className="text-body text-muted">Loading…</p>}
+      {loading && !retrying && (
+        <LoadingState label="Loading workers">
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2, 3].map(i => <WorkerCardSkeleton key={i} />)}
+          </ul>
+        </LoadingState>
+      )}
       {!loading && !error && workers.length === 0 && (
         <p className="text-body text-muted">No {categoryLabel(category).toLowerCase()} workers{area ? ` in ${areaLabel(area)}` : ''} yet.</p>
       )}
@@ -121,5 +127,20 @@ export default function Discover() {
         ))}
       </ul>
     </PageLayout>
+  );
+}
+// The shape of one worker card above: avatar, name, trades · area, tier badge.
+function WorkerCardSkeleton() {
+  return (
+    <Card as="li" className="p-0">
+      <div className="flex items-center gap-4 p-4">
+        <Skeleton className="w-[52px] h-[52px] shrink-0 rounded-full" />
+        <div className="min-w-0 flex-1">
+          <SkeletonText size="card" className="w-1/2" />
+          <SkeletonText className="w-3/4" />
+          <Skeleton className="w-40 h-[26px] mt-2 rounded-full" />
+        </div>
+      </div>
+    </Card>
   );
 }

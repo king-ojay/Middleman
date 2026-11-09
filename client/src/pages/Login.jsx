@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { wakeApi } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
-import { Avatar, Button, FormField, LogoMark, TextInput } from '../components/ui/index.js';
+import { Avatar, Button, FormField, LogoMark, SlowNotice, TextInput } from '../components/ui/index.js';
 import AuthLayout from '../components/AuthLayout.jsx';
 
 export default function Login() {
@@ -72,7 +72,10 @@ export default function Login() {
             />
           )}
         </FormField>
-        <Button type="submit" disabled={submitting}>{submitting ? 'Logging in…' : 'Log in'}</Button>
+        <div>
+          <Button type="submit" disabled={submitting} aria-busy={submitting}>{submitting ? 'Logging in…' : 'Log in'}</Button>
+          <SlowNotice active={submitting} className="mt-3 text-center" />
+        </div>
       </form>
       <div className="flex flex-col items-center mt-4">
         <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted hover:text-heading hover:underline">Forgot your PIN?</Link>

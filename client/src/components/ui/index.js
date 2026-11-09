@@ -16,3 +16,4 @@ export { default as LogoMark } from './LogoMark.jsx';
 export { default as Badge } from './Badge.jsx';
 export { default as OptionCard } from './OptionCard.jsx';
 export { default as Sheet } from './Sheet.jsx';
+export { default as Skeleton, SkeletonText, SlowNotice, LoadingState } from './Skeleton.jsx';
