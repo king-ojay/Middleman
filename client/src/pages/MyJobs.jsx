@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatRwf } from '../format.js';
 import { JOB_GROUPS, categoryLabel, areaLabel, moneyLabel, statusChip } from '../options.js';
-import { Badge, Button, Card, PageLayout } from '../components/ui/index.js';
+import { Badge, Button, Card, LoadingState, PageLayout, Skeleton, SkeletonText } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 import LoadError from '../components/LoadError.jsx';
 
@@ -51,7 +51,16 @@ export default function MyJobs() {
       tabBar
       role={role}
     >
-      {loading && <p className="text-body text-muted">Loading…</p>}
+      {loading && (
+        <LoadingState label="Loading jobs">
+          <div className="py-1 mb-5 flex gap-2 overflow-hidden">
+            {[0, 1, 2, 3].map(i => <Skeleton key={i} on="canvas" className="h-11 w-28 shrink-0 rounded-full" />)}
+          </div>
+          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {[0, 1, 2].map(i => <JobCardSkeleton key={i} />)}
+          </ul>
+        </LoadingState>
+      )}
       {error && <LoadError prefix="Couldn't load jobs" error={error} retrying={retrying} onRetry={tryAgain} />}
 
       {!loading && !error && jobs.length === 0 && (
@@ -146,6 +155,25 @@ function JobCard({ job, role, onChange }) {
       </div>
 
       <NextStep job={job} role={role} onChange={onChange} />
+    </Card>
+  );
+}
+
+// The shape of a job card: status, description, trade · area, price and the
+// next-step button.
+function JobCardSkeleton() {
+  return (
+    <Card as="li" className="p-5 flex flex-col gap-4">
+      <div>
+        <Skeleton className="w-24 h-[26px] rounded-full" />
+        <SkeletonText size="card" className="w-3/4 mt-3" />
+        <SkeletonText className="w-1/2 mt-1" />
+      </div>
+      <div className="mt-auto">
+        <SkeletonText size="small" className="w-20" />
+        <SkeletonText size="section" className="w-28" />
+      </div>
+      <Skeleton className="h-14 w-full rounded-full" />
     </Card>
   );
 }

@@ -5,7 +5,9 @@ import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
 import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import AreaPicker from '../components/AreaPicker.jsx';
-import { Avatar, Button, Card, Chip, ChipRow, PageLayout, StarRating, TierBadge, VerifiedBadge } from '../components/ui/index.js';
+import {
+  Avatar, Button, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, TierBadge, VerifiedBadge
+} from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
 
@@ -33,7 +35,7 @@ export default function Profile() {
 
   const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role, width: 'medium' };
   if (error) return <PageLayout {...layout}><p className="text-body text-danger" role="alert">Couldn't load this profile: {error}</p></PageLayout>;
-  if (!profile) return <PageLayout {...layout}><p className="text-body text-muted">Loading…</p></PageLayout>;
+  if (!profile) return <PageLayout {...layout}><ProfileSkeleton /></PageLayout>;
 
   const role = profile.role === 'worker' ? (profile.skills || []).map(categoryLabel).join(', ') : 'Client';
   const { stats } = profile;
@@ -162,6 +164,42 @@ function Preferences() {
         </div>
       </Card>
     </>
+  );
+}
+
+// The shape of the profile above: avatar, name, trade · area, badges, the
+// three stats, then the vouches and recent ratings.
+function ProfileSkeleton() {
+  return (
+    <LoadingState label="Loading profile">
+      <div className="flex flex-col items-center pt-2">
+        <Skeleton on="canvas" className="w-[88px] h-[88px] rounded-full" />
+        <SkeletonText size="title" on="canvas" className="w-48 mt-4" />
+        <SkeletonText on="canvas" className="w-40 mt-1" />
+        <Skeleton on="canvas" className="w-40 h-[26px] mt-3 rounded-full" />
+      </div>
+      <Card className="grid grid-cols-3 py-5 mt-6">
+        {[0, 1, 2].map(i => (
+          <div key={i} className="flex flex-col items-center">
+            <SkeletonText size="title" className="w-10" />
+            <SkeletonText size="small" className="w-16 mt-1" />
+          </div>
+        ))}
+      </Card>
+      <h2 className="text-section text-ink mt-8 mb-3">Vouched for by</h2>
+      <div className="flex gap-2">
+        {[0, 1].map(i => <Skeleton key={i} on="canvas" className="h-11 w-28 rounded-full" />)}
+      </div>
+      <h2 className="text-section text-ink mt-8 mb-3">Recent ratings</h2>
+      <ul className="grid gap-3 md:grid-cols-2">
+        {[0, 1].map(i => (
+          <Card as="li" key={i} className="p-5">
+            <SkeletonText className="w-1/2" />
+            <SkeletonText className="w-3/4 mt-2" />
+          </Card>
+        ))}
+      </ul>
+    </LoadingState>
   );
 }
 

@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
 import AuthLayout from '../components/AuthLayout.jsx';
-import { Button, FormField, PinBoxes, StepBar, TextInput } from '../components/ui/index.js';
+import { Button, FormField, PinBoxes, SlowNotice, StepBar, TextInput } from '../components/ui/index.js';
 
 // Forgot PIN: phone -> code by SMS + new PIN. The only time codes are used
 // after signup; daily login is phone + PIN.
@@ -58,7 +58,10 @@ export default function ResetPin() {
             <PinBoxes value={pin} onChange={setPin} label="New PIN" />
           </div>
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
-          <Button type="submit" disabled={busy || code.length !== 6 || pin.length !== 4}>{busy ? 'Saving…' : 'Save PIN and log in'}</Button>
+          <div>
+            <Button type="submit" disabled={busy || code.length !== 6 || pin.length !== 4} aria-busy={busy}>{busy ? 'Saving…' : 'Save PIN and log in'}</Button>
+            <SlowNotice active={busy} className="mt-3 text-center" />
+          </div>
         </form>
       </AuthLayout>
     );
@@ -73,7 +76,10 @@ export default function ResetPin() {
         <FormField label="Phone number" error={error}>
           {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="078X XXX XXX" required />}
         </FormField>
-        <Button type="submit" disabled={busy}>{busy ? 'Sending code…' : 'Send code'}</Button>
+        <div>
+          <Button type="submit" disabled={busy} aria-busy={busy}>{busy ? 'Sending code…' : 'Send code'}</Button>
+          <SlowNotice active={busy} className="mt-3 text-center" />
+        </div>
       </form>
     </AuthLayout>
   );

@@ -6,7 +6,9 @@ import { useAuth } from '../auth.jsx';
 import { firstName } from '../greeting.js';
 import { formatRwf, timeAgo } from '../format.js';
 import { AREAS, categoryLabel, areaLabel } from '../options.js';
-import { Avatar, Badge, Button, Card, Chip, ChipRow, FormField, PageLayout, PriceInput, Sheet, Switch, TierBadge } from '../components/ui/index.js';
+import {
+  Avatar, Badge, Button, Card, Chip, ChipRow, FormField, LoadingState, PageLayout, PriceInput, Sheet, Skeleton, SkeletonText, Switch, TierBadge
+} from '../components/ui/index.js';
 
 const SORTS = [
   { value: 'newest', label: 'Newest' },
@@ -121,7 +123,13 @@ export default function OpenJobs() {
       )}
 
       <div className="mt-4">
-        {loading && <p className="text-body text-muted">Loading…</p>}
+        {loading && (
+          <LoadingState label="Loading jobs">
+            <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {[0, 1, 2].map(i => <JobCardSkeleton key={i} />)}
+            </ul>
+          </LoadingState>
+        )}
         {error && <p className="text-body text-danger" role="alert">Couldn't load jobs: {error}</p>}
         {!loading && !error && jobs.length === 0 && (
           <p className="text-body text-muted">
@@ -159,6 +167,30 @@ export default function OpenJobs() {
         ))}
       </ul>
     </PageLayout>
+  );
+}
+
+// The shape of one open-job card above: description, trade · area, the
+// client and their tier, the price and the two response buttons.
+function JobCardSkeleton() {
+  return (
+    <Card as="li" className="p-5 flex flex-col">
+      <SkeletonText size="card" className="w-3/4" />
+      <SkeletonText className="w-1/2 mt-1" />
+      <div className="flex items-center gap-3 mt-4">
+        <Skeleton className="w-11 h-11 shrink-0 rounded-full" />
+        <div className="min-w-0 flex-1">
+          <SkeletonText className="w-1/3" />
+          <Skeleton className="w-40 h-[26px] rounded-full" />
+        </div>
+      </div>
+      <SkeletonText size="small" className="w-24 mt-4" />
+      <SkeletonText size="title" className="w-36" />
+      <div className="flex gap-3 mt-4">
+        <Skeleton className="flex-1 h-11 rounded-full" />
+        <Skeleton className="flex-1 h-11 rounded-full" />
+      </div>
+    </Card>
   );
 }
 

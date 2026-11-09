@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
 import { onSlowChange } from '../api.js';
+import { onInlineChange } from '../slowNotice.js';
 
 // Shown while any API request has been waiting more than 3 seconds, which on
 // the free host almost always means the server is waking from sleep. Sits
-// above the phone tab bar; from 768px at the bottom of the window.
+// above the phone tab bar; from 768px at the bottom of the window. Hidden
+// while the page shows its own loading state (Skeleton.jsx), which carries
+// its own notice.
 export default function ServerWaking() {
   const [slow, setSlow] = useState(false);
+  const [inline, setInline] = useState(false);
   useEffect(() => onSlowChange(setSlow), []);
-  if (!slow) return null;
+  useEffect(() => onInlineChange(setInline), []);
+  if (!slow || inline) return null;
   return (
     <div
       role="status"
