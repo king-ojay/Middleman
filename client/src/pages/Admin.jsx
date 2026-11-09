@@ -107,7 +107,7 @@ function Verification({ secret }) {
               <div className="min-w-0">
                 <h3 className="text-card text-ink">{w.name}</h3>
                 <p className="text-body text-muted">
-                  {(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)} · phone ending {w.phoneEnding}
+                  {(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)} · {w.phone}
                 </p>
               </div>
               <Button size="md" onClick={() => verify(w)} disabled={busy !== null}>
