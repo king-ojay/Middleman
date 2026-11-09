@@ -7,10 +7,13 @@
 //
 //   POST /api/admin/verification/verify  Body: { userId } or { phone }
 //   POST /api/admin/verification/revoke  Body: { userId } or { phone }
+//   GET  /api/admin/verification/unverified  Workers not yet verified (read-only)
 //
-// Both need the X-Admin-Secret header (adminAuth.js). The answer carries ids
-// and verification fields only, no name or phone. scripts/verifyUser.js
-// calls these routes.
+// All need the X-Admin-Secret header (adminAuth.js). verify and revoke answer
+// with ids and verification fields only, no name or phone.
+// scripts/verifyUser.js calls them. The unverified list is for the admin page
+// (/admin), so the researcher can find the person in front of them: name,
+// area, trades and only the last 3 digits of the phone.
 import express from 'express';
 import mongoose from 'mongoose';
 import User from './user.model.js';
@@ -62,6 +65,16 @@ export async function revokeVerification(who) {
 
 export const verificationRouter = express.Router();
 verificationRouter.use(requireAdmin);
+
+verificationRouter.get('/verification/unverified', async (req, res) => {
+  try {
+    const workers = await User.find({ role: 'worker', verifiedStatus: { $ne: 'verified' } }, '_id name area skills phone')
+      .sort({ _id: 1 }).lean(); // oldest signup first
+    res.json(workers.map(({ phone, ...w }) => ({ ...w, phoneEnding: phone.slice(-3) })));
+  } catch (err) {
+    serverError(res, err, req);
+  }
+});
 
 for (const [path, action] of [['verify', verifyUser], ['revoke', revokeVerification]]) {
   verificationRouter.post(`/verification/${path}`, async (req, res) => {

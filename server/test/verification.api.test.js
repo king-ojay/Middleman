@@ -144,6 +144,29 @@ test('nobody can verify themselves through their own profile', { skip }, async (
   await call('PATCH', '/api/users/me', { as: 'worker', body: { area: 'remera' } });
 });
 
+test('the unverified list (admin page): secret only, unverified workers only, name, area, trades and phone ending; read-only', { skip }, async () => {
+  const list = () => call('GET', '/api/admin/verification/unverified', { secret: ADMIN_SECRET });
+  assert.equal((await call('GET', '/api/admin/verification/unverified')).status, 401);
+  assert.equal((await call('GET', '/api/admin/verification/unverified', { secret: 'nope' })).status, 401);
+  assert.equal((await call('GET', '/api/admin/verification/unverified', { as: 'worker' })).status, 401);
+
+  const usersBefore = await User.find().lean();
+  const res = await list();
+  assert.equal(res.status, 200);
+  // the client (viewer) is never listed; both workers start unverified
+  assert.deepEqual(res.data.map(w => w.name), ['Worker Ver', 'Other Ver']);
+  assert.deepEqual(Object.keys(res.data[0]).sort(), ['_id', 'area', 'name', 'phoneEnding', 'skills']);
+  assert.deepEqual([res.data[0].area, res.data[0].skills, res.data[0].phoneEnding], ['remera', ['tiler'], '002']);
+  assert.equal(JSON.stringify(res.data).includes('788700'), false);
+  assert.deepEqual(await User.find().lean(), usersBefore);
+
+  // verified workers drop off the list, and come back when revoked
+  await admin('verify', { userId: String(users.other._id) });
+  assert.deepEqual((await list()).data.map(w => w.name), ['Worker Ver']);
+  await admin('revoke', { userId: String(users.other._id) });
+  assert.deepEqual((await list()).data.map(w => w.name), ['Worker Ver', 'Other Ver']);
+});
+
 test('scripts/verifyUser.js verifies and revokes through the route, printing no name or phone', { skip }, async () => {
   const run = promisify(execFile);
   const script = fileURLToPath(new URL('../scripts/verifyUser.js', import.meta.url));

@@ -28,8 +28,9 @@ export function wakeApi() {
   fetch(`${API_BASE}/api/health`).catch(() => { woken = false; });
 }
 
-export async function api(path, options = {}) {
-  const token = loadSession()?.token;
+// `session: false` sends no login token (the admin page, below).
+export async function api(path, { session = true, ...options } = {}) {
+  const token = session ? loadSession()?.token : null;
   let slow = false;
   const timer = setTimeout(() => { slow = true; setSlow(1); }, SLOW_MS);
   let res;
@@ -67,3 +68,9 @@ export async function api(path, options = {}) {
   }
   return data;
 }
+
+// The admin page (/admin): the researcher's secret goes in the X-Admin-Secret
+// header and no login token is sent, so a wrong secret (401) never logs out
+// someone signed in on the same browser. The secret is never stored or logged.
+export const adminApi = (path, secret, options = {}) =>
+  api(path, { ...options, session: false, headers: { 'X-Admin-Secret': secret, ...options.headers } });
