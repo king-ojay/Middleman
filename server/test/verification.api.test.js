@@ -16,7 +16,7 @@ const MONGO = process.env.TEST_MONGO_URI && (() => {
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
 const ADMIN_SECRET = 'verify-test-admin-secret';
 
-let server, base, mongoose, User, rankByTrust, users, tokens;
+let server, base, mongoose, User, Job, rankByTrust, users, tokens;
 
 before(async () => {
   if (skip) return;
@@ -27,6 +27,7 @@ before(async () => {
 
   mongoose = (await import('mongoose')).default;
   ({ default: User } = await import('../modules/users/user.model.js'));
+  ({ default: Job } = await import('../modules/jobs/job.model.js'));
   ({ rankByTrust } = await import('../modules/trust/trustPropagation.js'));
   const { createSessionToken } = await import('../modules/auth/session.js');
   const { default: app } = await import('../app.js');
@@ -142,6 +143,59 @@ test('nobody can verify themselves through their own profile', { skip }, async (
   const stored = await User.findById(users.worker._id).lean();
   assert.deepEqual([stored.verifiedStatus, stored.verifiedBy, stored.verifiedAt, stored.verificationMethod], ['unverified', null, null, null]);
   await call('PATCH', '/api/users/me', { as: 'worker', body: { area: 'remera' } });
+});
+
+test('the unverified list (admin page): secret only, unverified workers only, name, area, trades and full phone; read-only', { skip }, async () => {
+  const list = () => call('GET', '/api/admin/verification/unverified', { secret: ADMIN_SECRET });
+  assert.equal((await call('GET', '/api/admin/verification/unverified')).status, 401);
+  assert.equal((await call('GET', '/api/admin/verification/unverified', { secret: 'nope' })).status, 401);
+  assert.equal((await call('GET', '/api/admin/verification/unverified', { as: 'worker' })).status, 401);
+
+  const usersBefore = await User.find().lean();
+  const res = await list();
+  assert.equal(res.status, 200);
+  // the client (viewer) is never listed; both workers start unverified
+  assert.deepEqual(res.data.map(w => w.name), ['Worker Ver', 'Other Ver']);
+  assert.deepEqual(Object.keys(res.data[0]).sort(), ['_id', 'area', 'name', 'phone', 'skills']);
+  assert.deepEqual([res.data[0].area, res.data[0].skills, res.data[0].phone], ['remera', ['tiler'], '0788700002']);
+  assert.deepEqual(await User.find().lean(), usersBefore);
+
+  // verified workers drop off the list, and come back when revoked
+  await admin('verify', { userId: String(users.other._id) });
+  assert.deepEqual((await list()).data.map(w => w.name), ['Worker Ver']);
+  await admin('revoke', { userId: String(users.other._id) });
+  assert.deepEqual((await list()).data.map(w => w.name), ['Worker Ver', 'Other Ver']);
+});
+
+test('no non-admin route sends a worker\'s phone number to anyone else', { skip }, async () => {
+  const job = await Job.create({
+    client: users.viewer._id, worker: users.worker._id, category: 'tiler', area: 'remera',
+    description: 'Tile floor', proposedPrice: 9000, agreedPrice: 9000, status: 'quote_accepted', acceptedAt: new Date()
+  });
+  await Job.create({ client: users.viewer._id, category: 'tiler', area: 'remera', description: 'Tile wall', proposedPrice: 7000 });
+  try {
+    const answers = await Promise.all([
+      call('GET', '/api/discover?category=tiler', { as: 'viewer' }),
+      call('GET', '/api/discover?category=tiler&area=remera', { as: 'viewer' }),
+      call('GET', `/api/users/${users.worker._id}/profile`, { as: 'viewer' }),
+      call('GET', `/api/users/${users.worker._id}/profile`, { as: 'other' }),
+      call('POST', '/api/users/lookup', { body: { phone: '0788700002' } }),
+      call('GET', '/api/jobs/mine', { as: 'viewer' }),
+      call('GET', `/api/jobs/${job._id}`, { as: 'viewer' }),
+      call('GET', '/api/jobs/feed?area=all&trade=any', { as: 'other' })
+    ]);
+    for (const { status, data } of answers) {
+      assert.equal(status, 200);
+      const text = JSON.stringify(data);
+      for (const phone of ['788700002', '788700003']) assert.equal(text.includes(phone), false, `${phone} in ${text}`);
+    }
+    // the routes really answered about this worker and these jobs
+    assert.ok(answers[0].data.some(w => w.name === 'Worker Ver'));
+    assert.equal(answers[6].data.worker?.name, 'Worker Ver');
+    assert.ok(answers[7].data.some(j => j.description === 'Tile wall'));
+  } finally {
+    await Job.deleteMany({});
+  }
 });
 
 test('scripts/verifyUser.js verifies and revokes through the route, printing no name or phone', { skip }, async () => {

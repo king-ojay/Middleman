@@ -181,6 +181,24 @@ test('an admin release resolves a dispute raised after the work was marked done'
   assert.deepEqual((await admin('GET', '/api/admin/disputes')).data.map(j => String(j._id)).includes(String(job._id)), false);
 });
 
+test('the dispute list says what each job was (for the admin page), with no names or phones', { skip }, async () => {
+  const job = await acceptedJob();
+  await post(`/api/jobs/${job._id}/fund`, 'client');
+  await post(`/api/jobs/${job._id}/dispute`, 'client');
+  const res = await admin('GET', '/api/admin/disputes');
+  assert.equal(res.status, 200);
+  const listed = res.data.find(j => String(j._id) === String(job._id));
+  assert.deepEqual([listed.description, listed.category, listed.area, listed.agreedPrice, listed.escrow.status],
+    ['Fix sink', 'plumber', 'remera', 15000, 'held']);
+  const text = JSON.stringify(res.data);
+  for (const personal of ['Client Esc', 'Worker Esc', '0788400001', '0788400002', '+250788400001', '+250788400002']) {
+    assert.equal(text.includes(personal), false, personal);
+  }
+  assert.equal((await call('GET', '/api/admin/disputes')).status, 401);
+  assert.equal((await call('GET', '/api/admin/disputes', { as: 'client' })).status, 401);
+  await admin('POST', `/api/admin/jobs/${job._id}/refund`);
+});
+
 test('admin routes need the shared secret', { skip }, async () => {
   const job = await acceptedJob();
   assert.equal((await call('POST', `/api/admin/jobs/${job._id}/refund`)).status, 401);
