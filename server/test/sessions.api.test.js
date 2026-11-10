@@ -4,6 +4,7 @@
 //   TEST_MONGO_URI=mongodb://127.0.0.1:27017/middleman_test npm test
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { stubAfricasTalking, atAnswer } from './africasTalkingStub.js';
 
 const MONGO = process.env.TEST_MONGO_URI;
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
@@ -127,4 +128,31 @@ test('a PIN reset ends every older session and returns a new one', { skip }, asy
 
   assert.equal((await call('GET', '/api/jobs/mine', { token: before })).status, 401);
   assert.equal((await call('GET', '/api/jobs/mine', { token: reset.data.token })).status, 200);
+});
+
+test('a number Africa\'s Talking rejects gets the friendly message, and the reason is logged (masked)', { skip }, async () => {
+  const saved = { ...process.env };
+  Object.assign(process.env, { OTP_PROVIDER: 'africastalking', AT_USERNAME: 'middleman-user', AT_API_KEY: 'atsk_test_key_123456' });
+  const errors = [];
+  const error = console.error;
+  console.error = (...args) => errors.push(args.join(' '));
+  try {
+    for (const [respond, message] of [
+      [() => atAnswer([{ status: 'InvalidPhoneNumber', statusCode: 403 }]), "We couldn't send the code to that number, please check it and try again"],
+      [() => { throw new Error('connect ECONNREFUSED'); }, 'We could not send the code. Please try again.']
+    ]) {
+      const at = stubAfricasTalking(respond);
+      try {
+        const res = await call('POST', '/api/auth/otp', { body: { phone: '0788100077', purpose: 'register' } });
+        assert.equal(res.status, 502);
+        assert.equal(res.data.error, message);
+      } finally { at.restore(); }
+    }
+    assert.match(errors.join('\n'), /send failed \(number rejected\): status="InvalidPhoneNumber" statusCode=403/);
+    assert.match(errors.join('\n'), /send failed: connect ECONNREFUSED/);
+    assert.doesNotMatch(errors.join('\n'), /788100077|middleman-user|atsk_test_key/);
+  } finally {
+    console.error = error;
+    process.env = saved;
+  }
 });
