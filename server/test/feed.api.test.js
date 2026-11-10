@@ -32,7 +32,7 @@ test('feedQuery: search text is matched literally, never as a pattern, and cappe
   assert.equal(feedQuery(WORKER, { q: 'x'.repeat(500) }).filter.$or[0].description.$regex.length, 100);
 });
 
-let server, base, mongoose, Job, Quote, users, tokens, jobs;
+let server, base, mongoose, Job, Quote, users, tokens, jobs, User;
 
 before(async () => {
   if (skip) return;
@@ -40,7 +40,7 @@ before(async () => {
   process.env.SESSION_SECRET = 'api-test-secret';
 
   mongoose = (await import('mongoose')).default;
-  const { default: User } = await import('../modules/users/user.model.js');
+  ({ default: User } = await import('../modules/users/user.model.js'));
   ({ default: Job } = await import('../modules/jobs/job.model.js'));
   ({ default: Quote } = await import('../modules/jobs/quote.model.js'));
   const { createSessionToken } = await import('../modules/auth/session.js');
@@ -154,6 +154,35 @@ test('privacy: the list carries only job fields, the client\'s id, name and area
     assert.deepEqual(Object.keys(job).sort(), ['_id', 'area', 'canRespond', 'category', 'client', 'clientTrust', 'createdAt', 'description', 'myResponse', 'proposedPrice', 'status']);
     assert.deepEqual(Object.keys(job.client).sort(), ['_id', 'area', 'name']);
     assert.equal(typeof job.clientTrust, 'string');
+  }
+});
+
+test('a deleted account never breaks a page: orphan jobs leave the feed, job detail still loads, offers from a deleted worker are left out', { skip }, async () => {
+  const [gone, goneWorker] = await User.create([
+    { name: 'Gone Client', phone: '0788500009', role: 'client', area: 'remera' },
+    { name: 'Gone Worker', phone: '0788500008', role: 'worker', area: 'remera', skills: ['plumber'] }
+  ]);
+  const orphan = await Job.create({ client: gone._id, area: 'remera', category: 'plumber', description: 'Orphan sink job', proposedPrice: 7000 });
+  const own = await Job.create({ client: users.client._id, area: 'remera', category: 'plumber', description: 'Offer from a deleted worker', proposedPrice: 6000 });
+  await Quote.create({ job: own._id, worker: goneWorker._id, amount: 6000, isCounter: false });
+  await User.deleteMany({ _id: { $in: [gone._id, goneWorker._id] } });
+  try {
+    const listed = await feed('?area=all&trade=any'); // asserts 200
+    assert.equal(descriptions(listed).includes('Orphan sink job'), false);
+    assert.equal(descriptions(listed).includes('Offer from a deleted worker'), true);
+
+    const detail = await call('GET', `/api/jobs/${orphan._id}`, 'worker');
+    assert.equal(detail.status, 200);
+    assert.equal(detail.data.client, null);
+
+    const offers = await call('GET', `/api/jobs/${own._id}`, 'client');
+    assert.equal(offers.status, 200);
+    assert.deepEqual(offers.data.responses, []);
+
+    assert.equal((await call('GET', '/api/jobs/mine', 'client')).status, 200);
+  } finally {
+    await Quote.deleteMany({ job: own._id });
+    await Job.deleteMany({ _id: { $in: [orphan._id, own._id] } });
   }
 });
 

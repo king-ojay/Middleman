@@ -52,7 +52,9 @@ router.get('/feed', requireRole('worker'), handle(async (req, res) => {
     .limit(FEED_LIMIT)
     // verifiedStatus feeds the trust fallback only; it is not sent.
     .populate('client', 'name area verifiedStatus')
-    .lean();
+    .lean()
+    // A job whose client account was deleted populates as null: leave it out.
+    .then(found => found.filter(j => j.client));
 
   const clients = [...new Map(jobs.map(j => [String(j.client._id), j.client])).values()];
   const clientTier = tierById(await rankByTrust(req.user._id, clients));
@@ -105,8 +107,10 @@ router.get('/:id', handle(async (req, res) => {
     .lean();
   if (!job) throw new HttpError(404, 'Job not found');
 
-  if (String(job.client._id) === String(req.user._id)) {
-    const quotes = await Quote.find({ job: job._id }).populate('worker', 'name area skills verifiedStatus').lean();
+  // job.client (or a quote's worker) is null when that account was deleted.
+  if (job.client && String(job.client._id) === String(req.user._id)) {
+    const quotes = (await Quote.find({ job: job._id }).populate('worker', 'name area skills verifiedStatus').lean())
+      .filter(q => q.worker);
     const quoteByWorker = new Map(quotes.map(q => [String(q.worker._id), q]));
     const rankedWorkers = await rankByTrust(req.user._id, quotes.map(q => q.worker));
     const responses = rankedWorkers.map(w => ({

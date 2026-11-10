@@ -2,13 +2,16 @@ import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { Button, FormField, TextInput } from './ui/index.js';
 
-const RESEND_SECONDS = 60;
+const RESEND_SECONDS = 30;
 
-// The 6-digit code sent by SMS, with a "send a new code" link that waits a
-// minute between requests (the server rate-limits as well).
+// The 6-digit code sent by SMS, with a "Resend code" button that waits 30
+// seconds between requests. The server's limit (3 codes per number per 15
+// minutes) still applies; when it is reached its message shows here.
 export default function OtpField({ phone, purpose, value, onChange, autoFocus }) {
   const [wait, setWait] = useState(RESEND_SECONDS);
   const [note, setNote] = useState('');
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     if (wait <= 0) return undefined;
@@ -18,18 +21,23 @@ export default function OtpField({ phone, purpose, value, onChange, autoFocus })
 
   const resend = async () => {
     setNote('');
+    setError('');
+    setSending(true);
     try {
       await api('/api/auth/otp', { method: 'POST', body: JSON.stringify({ phone, purpose }) });
-      setWait(RESEND_SECONDS);
       setNote('We sent a new code.');
     } catch (err) {
-      setNote(err.message);
+      setError(err.message);
+    } finally {
+      // wait again either way, so a failed request isn't repeated straight away
+      setWait(RESEND_SECONDS);
+      setSending(false);
     }
   };
 
   return (
     <div>
-      <FormField label={`Code we sent to ${phone}`} helper={note || 'It can take a minute to arrive. It expires after 5 minutes.'}>
+      <FormField label={`Code we sent to ${phone}`} helper={note || 'It can take a minute to arrive. It expires after 5 minutes.'} error={error}>
         {field => (
           <TextInput
             {...field}
@@ -43,8 +51,8 @@ export default function OtpField({ phone, purpose, value, onChange, autoFocus })
           />
         )}
       </FormField>
-      <Button variant="plain" size="md" className="-ml-5" disabled={wait > 0} onClick={resend}>
-        {wait > 0 ? `Send a new code in ${wait}s` : 'Send a new code'}
+      <Button variant="plain" size="md" className="-ml-5" disabled={wait > 0 || sending} aria-busy={sending} onClick={resend}>
+        {sending ? 'Sending…' : wait > 0 ? `Resend code in ${wait}s` : 'Resend code'}
       </Button>
     </div>
   );

@@ -8,7 +8,7 @@ import { AREAS } from '../../config/areas.js';
 import { CATEGORIES } from '../../config/categories.js';
 import { hashPin, isValidPin, verifyPin } from './pin.js';
 import { issueOtp, OtpError, verifyOtp } from './otp/otp.js';
-import { maskPhonesIn } from './otp/providers.js';
+import { maskPhonesIn, SmsRejectedError } from './otp/providers.js';
 import { clearFailures, hit, lockedFor, recordFailure } from './rateLimit.js';
 import { createSessionToken } from './session.js';
 import { serverError } from '../serverError.js';
@@ -93,8 +93,13 @@ router.post('/otp', async (req, res) => {
     if (purpose === 'register' || exists) await issueOtp(phone, purpose);
     res.json({ sent: true });
   } catch (err) {
-    res.status(502).json({ error: 'We could not send the code. Please try again.' });
-    console.error('[otp] send failed:', maskPhonesIn(err.message));
+    // The provider refused this number (logged in providers.js): ask the
+    // person to check it. Anything else is on our side or the provider's.
+    const rejected = err instanceof SmsRejectedError;
+    res.status(502).json({
+      error: rejected ? "We couldn't send the code to that number, please check it and try again" : 'We could not send the code. Please try again.'
+    });
+    console.error(`[otp] send failed${rejected ? ' (number rejected)' : ''}:`, maskPhonesIn(err.message));
   }
 });
 
