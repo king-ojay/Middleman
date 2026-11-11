@@ -31,17 +31,18 @@ const idOf = ref => String(ref?._id ?? ref);
 
 /**
  * Builds the plain in-memory graph computeTrust reads, from TrustEdge-shaped
- * records ({ _id?, fromUser, toUser, type, weight, referredFlag }) and users
+ * records ({ _id?, fromUser, toUser, type, weight, referredFlag, createdAt? }) and users
  * ({ _id, area, verifiedStatus }). fromUser may be populated with { _id, area },
  * which also records the rater's area. Records with the same _id are counted
  * once. Treat the result as read-only: results are cached per graph object.
  *
- *   out:   { [fromId]: [{ to, positive, negative, referred }] }  traversal
+ *   out:   { [fromId]: [{ to, positive, negative, referred, kind, at }] }  traversal (kind: rating | signup_referral; at: createdAt, explanations only)
  *   in:    { [toId]:   [{ from, weight }] }                       area trust (3-5 star ratings only)
  *   users: { [id]:     { area, verified } }
+ *   rated: Set of ids that received any rating, good or bad (explanations only)
  */
 export function buildGraph(edges, users = []) {
-  const graph = { out: {}, in: {}, users: {} };
+  const graph = { out: {}, in: {}, users: {}, rated: new Set() };
   for (const u of users) graph.users[idOf(u)] = { area: u.area, verified: u.verifiedStatus === 'verified' };
 
   const seen = new Set();
@@ -57,7 +58,8 @@ export function buildGraph(edges, users = []) {
     seen.add(key);
 
     const evidence = edgeEvidence(edge);
-    (graph.out[from] ||= []).push({ to, ...evidence, referred: Boolean(edge.referredFlag) });
+    (graph.out[from] ||= []).push({ to, ...evidence, referred: Boolean(edge.referredFlag), kind: edge.type, at: edge.createdAt ?? null });
+    if (edge.type === 'rating') graph.rated.add(to);
     if (edge.type === 'rating' && evidence.positive > 0) (graph.in[to] ||= []).push({ from, weight: edge.weight });
   }
   return graph;
@@ -82,10 +84,12 @@ function hopFactor(edge, hops, o, boosted = true) {
  * and cycles can't loop (depth is capped and every later hop multiplies by at
  * most 1.4 x 0.65 = 0.91). Only positive edges carry trust onward. With
  * `boosted` false, referred edges get no boost and the default decay.
+ * Each entry also keeps the edge it came in on and the entry it came from
+ * (`via`, `from`), so the path can be read back; scores never depend on them.
  */
 function strongestPaths(graph, sourceId, depth, o, boosted) {
-  const best = new Map(); // id -> { score, hops }
-  let frontier = [{ id: sourceId, score: 1, hops: 0 }];
+  const best = new Map(); // id -> { id, score, hops, via, from }
+  let frontier = [{ id: sourceId, score: 1, hops: 0, via: null, from: null }];
 
   for (let hops = 0; hops < depth && frontier.length > 0; hops++) {
     const improved = new Map();
@@ -94,8 +98,9 @@ function strongestPaths(graph, sourceId, depth, o, boosted) {
         if (edge.to === sourceId || edge.positive <= 0) continue;
         const score = node.score * edge.positive * hopFactor(edge, hops, o, boosted);
         if (score <= (best.get(edge.to)?.score ?? 0)) continue;
-        best.set(edge.to, { score, hops: hops + 1 });
-        improved.set(edge.to, { id: edge.to, score, hops: hops + 1 });
+        const entry = { id: edge.to, score, hops: hops + 1, via: edge, from: node };
+        best.set(edge.to, entry);
+        improved.set(edge.to, entry);
       }
     }
     frontier = [...improved.values()];
@@ -197,6 +202,50 @@ export function computeTrust(graph, sourceId, targetId, options = {}) {
   const area = areaScore(graph, target, o);
   if (area !== undefined) return { score: area, positive, negative, source: 'area', pathLength: null };
   return { score: floor, positive, negative, source: 'floor', pathLength: null };
+}
+
+// What areaScore averages, for the explanation: the distinct people in
+// `targetId`'s own area who gave them 3-5 stars, and the lowest of those
+// ratings (so "N people rated them X stars or higher" is true).
+function areaRaters(graph, targetId) {
+  const area = graph.users[targetId]?.area;
+  const local = (graph.in[targetId] || []).filter(e => graph.users[e.from]?.area === area);
+  return {
+    areaRaters: new Set(local.map(e => e.from)).size,
+    minStars: Math.min(...local.map(e => Math.round(e.weight * 5)))
+  };
+}
+
+/**
+ * Why `targetId` is in their tier from `sourceId`'s side, next to the same
+ * result computeTrust gives (it is called unchanged, so scores and order
+ * cannot differ). Internal: it carries user ids, and the route decides what
+ * leaves the server.
+ *
+ *   source 'path':  steps — the strongest positive path, viewer first:
+ *                   [{ from, to, kind: 'rating'|'signup_referral', referred, at, stars }]
+ *                   (stars for ratings, 3-5; at is the edge's createdAt)
+ *   source 'area':  areaRaters — distinct same-area raters giving 3-5 stars,
+ *                   minStars — the lowest of those ratings
+ *   source 'floor': verified, rated (has any rating at all, good or bad)
+ */
+export function explainTrust(graph, sourceId, targetId, options = {}) {
+  const trust = computeTrust(graph, sourceId, targetId, options);
+  const target = String(targetId);
+  if (trust.source === 'path') {
+    const o = { ...DEFAULTS, ...options };
+    const steps = [];
+    for (let at = propagateCached(graph, String(sourceId), o).best.get(target); at?.via; at = at.from) {
+      const { kind, referred, positive, at: date } = at.via;
+      steps.unshift({
+        from: at.from.id, to: at.id, kind, referred, at: date,
+        ...(kind === 'rating' ? { stars: Math.round(positive * 5) } : {})
+      });
+    }
+    return { ...trust, steps };
+  }
+  if (trust.source === 'area') return { ...trust, ...areaRaters(graph, target) };
+  return { ...trust, verified: Boolean(graph.users[target]?.verified), rated: graph.rated.has(target) };
 }
 
 /**

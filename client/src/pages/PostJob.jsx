@@ -50,7 +50,7 @@ export default function PostJob() {
               ? `Visible to ${posted.matchingWorkers.length} ${categoryLabel(posted.category).toLowerCase()} worker${posted.matchingWorkers.length === 1 ? '' : 's'} in ${areaLabel(posted.area)}.`
               : `No ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)} yet.`}
           </p>
-          <Button to={`/my-jobs/${posted._id}`} variant="dark" size="md" className="mt-3">See offers</Button>
+          <Button to={`/my-jobs/${posted._id}`} state={{ offers: true }} variant="dark" size="md" className="mt-3">See offers</Button>
         </div>
       )}
 

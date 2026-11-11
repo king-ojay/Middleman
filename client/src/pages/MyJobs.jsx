@@ -133,7 +133,7 @@ function JobCard({ job, role, onChange }) {
       <div>
         <Badge tone={CHIP_TONES[chip.tone]}>{chip.label}</Badge>
         <h2 className="text-card text-ink mt-3 break-words">
-          <Link to={`/my-jobs/${job._id}`} className="hover:underline">{job.description}</Link>
+          <Link to={`/my-jobs/${job._id}`} state={offersState(job, role)} className="hover:underline">{job.description}</Link>
         </h2>
         <p className="text-body text-muted mt-1 break-words">
           {categoryLabel(job.category)} · {areaLabel(job.area)}{who ? ` · ${who}` : ''}
@@ -182,13 +182,16 @@ function JobCardSkeleton() {
 function NextStep({ job, role, onChange }) {
   const to = `/my-jobs/${job._id}`;
   const released = job.escrow?.status === 'released';
-  if (role === 'client' && job.status === 'open' && job.responseCount > 0) return <Button to={to}>See offers</Button>;
+  if (role === 'client' && job.status === 'open' && job.responseCount > 0) return <Button to={to} state={offersState(job, role)}>See offers</Button>;
   if (job.status === 'completed' && released && !job.rated) {
     return <Button to={to}>{role === 'client' ? 'Send rating' : 'Rate the client'}</Button>;
   }
   if (job.escrow?.pending || hasPrimaryAction(job, role)) return <JobActions job={job} role={role} onChange={onChange} primaryOnly />;
   return <Button to={to} variant="outline">View job</Button>;
 }
+
+// Tells the job page it is opening on offers, so its skeleton takes their shape.
+const offersState = (job, role) => (role === 'client' && job.status === 'open' ? { offers: true } : undefined);
 
 const PRIMARY = { client: ['quote_accepted', 'awaiting_confirmation'], worker: ['escrow_held', 'in_progress'] };
 const hasPrimaryAction = (job, role) => PRIMARY[role].includes(job.status);

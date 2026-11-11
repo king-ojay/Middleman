@@ -1,18 +1,20 @@
 // One job: for the client, offers ranked by trust, escrow payment, and confirm
 // and rate; for the worker, their offer, start/complete, and rating the client.
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { firstName } from '../greeting.js';
 import { formatRwf } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
-  Avatar, Button, Card, FormField, JobStepper, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, Switch, TextArea, TierBadge,
+  Avatar, Button, Card, FormField, JobStepper, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, Switch, TextArea,
   VerifiedBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 import LoadError from '../components/LoadError.jsx';
+import RankedItem from '../components/RankedItem.jsx';
+import { reasonSentence, topLabel } from '../trustReason.js';
 
 const POLL_EVERY_MS = 5000;
 const POLL_FOR_MS = 2 * 60 * 1000;
@@ -20,6 +22,8 @@ const POLL_FOR_MS = 2 * 60 * 1000;
 export default function JobDetail() {
   const { id } = useParams();
   const { user } = useAuth();
+  // "See offers" links say so (state.offers), so the skeleton can take the offers' shape.
+  const expectOffers = Boolean(useLocation().state?.offers);
   const [job, setJob] = useState(null);
   const [error, setError] = useState(null);
   const [retrying, setRetrying] = useState(false);
@@ -57,11 +61,12 @@ export default function JobDetail() {
   const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
   if (error) return <PageLayout {...layout} title="Job"><LoadError prefix="Couldn't load this job" error={error} retrying={retrying} onRetry={tryAgain} /></PageLayout>;
+  if (!job && isClient && expectOffers) return <PageLayout {...layout} title="Offers for your job"><OffersSkeleton /></PageLayout>;
   if (!job) return <PageLayout {...layout}><JobSkeleton /></PageLayout>;
 
   if (isClient && job.status === 'open') {
     return (
-      <PageLayout {...layout} title="Offers for your job" width="wide">
+      <PageLayout {...layout} title="Offers for your job">
         <div className="bg-mint rounded-card p-5 flex items-center justify-between gap-4 mb-6">
           <div className="min-w-0">
             <h2 className="text-card text-heading">{job.description}</h2>
@@ -142,7 +147,48 @@ function JobSkeleton() {
   );
 }
 
-// Every worker response to the client's price, ranked by trust (FR-05b).
+// The shape of the open-job page with offers: the mint job summary, the
+// note, and offer cards in one column.
+function OffersSkeleton() {
+  return (
+    <LoadingState label="Loading offers">
+      <Skeleton on="canvas" className="h-[88px] w-full rounded-card mb-6" />
+      <div>
+        <SkeletonText on="canvas" className="w-56" />
+        <SkeletonText on="canvas" className="w-72 mb-3" />
+        <ul className="grid gap-3">
+          {[0, 1, 2].map(i => (
+            <Card as="li" key={i} className="p-5">
+              <div className="flex items-start gap-3">
+                <Skeleton className="w-11 h-11 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1">
+                  <SkeletonText size="card" className="w-1/2" />
+                  <SkeletonText className="w-1/3" />
+                  <SkeletonText className="w-full mt-1" />
+                </div>
+              </div>
+              <div className="flex items-end justify-between gap-4 pt-4">
+                <div className="flex-1">
+                  <SkeletonText size="title" className="w-32" />
+                  <SkeletonText className="w-24" />
+                </div>
+                <Skeleton className="h-11 w-28 rounded-full" />
+              </div>
+            </Card>
+          ))}
+        </ul>
+      </div>
+    </LoadingState>
+  );
+}
+
+// "Your price", "2,000 RWF more" or "1,500 RWF less" than the client's price.
+const comparedWithYours = (amount, proposed) =>
+  amount === proposed ? 'Your price' : `${formatRwf(Math.abs(amount - proposed))} ${amount > proposed ? 'more' : 'less'}`;
+
+// Every worker response to the client's price, in trust order (FR-05b), each
+// with why that worker ranks there. The first gets the emphasised card when
+// they are trusted through the network or the area.
 function Offers({ job, onChosen }) {
   const [choosing, setChoosing] = useState(null);
   const [error, setError] = useState('');
@@ -165,38 +211,35 @@ function Offers({ job, onChosen }) {
 
   return (
     <>
-      <p className="text-body text-muted mb-3">Ranked by trust in your network</p>
+      <p className="text-body text-muted">Ranked by trust in your network</p>
+      <p className="text-body text-muted mb-3">Choosing an offer fixes the price. You then pay it into escrow.</p>
       {error && <p className="text-body text-danger mb-3" role="alert">{error}</p>}
-      <ul className="grid gap-3 md:grid-cols-2">
-        {job.responses.map(r => {
-          const difference = r.amount - job.proposedPrice;
+      <ul className="grid gap-3">
+        {job.responses.map((r, i) => {
+          const label = i === 0 ? topLabel(r.reason) : null;
           return (
-            <Card as="li" key={r._id} className="p-5 flex flex-col">
-              <div className="flex items-center gap-3">
+            <RankedItem key={r._id} highlighted={Boolean(label)} className="p-5">
+              {label && <p className="text-label font-semibold text-heading mb-2">{label}</p>}
+              <div className="flex items-start gap-3">
                 <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
                 <div className="min-w-0">
                   <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
-                  <div className="flex flex-wrap gap-2">
-                    <TierBadge tier={r.trustSource} />
-                    {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
-                  </div>
+                  <p className="text-body text-muted">{(r.worker.skills || []).map(categoryLabel).join(', ')} · {areaLabel(r.worker.area)}</p>
+                  <p className="text-body text-ink mt-1">{reasonSentence(r.reason)}</p>
+                  {r.worker.verifiedStatus === 'verified' && <div className="mt-2"><VerifiedBadge /></div>}
                 </div>
               </div>
-              <div className="flex items-end justify-between gap-4 mt-auto pt-4">
+              <div className="flex items-end justify-between gap-4 pt-4">
                 <div className="min-w-0">
                   <p className="text-title text-ink">{formatRwf(r.amount)}</p>
-                  <p className="text-body font-medium text-heading">
-                    {r.isCounter
-                      ? <>Counter-offer · <span className="whitespace-nowrap">{difference > 0 ? '+' : '−'}{formatRwf(Math.abs(difference))}</span></>
-                      : 'Accepts your price'}
-                  </p>
+                  <p className="text-body font-medium text-heading">{comparedWithYours(r.amount, job.proposedPrice)}</p>
                   {r.depositAmount > 0 && <p className="text-body text-muted">Needs {formatRwf(r.depositAmount)} upfront for materials</p>}
                 </div>
                 <Button size="md" className="shrink-0" disabled={choosing !== null} onClick={() => choose(r._id)}>
                   {choosing === r._id ? 'Choosing…' : 'Choose'}
                 </Button>
               </div>
-            </Card>
+            </RankedItem>
           );
         })}
       </ul>
