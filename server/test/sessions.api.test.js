@@ -104,7 +104,7 @@ test('discover ranks for the session user and ignores clientId in the URL', { sk
   assert.deepEqual(res.data.map(w => w.name), ['Worker One']);
   // only what the Discover card shows (verified: the "Verified" badge): no trust
   // score, phone, referrer, who verified them or when, or timestamps
-  for (const w of res.data) assert.deepEqual(Object.keys(w).sort(), ['_id', 'area', 'name', 'skills', 'trustSource', 'verified']);
+  for (const w of res.data) assert.deepEqual(Object.keys(w).sort(), ['_id', 'area', 'name', 'reason', 'skills', 'trustSource', 'verified']);
 });
 
 test('registration returns a working session', { skip }, async () => {

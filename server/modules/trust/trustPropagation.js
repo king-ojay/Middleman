@@ -1,5 +1,5 @@
 import TrustEdge from './trustEdge.model.js';
-import { DEFAULTS, buildGraph, computeTrust, pathScores } from './computeTrust.js';
+import { DEFAULTS, buildGraph, explainTrust, pathScores } from './computeTrust.js';
 
 // The trust service: loads the part of the trust graph a viewer can reach
 // and hands it to computeTrust (computeTrust.js), which holds the scoring
@@ -61,13 +61,16 @@ export async function computeTrustScores(clientId, options = {}) {
  * tier, then score, then worker id, so equal scores always come back in the
  * same order. Everyone passed in comes back, however they were rated.
  * Symmetric by design: a client ranking workers and a worker sizing up
- * clients use the same call.
+ * clients use the same call. With `explain`, each also gets trustReason
+ * (explainTrust: why they are in their tier; internal, carries user ids).
  */
-export async function rankByTrust(viewerId, candidates, options = {}) {
+export async function rankByTrust(viewerId, candidates, options = {}, { explain = false } = {}) {
   const graph = await loadTrustGraph(viewerId, candidates, options);
   const ranked = candidates.map(candidate => {
-    const trust = computeTrust(graph, viewerId, candidate._id, options);
-    return { ...candidate, trustScore: trust.score, trustSource: TIER_OF_SOURCE[trust.source] };
+    const { score, source, ...why } = explainTrust(graph, viewerId, candidate._id, options);
+    const result = { ...candidate, trustScore: score, trustSource: TIER_OF_SOURCE[source] };
+    if (explain) result.trustReason = why;
+    return result;
   });
 
   return ranked.sort((a, b) =>

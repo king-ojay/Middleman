@@ -2,7 +2,7 @@
 // negative evidence from 1-2 star ratings, and the options that tune both.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULTS, buildGraph, computeTrust, edgeEvidence, pathScores } from '../modules/trust/computeTrust.js';
+import { DEFAULTS, buildGraph, computeTrust, edgeEvidence, explainTrust, pathScores } from '../modules/trust/computeTrust.js';
 import TrustEdge from '../modules/trust/trustEdge.model.js';
 import { rankByTrust } from '../modules/trust/trustPropagation.js';
 
@@ -317,4 +317,74 @@ test('5. the one-hop rater is weighted by the viewer\'s direct trust in them, no
   const g = buildGraph([rating('you', 'a', 3), referral('you', 'r'), rating('r', 'a', 5, true), rating('a', 'w', 1)]);
   close(computeTrust(g, 'you', 'a').positive, 0.91);
   close(computeTrust(g, 'you', 'w').negative, 0.6 * 1.0 * 0.5);
+});
+
+// (e) explanations: explainTrust gives the same result as computeTrust plus why
+
+test('explainTrust returns exactly computeTrust\'s result, for every source', () => {
+  const graph = buildGraph([
+    ...strongPath, rating('you', 'd', 4), rating('you', 'bad', 1),
+    rating({ _id: 'n', area: 'remera' }, 'local', 5)
+  ], [{ _id: 'local', area: 'remera' }, { _id: 'v', area: 'remera', verifiedStatus: 'verified' }]);
+  for (const target of ['w', 'amina', 'd', 'bad', 'local', 'v', 'nobody']) {
+    const { steps, areaRaters, minStars, verified, rated, ...trust } = explainTrust(graph, 'you', target);
+    assert.deepEqual(trust, computeTrust(graph, 'you', target), target);
+  }
+});
+
+test('explainTrust: the strongest path, viewer first, with the kind of every hop', () => {
+  const graph = buildGraph([...strongPath, rating('you', 'b', 3), rating('b', 'w', 3)]);
+  assert.deepEqual(explainTrust(graph, 'you', 'w').steps, [
+    { from: 'you', to: 'amina', kind: 'signup_referral', referred: false, at: null },
+    { from: 'amina', to: 'w', kind: 'rating', referred: true, at: null, stars: 5 }
+  ]);
+  assert.deepEqual(explainTrust(buildGraph([rating('you', 'd', 4)]), 'you', 'd').steps,
+    [{ from: 'you', to: 'd', kind: 'rating', referred: false, at: null, stars: 4 }]);
+  const march = new Date('2026-03-14T10:00:00Z');
+  assert.equal(explainTrust(buildGraph([{ ...rating('you', 'd', 4), createdAt: march }]), 'you', 'd').steps[0].at, march);
+});
+
+test('explainTrust: a path improved later is read back as the path that was scored', () => {
+  // w is first reached in 2 hops through a weak link, then via a stronger 3-hop path
+  const graph = buildGraph([
+    rating('you', 'weak', 3), rating('weak', 'w', 3),
+    referral('you', 'a'), referral('a', 'b'), rating('b', 'w', 5, true)
+  ]);
+  const explained = explainTrust(graph, 'you', 'w');
+  assert.deepEqual(explained.steps.map(s => s.to), ['a', 'b', 'w']);
+  assert.equal(explained.pathLength, 3);
+});
+
+test('explainTrust: area counts distinct same-area raters giving 3-5 stars; new says verified and rated', () => {
+  const r1 = { _id: 'r1', area: 'gikondo' };
+  const graph = buildGraph([
+    rating(r1, 'g', 4), rating(r1, 'g', 3), rating({ _id: 'r2', area: 'gikondo' }, 'g', 5),
+    rating({ _id: 'r3', area: 'gikondo' }, 'g', 1), rating({ _id: 'r4', area: 'remera' }, 'g', 5),
+    rating('you', 'bad', 2)
+  ], [{ _id: 'g', area: 'gikondo' }, { _id: 'v', area: 'remera', verifiedStatus: 'verified' }, { _id: 'bad', area: 'remera' }]);
+  assert.equal(explainTrust(graph, 'you', 'g').areaRaters, 2);
+  assert.equal(explainTrust(graph, 'you', 'g').minStars, 3);
+  assert.deepEqual(pick(explainTrust(graph, 'you', 'v')), { source: 'floor', verified: true, rated: false });
+  assert.deepEqual(pick(explainTrust(graph, 'you', 'nobody')), { source: 'floor', verified: false, rated: false });
+  assert.deepEqual(pick(explainTrust(graph, 'you', 'bad')), { source: 'floor', verified: false, rated: true });
+});
+const pick = ({ source, verified, rated }) => ({ source, verified, rated });
+
+test('rankByTrust gives the same order, tiers and scores with or without explanations', async () => {
+  const edges = [...strongPath, rating('you', 'd', 4), rating('you', 'bad', 1), rating('d', 'e', 5)];
+  const find = TrustEdge.find;
+  TrustEdge.find = query => ({
+    lean: async () => edges.filter(e => query.fromUser ? query.fromUser.$in.includes(String(e.fromUser)) : query.toUser.$in.map(String).includes(String(e.toUser))),
+    populate() { return this; }
+  });
+  try {
+    const workers = ['w', 'd', 'e', 'bad', 'x'].map(_id => ({ _id, area: 'remera' }));
+    const plain = await rankByTrust('you', workers);
+    const explained = await rankByTrust('you', workers, {}, { explain: true });
+    assert.deepEqual(explained.map(({ trustReason, ...w }) => w), plain);
+    assert.ok(explained.every(w => w.trustReason));
+    assert.ok(plain.every(w => !('trustReason' in w)));
+  } finally {
+    TrustEdge.find = find;
+  }
 });

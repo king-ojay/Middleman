@@ -1,6 +1,7 @@
 import express from 'express';
 import User from '../users/user.model.js';
 import { rankByTrust } from './trustPropagation.js';
+import { withPublicReasons } from './reason.js';
 import { requireUser } from '../auth/currentUser.js';
 import { serverError } from '../serverError.js';
 
@@ -22,12 +23,13 @@ router.get('/', requireUser, async (req, res) => {
     }).lean();
 
     // Order, tier and what the Discover card shows, including whether the
-    // worker is verified (the "Verified" badge). The numeric score, phone
-    // numbers, referrer, who verified them and when, and timestamps never go
-    // to other users.
-    const ranked = await rankByTrust(req.user._id, candidates);
+    // worker is verified (the "Verified" badge) and why they rank where they
+    // do (reason.js). The numeric score, phone numbers, referrer, who
+    // verified them and when, and timestamps never go to other users.
+    const ranked = await withPublicReasons(await rankByTrust(req.user._id, candidates, {}, { explain: true }));
     res.json(ranked.map(w => ({
-      _id: w._id, name: w.name, skills: w.skills, area: w.area, trustSource: w.trustSource, verified: w.verifiedStatus === 'verified'
+      _id: w._id, name: w.name, skills: w.skills, area: w.area, trustSource: w.trustSource, verified: w.verifiedStatus === 'verified',
+      reason: w.reason
     })));
   } catch (err) {
     serverError(res, err, req);

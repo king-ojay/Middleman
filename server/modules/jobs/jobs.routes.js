@@ -9,6 +9,7 @@ import Quote from './quote.model.js';
 import { FEED_LIMIT, feedQuery } from './feed.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
 import { rankByTrust } from '../trust/trustPropagation.js';
+import { withPublicReasons } from '../trust/reason.js';
 import Rating from '../trust/rating.model.js';
 import { HttpError, confirmAndRate, dispute, rateClient, respond, selectResponse, transition } from './lifecycle.js';
 import { fund, sync } from '../payments/escrow.js';
@@ -98,7 +99,8 @@ router.get('/mine', handle(async (req, res) => {
 }));
 
 // GET /api/jobs/:id — the job; for its client, every response ranked by trust
-// (FR-05b); for a worker, their own response.
+// (FR-05b) with why each worker ranks there (reason.js); for a worker, their
+// own response.
 router.get('/:id', handle(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw new HttpError(404, 'Job not found');
   const job = await Job.findById(req.params.id)
@@ -109,13 +111,16 @@ router.get('/:id', handle(async (req, res) => {
 
   // job.client (or a quote's worker) is null when that account was deleted.
   if (job.client && String(job.client._id) === String(req.user._id)) {
-    const quotes = (await Quote.find({ job: job._id }).populate('worker', 'name area skills verifiedStatus').lean())
+    // createdAt is read for the join month in the reason and not sent itself.
+    const quotes = (await Quote.find({ job: job._id }).populate('worker', 'name area skills verifiedStatus createdAt').lean())
       .filter(q => q.worker);
     const quoteByWorker = new Map(quotes.map(q => [String(q.worker._id), q]));
-    const rankedWorkers = await rankByTrust(req.user._id, quotes.map(q => q.worker));
-    const responses = rankedWorkers.map(w => ({
-      ...quoteByWorker.get(String(w._id)),
-      trustSource: w.trustSource
+    const rankedWorkers = await withPublicReasons(await rankByTrust(req.user._id, quotes.map(q => q.worker), {}, { explain: true }));
+    const responses = rankedWorkers.map(({ trustScore, trustSource, reason, ...worker }) => ({
+      ...quoteByWorker.get(String(worker._id)),
+      worker,
+      trustSource,
+      reason
     }));
     const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
     return res.json({ ...job, responses, myRating });
