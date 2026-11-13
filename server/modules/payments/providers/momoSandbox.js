@@ -13,6 +13,7 @@
 // environment but "sandbox". Participants' phone numbers are never sent:
 // every payer and payee is the sandbox test number.
 import { ProviderError } from './errors.js';
+import { maskPhone } from '../../auth/otp/providers.js';
 
 export const SANDBOX_HOST = 'sandbox.momodeveloper.mtn.com';
 // Outside MTN's sandbox test-number table, so requests to it succeed.
@@ -57,8 +58,16 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
     }
   };
 
+  // One log line per refused call: HTTP status and MoMo's own code and
+  // message, the payer/payee masked. Never keys, tokens or headers.
   const failure = async (res, what) => {
     const text = await res.text().catch(() => '');
+    let said = {};
+    try { said = JSON.parse(text) || {}; } catch { /* not JSON */ }
+    const code = said.code || said.error || '-';
+    const message = String(said.message || said.error_description || (said.code ? '' : text) || '-').replace(/\s+/g, ' ').slice(0, 200);
+    const party = what === 'token' ? '' : ` party=${maskPhone(msisdn)}`;
+    console.error(`[payments] momo-sandbox ${what} rejected status=${res.status} code=${code} message="${message}"${party} currency=${currency}`);
     // 4xx: refused, nothing happened. 5xx: unknown, check the status later.
     return new ProviderError(`MoMo sandbox ${what} failed (${res.status}) ${text.slice(0, 200)}`, { definite: res.status < 500, status: res.status });
   };

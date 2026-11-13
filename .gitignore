@@ -7,3 +7,9 @@ dist/
 .agents/
 skills-lock.json
 data/raw/
+
+# end-to-end run output
+e2e/.logs/
+e2e/.dist/
+e2e/test-results/
+e2e/playwright-report/

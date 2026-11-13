@@ -111,3 +111,45 @@ test('sandbox test numbers: 450 failed, 451 rejected, 452 expired end FAILED; 45
     }
   }
 });
+
+// Captures console.error while `run` runs.
+const logged = async run => {
+  const lines = [];
+  const error = console.error;
+  console.error = (...args) => lines.push(args.join(' '));
+  try { await run(); } finally { console.error = error; }
+  return lines;
+};
+
+test('what a payment sends: the sandbox number (default when MOMO_SANDBOX_MSISDN is unset), EUR unless MOMO_CURRENCY says otherwise', async () => {
+  const { requests, fetchImpl } = stubFetch();
+  await createMomoSandboxProvider(ENV, fetchImpl).requestToPay(request);
+  const pay = requests.find(r => r.url.endsWith('/requesttopay'));
+  assert.deepEqual(pay.body.payer, { partyIdType: 'MSISDN', partyId: '46733123480' });
+  assert.equal(pay.body.currency, 'EUR');
+  assert.equal(pay.headers['X-Target-Environment'], 'sandbox');
+
+  const other = stubFetch();
+  await createMomoSandboxProvider({ ...ENV, MOMO_SANDBOX_MSISDN: '46733123454', MOMO_CURRENCY: 'RWF' }, other.fetchImpl).requestToPay(request);
+  const sent = other.requests.find(r => r.url.endsWith('/requesttopay')).body;
+  assert.equal(sent.payer.partyId, '46733123454');
+  assert.equal(sent.currency, 'RWF'); // passed through as set: the sandbox only takes EUR
+});
+
+test('a refused payment logs one line: HTTP status, MoMo code and message, masked payer, no keys or token', async () => {
+  const { fetchImpl } = stubFetch(() => Response.json({ code: 'INVALID_CURRENCY', message: 'Currency not supported.' }, { status: 400 }));
+  const momo = createMomoSandboxProvider(ENV, fetchImpl);
+  const lines = await logged(() => assert.rejects(momo.requestToPay(request), err => err.definite && err.status === 400));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^\[payments\] momo-sandbox requesttopay rejected status=400 code=INVALID_CURRENCY message="Currency not supported\." party=\*{5}480 currency=EUR$/);
+  for (const secret of ['col-sub', 'col-user', 'col-key', 'tok-col', '46733123480']) assert.equal(lines[0].includes(secret), false, secret);
+});
+
+test('a refused token request is logged too, without the credentials', async () => {
+  const fetchImpl = async url => (String(url).endsWith('/token/')
+    ? Response.json({ error: 'login_failed', error_description: 'Access denied' }, { status: 401 })
+    : new Response(null, { status: 202 }));
+  const momo = createMomoSandboxProvider(ENV, fetchImpl);
+  const lines = await logged(() => assert.rejects(momo.requestToPay(request), err => err.definite && err.status === 401));
+  assert.deepEqual(lines, ['[payments] momo-sandbox token rejected status=401 code=login_failed message="Access denied" currency=EUR']);
+});

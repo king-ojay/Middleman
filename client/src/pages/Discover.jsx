@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { greeting } from '../greeting.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
 import LoadError from '../components/LoadError.jsx';
 import RankedItem from '../components/RankedItem.jsx';
+import ProfileButton from '../components/ProfileButton.jsx';
 import { Avatar, Card, Chip, ChipRow, LoadingState, PageLayout, Sheet, Skeleton, SkeletonText, VerifiedBadge } from '../components/ui/index.js';
 import { reasonSentence, topLabel } from '../trustReason.js';
 
@@ -155,13 +155,14 @@ const TIERS = [
   { key: 'new', heading: () => 'New on Middleman' }
 ];
 
-// One worker: name, trades · area, the sentence saying why they are here, and
-// the Verified badge. The first-ranked worker gets the emphasised card and a
-// label. The avatar colour still follows the tier.
+// One worker: name, trades · area, the sentence saying why they are here, the
+// Verified badge and a "View profile" button (primary on the highlighted
+// first card, outline on the others). The first-ranked worker gets the
+// emphasised card and a label. The avatar colour still follows the tier.
 function WorkerCard({ worker: w, label }) {
   return (
-    <RankedItem highlighted={Boolean(label)} className="p-0">
-      <Link to={`/people/${w._id}`} className={`h-full flex items-center gap-4 p-4 rounded-card transition-colors ${label ? 'hover:brightness-95' : 'hover:bg-soft/60'}`}>
+    <RankedItem highlighted={Boolean(label)} className="p-4">
+      <div className="flex items-start gap-4">
         <Avatar name={w.name} tier={w.trustSource} size={52} />
         <div className="min-w-0 flex-1">
           {label && <p className="text-label font-semibold text-heading mb-1">{label}</p>}
@@ -169,26 +170,25 @@ function WorkerCard({ worker: w, label }) {
           <p className="text-body text-muted">{(w.skills || []).map(categoryLabel).join(', ')} · {areaLabel(w.area)}</p>
           <p className="text-body text-ink mt-1">{reasonSentence(w.reason)}</p>
           {w.verified && <div className="mt-2"><VerifiedBadge /></div>}
+          <ProfileButton worker={w} variant={label ? 'primary' : 'outline'} className="mt-3" />
         </div>
-        <svg width="8" height="14" viewBox="0 0 8 14" fill="none" aria-hidden="true" className="shrink-0">
-          <path d="m1.5 1.5 5 5.5-5 5.5" className="stroke-faint" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </Link>
+      </div>
     </RankedItem>
   );
 }
 
-// The shape of WorkerCard: avatar, name, trades · area, the reason sentence.
+// The shape of WorkerCard: avatar, name, trades · area, the reason sentence, the button.
 function WorkerCardSkeleton() {
   return (
     <Card as="li" className="p-0">
-      <div className="flex items-center gap-4 p-4">
+      <div className="flex items-start gap-4 p-4">
         <Skeleton className="w-[52px] h-[52px] shrink-0 rounded-full" />
         <div className="min-w-0 flex-1">
           <SkeletonText size="card" className="w-1/2" />
           <SkeletonText className="w-1/3" />
           <SkeletonText className="w-full mt-1" />
           <SkeletonText className="w-2/3" />
+          <Skeleton className="h-11 w-36 mt-3 rounded-full" />
         </div>
       </div>
     </Card>

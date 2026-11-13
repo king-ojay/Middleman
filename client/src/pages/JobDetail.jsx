@@ -14,6 +14,7 @@ import {
 import JobActions from '../components/JobActions.jsx';
 import LoadError from '../components/LoadError.jsx';
 import RankedItem from '../components/RankedItem.jsx';
+import ProfileButton from '../components/ProfileButton.jsx';
 import { reasonSentence, topLabel } from '../trustReason.js';
 
 const POLL_EVERY_MS = 5000;
@@ -172,7 +173,10 @@ function OffersSkeleton() {
                   <SkeletonText size="title" className="w-32" />
                   <SkeletonText className="w-24" />
                 </div>
-                <Skeleton className="h-11 w-28 rounded-full" />
+                <div className="flex gap-2">
+                  <Skeleton className="h-11 w-32 rounded-full" />
+                  <Skeleton className="h-11 w-24 rounded-full" />
+                </div>
               </div>
             </Card>
           ))}
@@ -229,15 +233,20 @@ function Offers({ job, onChosen }) {
                   {r.worker.verifiedStatus === 'verified' && <div className="mt-2"><VerifiedBadge /></div>}
                 </div>
               </div>
-              <div className="flex items-end justify-between gap-4 pt-4">
-                <div className="min-w-0">
-                  <p className="text-title text-ink">{formatRwf(r.amount)}</p>
+              {/* On a phone the buttons wrap under the amount rather than squeeze it. */}
+              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 pt-4">
+                <div className="shrink-0">
+                  <p className="text-title text-ink whitespace-nowrap">{formatRwf(r.amount)}</p>
                   <p className="text-body font-medium text-heading">{comparedWithYours(r.amount, job.proposedPrice)}</p>
                   {r.depositAmount > 0 && <p className="text-body text-muted">Needs {formatRwf(r.depositAmount)} upfront for materials</p>}
                 </div>
-                <Button size="md" className="shrink-0" disabled={choosing !== null} onClick={() => choose(r._id)}>
-                  {choosing === r._id ? 'Choosing…' : 'Choose'}
-                </Button>
+                {/* Choose stays the main action; View profile sits beside it in outline. */}
+                <div className="flex flex-wrap justify-end gap-2 ml-auto">
+                  <ProfileButton worker={r.worker} />
+                  <Button size="md" disabled={choosing !== null} onClick={() => choose(r._id)}>
+                    {choosing === r._id ? 'Choosing…' : 'Choose'}
+                  </Button>
+                </div>
               </div>
             </RankedItem>
           );

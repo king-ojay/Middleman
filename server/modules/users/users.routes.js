@@ -64,8 +64,22 @@ router.patch('/me', requireUser, async (req, res) => {
   }
 });
 
+// Your own profile only: what went through escrow to you (worker: "Earned on
+// Middleman") or from you (client: "Paid through Middleman"). Counts every
+// job whose escrow was released to the worker: confirmed by the client, or a
+// dispute settled by release. Refunded jobs and money still held are left
+// out. Always sandbox: there is no live provider.
+async function moneyThroughMiddleman(userId, roleField) {
+  const [sum] = await Job.aggregate([
+    { $match: { [roleField]: userId, status: { $in: ['completed', 'resolved'] }, 'escrow.status': 'released' } },
+    { $group: { _id: null, total: { $sum: '$escrow.amount' }, jobs: { $sum: 1 } } }
+  ]);
+  return { total: sum?.total ?? 0, jobs: sum?.jobs ?? 0, sandbox: true };
+}
+
 // GET /api/users/:id/profile — stats, who vouches for them, recent ratings,
 // and (for someone else's profile) their trust tier from the viewer's side.
+// On your own profile only, also `earnings` (moneyThroughMiddleman).
 router.get('/:id/profile', requireUser, async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ error: 'Person not found' });
@@ -86,6 +100,7 @@ router.get('/:id/profile', requireUser, async (req, res) => {
 
     const isSelf = String(user._id) === String(req.user._id);
     const trustSource = isSelf ? null : (await rankByTrust(req.user._id, [user]))[0].trustSource;
+    const money = isSelf ? await moneyThroughMiddleman(user._id, roleField) : null;
 
     res.json({
       ...user,
@@ -103,7 +118,8 @@ router.get('/:id/profile', requireUser, async (req, res) => {
         comment: r.comment,
         from: shortName(r.fromUser?.name),
         createdAt: r.createdAt
-      }))
+      })),
+      ...(money && { earnings: money })
     });
   } catch (err) {
     serverError(res, err, req);
