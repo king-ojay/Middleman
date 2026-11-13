@@ -10,6 +10,11 @@ const MONGO = process.env.TEST_MONGO_URI && (() => {
   return url.toString();
 })();
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
+// A valid problem report (POST /api/jobs/:id/dispute needs a reason and a description).
+const REPORT = {
+  client: { reason: 'not_done', details: 'The worker left before finishing the job.' },
+  worker: { reason: 'not_confirming', details: 'The work is finished but the client will not confirm it.' }
+};
 const ADMIN_SECRET = 'transactions-test-admin-secret';
 
 let server, base, mongoose, Job, users, tokens, fake, jobs;
@@ -70,13 +75,13 @@ before(async () => {
   fake.failNext('requestToPay', 'refuse');
   assert.equal((await call('POST', `/api/jobs/${jobs.refunded._id}/fund`, 'client')).status, 502);
   await funded(jobs.refunded);
-  await ok('POST', `/api/jobs/${jobs.refunded._id}/dispute`, 'worker');
+  await ok('POST', `/api/jobs/${jobs.refunded._id}/dispute`, 'worker', REPORT.worker);
   assert.equal((await admin(`/api/admin/jobs/${jobs.refunded._id}/refund`)).status, 200);
 
   // Done, disputed, and released by an admin.
   jobs.disputeReleased = await funded(await accepted('Unblock the drain', 13000));
   await done(jobs.disputeReleased);
-  await ok('POST', `/api/jobs/${jobs.disputeReleased._id}/dispute`, 'client');
+  await ok('POST', `/api/jobs/${jobs.disputeReleased._id}/dispute`, 'client', REPORT.client);
   assert.equal((await admin(`/api/admin/jobs/${jobs.disputeReleased._id}/release`)).status, 200);
 
   // A payment still waiting for the payer.

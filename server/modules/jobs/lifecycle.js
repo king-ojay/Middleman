@@ -4,6 +4,7 @@ import Quote from './quote.model.js';
 import { validateRatingInput, writeRating } from '../trust/ratings.js';
 import { HttpError } from '../httpError.js';
 import { recordDispute, release, sync } from '../payments/escrow.js';
+import { cleanDisputeDetails, DISPUTE_DETAILS_MAX, DISPUTE_DETAILS_MIN, disputeReasonLabel } from '../../config/disputeReasons.js';
 
 export { HttpError };
 
@@ -29,12 +30,12 @@ const actorFilter = (actor, userId) => {
  * the job is missing, not the caller's, or in the wrong state. Pass a
  * `session` to make the move part of a transaction.
  */
-export async function transition(jobId, action, user, session = null) {
+export async function transition(jobId, action, user, session = null, extra = {}) {
   const rule = TRANSITIONS[action];
   if (!rule) throw new HttpError(400, `Unknown action: ${action}`);
   if (!mongoose.isValidObjectId(jobId)) throw new HttpError(404, 'Job not found');
 
-  const update = { status: rule.to, [rule.stamp]: new Date() };
+  const update = { status: rule.to, [rule.stamp]: new Date(), ...extra };
   if (action === 'dispute') update.disputedBy = user._id;
 
   const job = await Job.findOneAndUpdate(
@@ -53,10 +54,28 @@ export async function transition(jobId, action, user, session = null) {
   throw new HttpError(409, `Can't ${action} a job that is ${existing.status.replaceAll('_', ' ')}`);
 }
 
-/** Either party reports a problem; the dispute and its ledger record are one unit. */
-export async function dispute(jobId, user) {
+/**
+ * The reason (one of the reporter's role's list) and the description, cleaned
+ * to plain text. Throws 400 when either is missing or the description is too
+ * short or too long.
+ */
+export function validateDispute(role, body) {
+  const reason = body?.reason;
+  if (typeof reason !== 'string' || !disputeReasonLabel(role, reason)) throw new HttpError(400, 'Choose what the problem is');
+  const details = cleanDisputeDetails(body?.details);
+  if (details.length < DISPUTE_DETAILS_MIN) throw new HttpError(400, `Describe what is wrong in at least ${DISPUTE_DETAILS_MIN} characters`);
+  if (details.length > DISPUTE_DETAILS_MAX) throw new HttpError(400, `Keep the description to ${DISPUTE_DETAILS_MAX} characters or fewer`);
+  return { disputeReason: reason, disputeDetails: details };
+}
+
+/**
+ * Either party reports a problem, with a reason and a description (see
+ * validateDispute); the dispute and its ledger record are one unit.
+ */
+export async function dispute(jobId, user, body) {
+  const report = validateDispute(user.role, body);
   return mongoose.connection.transaction(async session => {
-    const job = await transition(jobId, 'dispute', user, session);
+    const job = await transition(jobId, 'dispute', user, session, report);
     await recordDispute(job, user, session);
     return job;
   });

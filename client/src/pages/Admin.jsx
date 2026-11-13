@@ -8,6 +8,7 @@ import { formatRwf, timeAgo } from '../format.js';
 import { categoryLabel, areaLabel } from '../options.js';
 import { Button, Card, FormField, PageLayout, Sheet, TextInput } from '../components/ui/index.js';
 import LoadError from '../components/LoadError.jsx';
+import DisputeSummary from '../components/DisputeSummary.jsx';
 
 export default function Admin() {
   const [secret, setSecret] = useState('');
@@ -163,13 +164,15 @@ function Disputes({ secret }) {
       {items?.length > 0 && (
         <ul className="grid gap-3">
           {items.map(job => {
-            const reporter = String(job.disputedBy) === String(job.client) ? 'the client' : 'the worker';
+            const reporterRole = job.reportedBy || (String(job.disputedBy) === String(job.client) ? 'client' : 'worker');
+            const reporter = `the ${reporterRole}`;
             return (
               <Card as="li" key={job._id} className="p-5">
                 <h3 className="text-card text-ink break-words">{job.description}</h3>
                 <p className="text-body text-muted mt-1">
                   {categoryLabel(job.category)} · {areaLabel(job.area)} · reported by {reporter} {timeAgo(job.disputedAt)}
                 </p>
+                <DisputeSummary job={job} reporterRole={reporterRole} className="bg-soft rounded-field px-4 py-3 mt-3" />
                 <p className="text-small text-muted mt-3">Locked in escrow</p>
                 <p className="text-section text-ink">{formatRwf(job.escrow?.amount ?? job.agreedPrice)}</p>
                 {job.escrow?.pending ? (

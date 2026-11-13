@@ -5,13 +5,15 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { firstName } from '../greeting.js';
-import { formatRwf } from '../format.js';
+import { formatRwf, timeAgo } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
   Avatar, Button, Card, FormField, JobStepper, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, Switch, TextArea,
   VerifiedBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
+import ReportProblem from '../components/ReportProblem.jsx';
+import DisputeSummary from '../components/DisputeSummary.jsx';
 import LoadError from '../components/LoadError.jsx';
 import RankedItem from '../components/RankedItem.jsx';
 import ProfileButton from '../components/ProfileButton.jsx';
@@ -107,6 +109,7 @@ export default function JobDetail() {
             {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
             <JobActions job={job} role={user.role} onChange={load} stalled={stalled} />
           </Card>
+          {['disputed', 'resolved'].includes(job.status) && job.disputedAt && <ProblemReported job={job} userId={user._id} />}
           {!isClient && paidOut && <RateClient job={job} onRated={load} />}
           {isClient && job.myRating && (
             <Card className="p-5 mt-3">
@@ -117,6 +120,20 @@ export default function JobDetail() {
         </>
       )}
     </PageLayout>
+  );
+}
+
+// Disputed or resolved: what was reported, by whom and when, for both parties.
+function ProblemReported({ job, userId }) {
+  const byClient = String(job.disputedBy) === String(job.client?._id);
+  const reporter = !job.disputedBy ? null : String(job.disputedBy) === String(userId) ? 'you' : firstName(byClient ? job.client : job.worker);
+  return (
+    <Card className="p-5 mt-3">
+      <p className="text-small text-muted">
+        Problem reported{reporter ? ` by ${reporter}` : ''} · <time dateTime={job.disputedAt}>{timeAgo(job.disputedAt)}</time>
+      </p>
+      <DisputeSummary job={job} reporterRole={byClient ? 'client' : 'worker'} className="mt-2" />
+    </Card>
   );
 }
 
@@ -289,18 +306,7 @@ function ConfirmAndRate({ job, onChange, stalled }) {
     }
   };
 
-  const reportProblem = async () => {
-    if (!window.confirm('Report a problem with this job? The payment stays locked until it is reviewed.')) return;
-    setError('');
-    setBusy(true);
-    try {
-      await api(`/api/jobs/${job._id}/dispute`, { method: 'POST' });
-      navigate('/my-jobs');
-    } catch (err) {
-      setError(err.message);
-      setBusy(false);
-    }
-  };
+  const [reporting, setReporting] = useState(false);
 
   return (
     <>
@@ -340,8 +346,9 @@ function ConfirmAndRate({ job, onChange, stalled }) {
           {busy ? 'Sending…' : confirmed ? 'Send rating' : 'Confirm job is done'}
         </Button>
         {paying && stalled && <JobActions job={job} role="client" onChange={onChange} stalled />}
-        {!confirmed && <Button variant="plain" onClick={reportProblem} disabled={busy}>Report a problem</Button>}
+        {!confirmed && <Button variant="plain" onClick={() => setReporting(true)} disabled={busy}>Report a problem</Button>}
       </div>
+      <ReportProblem job={job} role="client" open={reporting} onClose={() => setReporting(false)} onReported={() => navigate('/my-jobs')} />
     </>
   );
 }
