@@ -3,10 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
+import { formatRwf } from '../format.js';
 import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import AreaPicker from '../components/AreaPicker.jsx';
 import {
-  Avatar, Button, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, TierBadge, VerifiedBadge
+  Avatar, Badge, Button, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, TierBadge, VerifiedBadge
 } from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
@@ -59,6 +60,8 @@ export default function Profile() {
         <Stat value={stats.vouches} label="Vouches" />
       </Card>
 
+      {isOwn && profile.earnings && <Earnings earnings={profile.earnings} role={profile.role} />}
+
       <h2 className="text-section text-ink mt-8 mb-3">Vouched for by</h2>
       {profile.vouchedBy.length === 0 ? (
         <p className="text-body text-muted">No vouches yet.</p>
@@ -93,6 +96,23 @@ export default function Profile() {
         <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>Log out</Button>
       )}
     </PageLayout>
+  );
+}
+
+// Your own profile only (the server sends it to nobody else): money released
+// from escrow to you as a worker, or paid by you as a client.
+function Earnings({ earnings, role }) {
+  return (
+    <Card className="p-5 mt-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-body font-semibold text-ink">{role === 'worker' ? 'Earned on Middleman' : 'Paid through Middleman'}</p>
+        {earnings.sandbox && <Badge>Sandbox, test money</Badge>}
+      </div>
+      <p className="text-title text-heading mt-2">{formatRwf(earnings.total)}</p>
+      <p className="text-small text-muted mt-1">
+        {earnings.jobs} completed job{earnings.jobs === 1 ? '' : 's'} · only you can see this
+      </p>
+    </Card>
   );
 }
 

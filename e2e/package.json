@@ -1,0 +1,12 @@
+{
+  "name": "middleman-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end test of the whole flow against a LOCAL API and a throwaway local database",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}

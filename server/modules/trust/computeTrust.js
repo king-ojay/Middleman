@@ -75,6 +75,15 @@ function hopFactor(edge, hops, o, boosted = true) {
   return boost * decay;
 }
 
+// A tie that changes only the explanation: a path of the same strength and
+// the same number of hops but fewer invite hops replaces the one found
+// first, so the reason reads "You hired and rated" rather than "You invited".
+// Score and hop count stay the same, so nothing computed from them changes.
+const invitesOn = (node, edge) => (node.invites || 0) + (edge.kind === 'signup_referral' ? 1 : 0);
+function ratingBeatsInvite(invites, hops, known) {
+  return hops === known.hops && invites < (known.invites || 0);
+}
+
 /**
  * Strongest positive path from `sourceId` to everyone within `depth` hops:
  * weighted breadth-first rounds. Each hop multiplies the running score by its
@@ -85,10 +94,11 @@ function hopFactor(edge, hops, o, boosted = true) {
  * most 1.4 x 0.65 = 0.91). Only positive edges carry trust onward. With
  * `boosted` false, referred edges get no boost and the default decay.
  * Each entry also keeps the edge it came in on and the entry it came from
- * (`via`, `from`), so the path can be read back; scores never depend on them.
+ * (`via`, `from`), so the path can be read back; scores never depend on them,
+ * nor on the one tie rule for the explanation (ratingBeatsInvite).
  */
 function strongestPaths(graph, sourceId, depth, o, boosted) {
-  const best = new Map(); // id -> { id, score, hops, via, from }
+  const best = new Map(); // id -> { id, score, hops, via, from, invites }
   let frontier = [{ id: sourceId, score: 1, hops: 0, via: null, from: null }];
 
   for (let hops = 0; hops < depth && frontier.length > 0; hops++) {
@@ -97,8 +107,11 @@ function strongestPaths(graph, sourceId, depth, o, boosted) {
       for (const edge of graph.out[node.id] || []) {
         if (edge.to === sourceId || edge.positive <= 0) continue;
         const score = node.score * edge.positive * hopFactor(edge, hops, o, boosted);
-        if (score <= (best.get(edge.to)?.score ?? 0)) continue;
-        const entry = { id: edge.to, score, hops: hops + 1, via: edge, from: node };
+        const known = best.get(edge.to);
+        const stronger = score > (known?.score ?? 0);
+        const invites = invitesOn(node, edge);
+        if (!stronger && !(known && score === known.score && ratingBeatsInvite(invites, hops + 1, known))) continue;
+        const entry = { id: edge.to, score, hops: hops + 1, via: edge, from: node, invites };
         best.set(edge.to, entry);
         improved.set(edge.to, entry);
       }

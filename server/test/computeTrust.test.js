@@ -388,3 +388,18 @@ test('rankByTrust gives the same order, tiers and scores with or without explana
     TrustEdge.find = find;
   }
 });
+
+test('explainTrust: a rating and an invite of equal strength explain as the rating, whichever came first; score unchanged', () => {
+  for (const edges of [[referral('you', 'w'), rating('you', 'w', 5)], [rating('you', 'w', 5), referral('you', 'w')]]) {
+    const graph = buildGraph(edges);
+    const explained = explainTrust(graph, 'you', 'w');
+    assert.deepEqual(explained.steps.map(s => s.kind), ['rating']);
+    assert.equal(explained.score, 1);
+    assert.equal(explained.pathLength, 1);
+  }
+  // two hops: invite then rating vs rating then rating, same strength and length
+  const twoHop = buildGraph([referral('you', 'a'), rating('a', 'w', 5), rating('you', 'b', 5), rating('b', 'w', 5)]);
+  assert.deepEqual(explainTrust(twoHop, 'you', 'w').steps.map(s => s.kind), ['rating', 'rating']);
+  // a stronger invite path still wins: only exact ties change the explanation
+  assert.deepEqual(explainTrust(buildGraph([referral('you', 'w'), rating('you', 'w', 4)]), 'you', 'w').steps.map(s => s.kind), ['signup_referral']);
+});
