@@ -2,7 +2,8 @@
 // the client invited. Register both, post a job, offer, see the ranked offers
 // with the reason sentence, choose and pay into escrow (fake provider), do
 // the work, confirm, rate both ways, then check the worker's private earnings
-// and the client's Discover sentence built from the real rating.
+// and Transactions page, and the client's Discover sentence built from the
+// real rating.
 import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { API_LOG } from './playwright.config.js';
@@ -125,16 +126,30 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
     const earned = asWorker.getByText('Earned on Middleman').locator('xpath=ancestor::div[contains(@class,"rounded-card")][1]');
     await expect(earned).toContainText(PRICE);
     await expect(earned).toContainText('1 completed job');
-    await expect(earned).toContainText('Sandbox, test money');
+    await expect(earned).toContainText('only you can see this');
+    await expect(earned).not.toContainText('Sandbox, test money');
     await asWorker.screenshot({ path: '.logs/10-earnings.png', fullPage: true });
   });
 
-  await test.step("11. the client's Discover shows the worker with a sentence from the real rating", async () => {
+  await test.step("11. the worker's Transactions page shows the payment received", async () => {
+    await asWorker.getByRole('link', { name: 'View transactions' }).click();
+    await expect(asWorker.getByRole('heading', { name: 'Transactions' })).toBeVisible();
+    const row = asWorker.getByRole('listitem').filter({ hasText: 'Received' });
+    await expect(row).toHaveCount(1);
+    await expect(row.getByRole('link', { name: JOB })).toBeVisible();
+    await expect(row).toContainText(`from ${client.name.split(' ')[0]} ${client.name.split(' ')[1][0]}.`);
+    await expect(row).toContainText(`+${PRICE}`);
+    await expect(row).toContainText('Completed');
+    await expect(asWorker.getByText('1 completed job')).toBeVisible();
+    await asWorker.screenshot({ path: '.logs/11-transactions.png', fullPage: true });
+  });
+
+  await test.step("12. the client's Discover shows the worker with a sentence from the real rating", async () => {
     await asClient.goto('/discover');
     await asClient.getByRole('button', { name: worker.trade, exact: true }).click();
     const card = asClient.getByRole('listitem').filter({ hasText: worker.name });
     await expect(card).toBeVisible();
-    await asClient.screenshot({ path: '.logs/11-discover.png', fullPage: true });
+    await asClient.screenshot({ path: '.logs/12-discover.png', fullPage: true });
     await expect(card.getByText(/rated Walter 5★/)).toBeVisible();
   });
 });
