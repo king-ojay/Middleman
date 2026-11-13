@@ -12,6 +12,11 @@ const MONGO = process.env.TEST_MONGO_URI && (() => {
   return url.toString();
 })();
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
+// A valid problem report (POST /api/jobs/:id/dispute needs a reason and a description).
+const REPORT = {
+  client: { reason: 'not_done', details: 'The worker left before finishing the job.' },
+  worker: { reason: 'not_confirming', details: 'The work is finished but the client will not confirm it.' }
+};
 
 const ADMIN_SECRET = 'escrow-test-admin-secret';
 let server, base, mongoose, Job, Rating, TrustEdge, Transaction, users, tokens, fake, createFakeProvider, setPaymentProvider;
@@ -149,7 +154,7 @@ test('confirm releases escrow to the worker, then stores the rating and trust ed
 test('dispute locks escrow; an admin refund resolves it and repays the client', { skip }, async () => {
   const job = await acceptedJob();
   await post(`/api/jobs/${job._id}/fund`, 'client');
-  assert.equal((await post(`/api/jobs/${job._id}/dispute`, 'worker')).data.status, 'disputed');
+  assert.equal((await post(`/api/jobs/${job._id}/dispute`, 'worker', REPORT.worker)).data.status, 'disputed');
 
   // locked: no start, no confirm, no rating
   assert.equal((await post(`/api/jobs/${job._id}/start`, 'worker')).status, 409);
@@ -180,7 +185,7 @@ test('fund, release and refund send a fixed safe note and an alphanumeric extern
   assert.equal((await post(`/api/jobs/${released._id}/confirm`, 'client', { score: 5 })).status, 200);
   const refunded = await acceptedJob({ description: MESSY });
   await post(`/api/jobs/${refunded._id}/fund`, 'client');
-  await post(`/api/jobs/${refunded._id}/dispute`, 'worker');
+  await post(`/api/jobs/${refunded._id}/dispute`, 'worker', REPORT.worker);
   assert.equal((await admin('POST', `/api/admin/jobs/${refunded._id}/refund`)).status, 200);
 
   const sent = fake.calls.filter(c => c.op !== 'getStatus');
@@ -199,7 +204,7 @@ test('fund, release and refund send a fixed safe note and an alphanumeric extern
 
 test('an admin release resolves a dispute raised after the work was marked done', { skip }, async () => {
   const job = await awaitingJob();
-  assert.equal((await post(`/api/jobs/${job._id}/dispute`, 'client')).status, 200);
+  assert.equal((await post(`/api/jobs/${job._id}/dispute`, 'client', REPORT.client)).status, 200);
   const res = await admin('POST', `/api/admin/jobs/${job._id}/release`);
   assert.equal(res.status, 200);
   assert.equal(res.data.status, 'resolved');
@@ -212,7 +217,7 @@ test('an admin release resolves a dispute raised after the work was marked done'
 test('the dispute list says what each job was (for the admin page), with no names or phones', { skip }, async () => {
   const job = await acceptedJob();
   await post(`/api/jobs/${job._id}/fund`, 'client');
-  await post(`/api/jobs/${job._id}/dispute`, 'client');
+  await post(`/api/jobs/${job._id}/dispute`, 'client', REPORT.client);
   const res = await admin('GET', '/api/admin/disputes');
   assert.equal(res.status, 200);
   const listed = res.data.find(j => String(j._id) === String(job._id));
@@ -412,7 +417,7 @@ test('the worker can no longer rate the client before confirmation and release',
 
 test('a disputed job cannot be rated, even after it is resolved', { skip }, async () => {
   const job = await awaitingJob();
-  await post(`/api/jobs/${job._id}/dispute`, 'worker');
+  await post(`/api/jobs/${job._id}/dispute`, 'worker', REPORT.worker);
   await admin('POST', `/api/admin/jobs/${job._id}/release`);
   assert.equal((await post(`/api/jobs/${job._id}/rate-client`, 'worker', { score: 2 })).status, 409);
   assert.equal((await post(`/api/jobs/${job._id}/confirm`, 'client', { score: 2 })).status, 409);

@@ -128,7 +128,10 @@ router.get('/:id', handle(async (req, res) => {
 
   const myResponse = await Quote.findOne({ job: job._id, worker: req.user._id }).lean();
   const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
-  res.json({ ...job, myResponse, myRating });
+  // What was reported about a job is for its two parties (and the admin) only.
+  const isWorker = job.worker && String(job.worker._id) === String(req.user._id);
+  const { disputeReason, disputeDetails, disputedBy, ...shown } = job;
+  res.json({ ...(isWorker ? job : shown), myResponse, myRating });
 }));
 
 // POST /api/jobs/:id/responses — worker accepts the price or counters (FR-05).
@@ -181,9 +184,10 @@ for (const action of ['start', 'complete']) {
   }));
 }
 
-// POST /api/jobs/:id/dispute — either party reports a problem; escrow stays locked (FR-14).
+// POST /api/jobs/:id/dispute — either party reports a problem; escrow stays
+// locked (FR-14). Body: { reason, details } (lifecycle.js validateDispute).
 router.post('/:id/dispute', handle(async (req, res) => {
-  res.json(await dispute(req.params.id, req.user));
+  res.json(await dispute(req.params.id, req.user, req.body));
 }));
 
 export default router;

@@ -74,6 +74,11 @@ const jobSchema = new mongoose.Schema({
   completedAt: { type: Date, default: null },
   disputedAt: { type: Date, default: null },
   disputedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  // What the person who reported the problem said (config/disputeReasons.js).
+  // Null on disputes from before a reason was asked for ("No reason given").
+  // Shown to the two parties and the admin only; never sent to the payment provider.
+  disputeReason: { type: String, default: null },
+  disputeDetails: { type: String, default: null, maxlength: 500 },
   resolvedAt: { type: Date, default: null },
   escrow: { type: escrowSchema, default: () => ({}) }
 }, { timestamps: true });

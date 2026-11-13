@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { api } from '../api.js';
 import { formatRwf } from '../format.js';
 import { Button } from './ui/index.js';
+import ReportProblem from './ReportProblem.jsx';
 
 const DISPUTE = { action: 'dispute', label: 'Report a problem' };
 
@@ -34,6 +35,7 @@ const PAYMENT_FAILED = "The payment didn't go through. Please try again.";
 export default function JobActions({ job, role, onChange, primaryOnly = false, stalled = false }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [reporting, setReporting] = useState(false);
   const all = job.escrow?.pending ? CHECK_PAYMENT : ACTIONS[role]?.[job.status] || [];
   const actions = primaryOnly && all !== CHECK_PAYMENT ? all.filter(a => a.primary) : all;
   if (actions.length === 0) return null;
@@ -41,7 +43,7 @@ export default function JobActions({ job, role, onChange, primaryOnly = false, s
     && job.escrow?.lastFailure?.kind === 'fund';
 
   const run = async action => {
-    if (action === 'dispute' && !window.confirm('Report a problem with this job? The payment stays locked until it is reviewed.')) return;
+    if (action === 'dispute') return setReporting(true);
     if (action === 'fund' && !window.confirm(`Pay ${formatRwf(job.agreedPrice)} into escrow? It is held until you confirm the work is done. (Sandbox: no real money.)`)) return;
     setError('');
     setBusy(true);
@@ -69,6 +71,9 @@ export default function JobActions({ job, role, onChange, primaryOnly = false, s
         )
       )}
       {error && <p className="text-small text-danger" role="alert">{error}</p>}
+      {!primaryOnly && (
+        <ReportProblem job={job} role={role} open={reporting} onClose={() => setReporting(false)} onReported={() => { setReporting(false); onChange(); }} />
+      )}
     </div>
   );
 }

@@ -34,11 +34,16 @@ callbackRouter.all('/momo/callback', async (req, res) => {
 export const adminRouter = express.Router();
 adminRouter.use(requireAdmin);
 
-// GET /api/admin/disputes — disputed jobs with their escrow state, and what
-// the job was so the admin page can tell them apart (ids only, no names or phones).
-const DISPUTE_FIELDS = 'status escrow agreedPrice disputedAt disputedBy client worker description category area';
+// GET /api/admin/disputes — disputed jobs with their escrow state, what the
+// job was, and what was reported (reason, description, by the client or the
+// worker), so the admin can choose release or refund. Ids only, no names or phones.
+const DISPUTE_FIELDS = 'status escrow agreedPrice disputedAt disputedBy disputeReason disputeDetails client worker description category area';
 adminRouter.get('/disputes', handle(async (_req, res) => {
-  res.json(await Job.find({ status: 'disputed' }, DISPUTE_FIELDS).sort({ disputedAt: 1 }).lean());
+  const jobs = await Job.find({ status: 'disputed' }, DISPUTE_FIELDS).sort({ disputedAt: 1 }).lean();
+  res.json(jobs.map(job => ({
+    ...job,
+    reportedBy: !job.disputedBy ? null : String(job.disputedBy) === String(job.worker) ? 'worker' : 'client'
+  })));
 }));
 
 // GET /api/admin/jobs/:id/ledger — every escrow record for the job, oldest first.
