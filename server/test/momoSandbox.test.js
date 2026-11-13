@@ -5,6 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMomoSandboxProvider, SANDBOX_HOST } from '../modules/payments/providers/momoSandbox.js';
 import { SANDBOX_ENV, SANDBOX_NUMBERS, sandboxFetch } from './momoSandboxStub.js';
+import { jobNote, safeExternalId, safeNote } from '../modules/payments/providers/safeText.js';
 
 const ENV = {
   MOMO_COLLECTION_SUBSCRIPTION_KEY: 'col-sub', MOMO_COLLECTION_USER_ID: 'col-user', MOMO_COLLECTION_API_KEY: 'col-key',
@@ -141,7 +142,7 @@ test('a refused payment logs one line: HTTP status, MoMo code and message, maske
   const momo = createMomoSandboxProvider(ENV, fetchImpl);
   const lines = await logged(() => assert.rejects(momo.requestToPay(request), err => err.definite && err.status === 400));
   assert.equal(lines.length, 1);
-  assert.match(lines[0], /^\[payments\] momo-sandbox requesttopay rejected status=400 code=INVALID_CURRENCY message="Currency not supported\." party=\*{5}480 currency=EUR$/);
+  assert.match(lines[0], /^\[payments\] momo-sandbox requesttopay rejected status=400 contentType=application\/json code=INVALID_CURRENCY message="Currency not supported\." party=\*{5}480 currency=EUR$/);
   for (const secret of ['col-sub', 'col-user', 'col-key', 'tok-col', '46733123480']) assert.equal(lines[0].includes(secret), false, secret);
 });
 
@@ -151,5 +152,79 @@ test('a refused token request is logged too, without the credentials', async () 
     : new Response(null, { status: 202 }));
   const momo = createMomoSandboxProvider(ENV, fetchImpl);
   const lines = await logged(() => assert.rejects(momo.requestToPay(request), err => err.definite && err.status === 401));
-  assert.deepEqual(lines, ['[payments] momo-sandbox token rejected status=401 code=login_failed message="Access denied" currency=EUR']);
+  assert.deepEqual(lines, ['[payments] momo-sandbox token rejected status=401 contentType=application/json code=login_failed message="Access denied" currency=EUR']);
+});
+
+// The sandbox firewall answers text it dislikes with an HTML page and HTTP 200.
+const MESSY = 'R\u00e9parer le robinet!!! <b>vite</b> "urgent" & 50% off? \u{1F6B0} Amazi \u2014 3/4; DROP TABLE x; -- http://example.com/?a=1&b=<2>';
+const SAFE = /^[A-Za-z0-9 ]{1,60}$/;
+const WAF_PAGE = '<html><head><title>Request Rejected</title></head><body>The requested URL was rejected. Please consult with your administrator.<br><br>Your support ID is: 1234567890<br><br><a href="javascript:history.back();">[Go Back]</a></body></html>';
+const html = (body = WAF_PAGE, status = 200) => new Response(body, { status, headers: { 'content-type': 'text/html; charset=utf-8' } });
+
+test('safe text: letters, digits and single spaces, at most 60 characters; never empty', () => {
+  for (const text of [MESSY, MESSY.repeat(5), '\u00e9\u00e8\u00ea', '!!!', '', null, undefined, 'Middleman job 4f9a2c fund']) {
+    assert.match(safeNote(text), SAFE, JSON.stringify(text));
+  }
+  assert.equal(safeNote('R\u00e9parer   le\trobinet!!'), 'Reparer le robinet');
+  assert.equal(safeNote('!!!'), 'Middleman job');
+  assert.equal(safeNote('x'.repeat(100)).length, 60);
+  assert.equal(jobNote('6650c3f1a2b4c5d6e7f80912', 'refund'), 'Middleman job f80912 refund');
+  assert.equal(safeExternalId('check-1730000000000'), 'check1730000000000');
+  assert.equal(safeExternalId('6650c3f1a2b4c5d6e7f80912'), '6650c3f1a2b4c5d6e7f80912');
+  assert.equal(safeExternalId('-_-'), 'middleman');
+});
+
+test('a description full of punctuation and non-ASCII still sends a safe note and externalId, on payments and payouts', async () => {
+  const { requests, fetchImpl } = stubFetch();
+  const momo = createMomoSandboxProvider(ENV, fetchImpl);
+  await momo.requestToPay({ ...request, note: MESSY, externalId: 'job/1?x=<y>' });
+  await momo.transfer({ ...request, note: MESSY, externalId: 'job/1?x=<y>' });
+  const sent = requests.filter(r => r.method === 'POST' && !r.url.endsWith('/token/'));
+  assert.equal(sent.length, 2);
+  for (const { body, headers } of sent) {
+    assert.match(body.payerMessage, SAFE);
+    assert.match(body.payeeNote, SAFE);
+    assert.equal(body.externalId, 'job1xy');
+    assert.equal(body.payerMessage, 'Reparer le robinet b vite b urgent 50 off Amazi 3 4 DROP TAB');
+    // No header carries any of it either.
+    for (const value of Object.values(headers)) for (const word of ['Reparer', 'robinet', 'Amazi', 'example']) assert.equal(String(value).includes(word), false, word);
+  }
+});
+
+test('an HTML "Request Rejected" page with HTTP 200 is a rejection, logged with its content type and the page text', async () => {
+  const { fetchImpl } = stubFetch(() => html());
+  const momo = createMomoSandboxProvider(ENV, fetchImpl);
+  const lines = await logged(() => assert.rejects(momo.requestToPay(request), err => err.definite && err.status === 200));
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^\[payments\] momo-sandbox requesttopay rejected status=200 contentType=text\/html code=- message="Request Rejected The requested URL was rejected\. .*support ID is: 1234567890 .*" party=\*{5}480 currency=EUR$/);
+  for (const secret of ['col-sub', 'col-user', 'col-key', 'tok-col', '46733123480']) assert.equal(lines[0].includes(secret), false, secret);
+
+  // A payout, and an HTML page even with 202, are refused the same way.
+  await logged(() => assert.rejects(createMomoSandboxProvider(ENV, stubFetch(() => html()).fetchImpl).transfer(request), err => err.definite));
+  await logged(() => assert.rejects(createMomoSandboxProvider(ENV, stubFetch(() => html(WAF_PAGE, 202)).fetchImpl).requestToPay(request), err => err.definite));
+});
+
+test('a token or status answer that is not JSON is a rejection too, even without a content type', async () => {
+  const tokenPage = async url => (String(url).endsWith('/token/') ? html() : new Response(null, { status: 202 }));
+  const lines = await logged(() => assert.rejects(createMomoSandboxProvider(ENV, tokenPage).requestToPay(request), err => err.definite && err.status === 200));
+  assert.match(lines[0], /^\[payments\] momo-sandbox token rejected status=200 contentType=text\/html code=- message="Request Rejected/);
+
+  const bare = async url => (String(url).endsWith('/token/') ? new Response(WAF_PAGE, { status: 200, headers: { 'content-type': '' } }) : new Response(null, { status: 202 }));
+  const bareLines = await logged(() => assert.rejects(createMomoSandboxProvider(ENV, bare).requestToPay(request), err => err.definite));
+  assert.match(bareLines[0], /token rejected status=200 contentType=- code=- message="<html>/);
+
+  const statusPage = stubFetch(req => (req.method === 'GET' ? html() : new Response(null, { status: 202 })));
+  const momo = createMomoSandboxProvider(ENV, statusPage.fetchImpl);
+  await momo.requestToPay(request);
+  const statusLines = await logged(() => assert.rejects(momo.getStatus('collection', request.referenceId), err => err.status === 200));
+  assert.match(statusLines[0], /requesttopay status rejected status=200 contentType=text\/html/);
+});
+
+test('an empty 202, 409 or 404 is still MoMo\'s answer, whatever its content type', async () => {
+  for (const type of ['', 'text/plain', 'application/json']) {
+    const reply = status => new Response(null, { status, headers: type ? { 'content-type': type } : {} });
+    assert.deepEqual(await createMomoSandboxProvider(ENV, stubFetch(() => reply(202)).fetchImpl).requestToPay(request), { accepted: true, duplicate: false });
+    assert.deepEqual(await createMomoSandboxProvider(ENV, stubFetch(() => reply(409)).fetchImpl).requestToPay(request), { accepted: true, duplicate: true });
+    assert.deepEqual(await createMomoSandboxProvider(ENV, stubFetch(() => reply(404)).fetchImpl).getStatus('collection', request.referenceId), { status: 'NOT_FOUND', reason: '' });
+  }
 });

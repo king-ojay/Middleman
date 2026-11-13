@@ -29,6 +29,7 @@ import mongoose from 'mongoose';
 import Job from '../jobs/job.model.js';
 import Transaction from './transaction.model.js';
 import { getPaymentProvider } from './providers/index.js';
+import { jobNote, safeExternalId } from './providers/safeText.js';
 import { HttpError } from '../httpError.js';
 
 const MOVES = {
@@ -90,9 +91,9 @@ async function move(kind, { filter, jobStatus, doneStatus, backStatus, extra = {
       referenceId: ref,
       amount: job.escrow.amount,
       currency: job.escrow.currency,
-      externalId: String(job._id),
+      externalId: safeExternalId(job._id),
       party,
-      note: `Middleman job ${job._id} (${kind}, sandbox)`
+      note: jobNote(job._id, kind) // never the description or anything else a person typed
     });
   } catch (err) {
     if (err.definite) {
