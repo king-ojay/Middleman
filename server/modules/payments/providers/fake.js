@@ -13,8 +13,8 @@ export function createFakeProvider() {
     return i < 0 ? null : plan.splice(i, 1)[0].outcome;
   };
 
-  const accept = (api, op, { referenceId, amount, currency, party }) => {
-    calls.push({ op, referenceId, amount, currency, party });
+  const accept = (api, op, { referenceId, amount, currency, party, externalId, note }) => {
+    calls.push({ op, referenceId, amount, currency, party, externalId, note });
     const outcome = take(op);
     if (outcome === 'refuse') throw new ProviderError(`fake ${op} refused`, { definite: true, status: 400 });
     if (outcome === 'timeout') throw new ProviderError(`fake ${op} timed out`, { definite: false });

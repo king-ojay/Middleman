@@ -75,16 +75,16 @@ const call = async (method, path, { as, body, headers = {} } = {}) => {
 const post = (path, as, body) => call('POST', path, { as, body });
 const admin = (method, path) => call(method, path, { headers: { 'x-admin-secret': ADMIN_SECRET } });
 
-const acceptedJob = () => Job.create({
+const acceptedJob = (extra = {}) => Job.create({
   client: users.client._id, worker: users.worker._id, category: 'plumber', area: 'remera',
-  description: 'Fix sink', proposedPrice: 15000, agreedPrice: 15000, status: 'quote_accepted', acceptedAt: new Date()
+  description: 'Fix sink', proposedPrice: 15000, agreedPrice: 15000, status: 'quote_accepted', acceptedAt: new Date(), ...extra
 });
 const ledger = async jobId => (await Transaction.find({ job: jobId }).sort({ createdAt: 1, _id: 1 }).lean()).map(t => t.event);
 const reload = id => Job.findById(id).lean();
 
 // Funded and taken to awaiting confirmation through the API.
-const awaitingJob = async () => {
-  const job = await acceptedJob();
+const awaitingJob = async (extra) => {
+  const job = await acceptedJob(extra);
   assert.equal((await post(`/api/jobs/${job._id}/fund`, 'client')).status, 200);
   assert.equal((await post(`/api/jobs/${job._id}/start`, 'worker')).status, 200);
   assert.equal((await post(`/api/jobs/${job._id}/complete`, 'worker')).status, 200);
@@ -167,6 +167,34 @@ test('dispute locks escrow; an admin refund resolves it and repays the client', 
   assert.equal((await admin('POST', `/api/admin/jobs/${job._id}/release`)).status, 409);
   assert.equal((await admin('POST', `/api/admin/jobs/${job._id}/refund`)).status, 409);
   assert.equal(fake.calls.filter(c => c.op === 'transfer').length, 1);
+});
+
+// What a payment provider is told about a job: never the description or any
+// other text a person typed, only "Middleman job <last 6 of the id> <kind>"
+// and the id itself, letters, digits and spaces only.
+const MESSY = 'Fuite d\u2019eau \u00e0 la cuisine!! <script>alert(1)</script> "urgent" & 50% off? \u{1F6B0} Amazi \u2014 ku wa 3/4 ; DROP TABLE jobs; -- http://example.com/?a=1';
+const SAFE = /^[A-Za-z0-9 ]{1,60}$/;
+
+test('fund, release and refund send a fixed safe note and an alphanumeric externalId, whatever the description says', { skip }, async () => {
+  const released = await awaitingJob({ description: MESSY });
+  assert.equal((await post(`/api/jobs/${released._id}/confirm`, 'client', { score: 5 })).status, 200);
+  const refunded = await acceptedJob({ description: MESSY });
+  await post(`/api/jobs/${refunded._id}/fund`, 'client');
+  await post(`/api/jobs/${refunded._id}/dispute`, 'worker');
+  assert.equal((await admin('POST', `/api/admin/jobs/${refunded._id}/refund`)).status, 200);
+
+  const sent = fake.calls.filter(c => c.op !== 'getStatus');
+  assert.deepEqual(sent.map(c => c.note), [
+    `Middleman job ${String(released._id).slice(-6)} fund`,
+    `Middleman job ${String(released._id).slice(-6)} release`,
+    `Middleman job ${String(refunded._id).slice(-6)} fund`,
+    `Middleman job ${String(refunded._id).slice(-6)} refund`
+  ]);
+  for (const call of sent) {
+    assert.match(call.note, SAFE);
+    assert.match(call.externalId, /^[A-Za-z0-9]+$/);
+    for (const word of ['Fuite', 'cuisine', 'script', 'urgent', 'Amazi', 'DROP', 'example']) assert.equal(JSON.stringify(call).includes(word), false, word);
+  }
 });
 
 test('an admin release resolves a dispute raised after the work was marked done', { skip }, async () => {

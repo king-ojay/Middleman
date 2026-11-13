@@ -11,8 +11,11 @@
 //
 // No real money, ever: this refuses any host but the sandbox and any target
 // environment but "sandbox". Participants' phone numbers are never sent:
-// every payer and payee is the sandbox test number.
+// every payer and payee is the sandbox test number. Nothing a person typed is
+// sent either: payerMessage/payeeNote and externalId are letters, digits and
+// spaces only (safeText.js).
 import { ProviderError } from './errors.js';
+import { safeExternalId, safeNote } from './safeText.js';
 import { maskPhone } from '../../auth/otp/providers.js';
 
 export const SANDBOX_HOST = 'sandbox.momodeveloper.mtn.com';
@@ -58,18 +61,35 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
     }
   };
 
-  // One log line per refused call: HTTP status and MoMo's own code and
-  // message, the payer/payee masked. Never keys, tokens or headers.
-  const failure = async (res, what) => {
-    const text = await res.text().catch(() => '');
+  const contentType = res => (res.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+  // MoMo answers in JSON, or with no body (202, 409, 404). An HTML page, such
+  // as the firewall's "Request Rejected" sent with HTTP 200, or any other
+  // non-JSON body where JSON is due, is not MoMo's answer: a rejection.
+  const isHtml = res => contentType(res).includes('html');
+  const notJson = res => contentType(res) !== '' && !contentType(res).includes('json');
+
+  // One log line per refused call: HTTP status, content type and MoMo's own
+  // code and message, the payer/payee masked. Never keys, tokens or headers.
+  const failure = async (res, what, text) => {
+    text ??= await res.text().catch(() => '');
     let said = {};
     try { said = JSON.parse(text) || {}; } catch { /* not JSON */ }
+    const type = contentType(res);
     const code = said.code || said.error || '-';
-    const message = String(said.message || said.error_description || (said.code ? '' : text) || '-').replace(/\s+/g, ' ').slice(0, 200);
+    const raw = said.message || said.error_description || (said.code ? '' : text);
+    const readable = type.includes('html') ? String(raw).replace(/<[^>]*>/g, ' ') : String(raw);
+    const message = (readable.replace(/\s+/g, ' ').trim() || '-').slice(0, 200);
     const party = what === 'token' ? '' : ` party=${maskPhone(msisdn)}`;
-    console.error(`[payments] momo-sandbox ${what} rejected status=${res.status} code=${code} message="${message}"${party} currency=${currency}`);
+    console.error(`[payments] momo-sandbox ${what} rejected status=${res.status} contentType=${type || '-'} code=${code} message="${message}"${party} currency=${currency}`);
     // 4xx: refused, nothing happened. 5xx: unknown, check the status later.
     return new ProviderError(`MoMo sandbox ${what} failed (${res.status}) ${text.slice(0, 200)}`, { definite: res.status < 500, status: res.status });
+  };
+
+  // A body that should be JSON; one that isn't (an HTML page without a
+  // Content-Type) is a rejection too.
+  const jsonOf = async (res, what) => {
+    const text = await res.text().catch(() => '');
+    try { return JSON.parse(text); } catch { throw await failure(res, what, text); }
   };
 
   // Access tokens last an hour; refresh a minute early.
@@ -83,8 +103,8 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
         'Ocp-Apim-Subscription-Key': p.subscriptionKey
       }
     });
-    if (!res.ok) throw await failure(res, 'token');
-    const body = await res.json();
+    if (!res.ok || notJson(res)) throw await failure(res, 'token');
+    const body = await jsonOf(res, 'token');
     p.token = body.access_token;
     p.expiresAt = Date.now() + (Number(body.expires_in || 3600) - 60) * 1000;
     return p.token;
@@ -101,10 +121,10 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
     const body = {
       amount: String(amount),
       currency,
-      externalId,
+      externalId: safeExternalId(externalId),
       ...(api === 'collection' ? { payer: party } : { payee: party }),
-      payerMessage: note,
-      payeeNote: note
+      payerMessage: safeNote(note),
+      payeeNote: safeNote(note)
     };
     const res = await send(`${base}/${api}/v1_0/${PATHS[api]}`, {
       method: 'POST',
@@ -116,9 +136,9 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
       },
       body: JSON.stringify(body)
     });
-    if (res.status === 202) return { accepted: true, duplicate: false };
+    if (res.status === 202 && !isHtml(res)) return { accepted: true, duplicate: false };
     // 409: this X-Reference-Id was already accepted; nothing new moves.
-    if (res.status === 409) return { accepted: true, duplicate: true };
+    if (res.status === 409 && !isHtml(res)) return { accepted: true, duplicate: true };
     throw await failure(res, PATHS[api]);
   };
 
@@ -129,9 +149,9 @@ export function createMomoSandboxProvider(env = process.env, fetchImpl = globalT
     transfer: request => post('disbursement', request),
     async getStatus(api, referenceId) {
       const res = await send(`${base}/${api}/v1_0/${PATHS[api]}/${encodeURIComponent(referenceId)}`, { headers: await headers(api) });
-      if (res.status === 404) return { status: 'NOT_FOUND', reason: '' };
-      if (!res.ok) throw await failure(res, `${PATHS[api]} status`);
-      const body = await res.json();
+      if (res.status === 404 && !isHtml(res)) return { status: 'NOT_FOUND', reason: '' };
+      if (!res.ok || notJson(res)) throw await failure(res, `${PATHS[api]} status`);
+      const body = await jsonOf(res, `${PATHS[api]} status`);
       const raw = String(body.status || '').toUpperCase();
       const status = raw === 'SUCCESSFUL' ? 'SUCCESSFUL' : FINAL_FAILURES.includes(raw) ? 'FAILED' : 'PENDING';
       const given = typeof body.reason === 'string' ? body.reason : body.reason?.message || body.reason?.code || '';
