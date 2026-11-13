@@ -10,6 +10,7 @@ import jobsRouter from './modules/jobs/jobs.routes.js';
 import discoverRouter from './modules/trust/discover.routes.js';
 import usersRouter from './modules/users/users.routes.js';
 import { adminRouter, callbackRouter } from './modules/payments/payments.routes.js';
+import transactionsRouter from './modules/payments/transactions.routes.js';
 import { serverError } from './modules/serverError.js';
 import { verificationRouter } from './modules/users/verification.js';
 
@@ -32,6 +33,7 @@ app.use('/api/jobs', jobsRouter);
 app.use('/api/discover', discoverRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/payments', callbackRouter);
+app.use('/api/transactions', transactionsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', verificationRouter);
 

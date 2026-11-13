@@ -9,16 +9,12 @@ import { rankByTrust } from '../trust/trustPropagation.js';
 import { requireUser } from '../auth/currentUser.js';
 import { hit } from '../auth/rateLimit.js';
 import { normalisePhone } from './phone.js';
+import { shortName } from './shortName.js';
 import { AREAS } from '../../config/areas.js';
 import { serverError } from '../serverError.js';
 
 const router = express.Router();
 
-// "Amina Uwimana" -> "Amina U." for lists other people see (NFR-05).
-const shortName = name => {
-  const [first, ...rest] = String(name || '').trim().split(/\s+/);
-  return rest.length ? `${first} ${rest[rest.length - 1][0]}.` : first;
-};
 
 // Inviter lookups: 30 per IP per 15 minutes (pilot sessions share one Wi-Fi
 // network, so one IP), shared with the register route so it can't be used to

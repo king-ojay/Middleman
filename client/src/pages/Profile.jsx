@@ -7,7 +7,7 @@ import { formatRwf } from '../format.js';
 import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import AreaPicker from '../components/AreaPicker.jsx';
 import {
-  Avatar, Badge, Button, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, TierBadge, VerifiedBadge
+  Avatar, Button, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, TierBadge, VerifiedBadge
 } from '../components/ui/index.js';
 
 const MAX_VOUCHER_CHIPS = 3;
@@ -100,18 +100,17 @@ export default function Profile() {
 }
 
 // Your own profile only (the server sends it to nobody else): money released
-// from escrow to you as a worker, or paid by you as a client.
+// from escrow to you as a worker, or paid by you as a client, and the way
+// into every movement (Transactions).
 function Earnings({ earnings, role }) {
   return (
     <Card className="p-5 mt-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-body font-semibold text-ink">{role === 'worker' ? 'Earned on Middleman' : 'Paid through Middleman'}</p>
-        {earnings.sandbox && <Badge>Sandbox, test money</Badge>}
-      </div>
+      <p className="text-body font-semibold text-ink">{role === 'worker' ? 'Earned on Middleman' : 'Paid through Middleman'}</p>
       <p className="text-title text-heading mt-2">{formatRwf(earnings.total)}</p>
       <p className="text-small text-muted mt-1">
         {earnings.jobs} completed job{earnings.jobs === 1 ? '' : 's'} · only you can see this
       </p>
+      <Button to="/transactions" variant="outline" size="md" className="mt-4">View transactions</Button>
     </Card>
   );
 }

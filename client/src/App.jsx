@@ -11,6 +11,7 @@ import OpenJobs from './pages/OpenJobs.jsx';
 import MyJobs from './pages/MyJobs.jsx';
 import JobDetail from './pages/JobDetail.jsx';
 import Profile from './pages/Profile.jsx';
+import Transactions from './pages/Transactions.jsx';
 import Admin from './pages/Admin.jsx';
 import ServerWaking from './components/ServerWaking.jsx';
 import SandboxBanner from './components/SandboxBanner.jsx';
@@ -35,6 +36,7 @@ export default function App() {
         <Route path="/my-jobs/:id" element={<RequireUser><JobDetail /></RequireUser>} />
         <Route path="/profile" element={<RequireUser><Profile /></RequireUser>} />
         <Route path="/people/:id" element={<RequireUser><Profile /></RequireUser>} />
+        <Route path="/transactions" element={<RequireUser><Transactions /></RequireUser>} />
         {/* the researcher's page: needs ADMIN_SECRET, not a login; not in any tab bar */}
         <Route path="/admin" element={<Admin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
