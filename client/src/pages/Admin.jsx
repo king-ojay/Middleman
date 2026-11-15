@@ -1,5 +1,5 @@
 // The researcher's page, separate from the user app: verify workers met in
-// person (FR-04) and settle disputes (FR-14). It asks for ADMIN_SECRET and
+// person (FR-04), settle disputes (FR-14) and delete accounts. It asks for ADMIN_SECRET and
 // keeps it in memory only, so it is gone on reload or "Lock". Uses the
 // existing admin routes (adminAuth.js); not linked from any tab bar.
 import { useEffect, useState } from 'react';
@@ -51,6 +51,7 @@ export default function Admin() {
     <PageLayout title="Admin" width="medium" right={<Button variant="plain" size="md" onClick={() => setSecret('')}>Lock</Button>}>
       <Verification secret={secret} />
       <Disputes secret={secret} />
+      <DeleteAccount secret={secret} />
     </PageLayout>
   );
 }
@@ -209,6 +210,132 @@ function Disputes({ secret }) {
             {actionError && <p className="text-small text-danger" role="alert">{actionError}</p>}
             <Button onClick={settle} disabled={sending}>{sending ? 'Sending…' : OUTCOMES[confirming.outcome].button}</Button>
             <Button variant="outline" onClick={() => setConfirming(null)} disabled={sending}>Cancel</Button>
+          </div>
+        )}
+      </Sheet>
+    </section>
+  );
+}
+
+// What a deletion removes or changes (server/modules/users/deleteUser.js).
+const DELETION_LABELS = {
+  user: 'Account',
+  otpCodes: 'Pending sign-in codes',
+  ratingsGiven: 'Ratings they gave',
+  ratingsReceived: 'Ratings they received',
+  trustEdgesRating: 'Trust links from ratings',
+  trustEdgesReferral: 'Trust links from invitations',
+  offers: 'Offers',
+  jobsDeleted: 'Jobs deleted (no money settled)',
+  jobsKeptWithoutThem: 'Jobs kept for the other person, shown as "Deleted user"',
+  jobsReopened: 'Jobs reopened for the client',
+  referralsCleared: 'People they invited (link removed)',
+  ledgerEntriesAnonymised: 'Payment records kept, their id removed'
+};
+
+function DeletionCounts({ counts }) {
+  return (
+    <dl className="grid gap-1 mt-3">
+      {Object.entries(DELETION_LABELS).map(([key, label]) => (
+        <div key={key} className="flex justify-between gap-4 text-body">
+          <dt className="text-muted">{label}</dt>
+          <dd className="text-ink font-semibold tabular-nums">{counts[key] ?? 0}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+// Section 3: delete an account. Look it up by phone number; the preview
+// shows who it is (first name and last 3 digits) and what would be removed,
+// or which jobs stop it. Deleting goes through a confirm step that shows the
+// counts again, and uses the id from the preview.
+function DeleteAccount({ secret }) {
+  const [phone, setPhone] = useState('');
+  const [preview, setPreview] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
+  const [done, setDone] = useState('');
+
+  const check = async e => {
+    e.preventDefault();
+    setError('');
+    setDone('');
+    setPreview(null);
+    setChecking(true);
+    try {
+      setPreview(await adminApi('/api/admin/users/deletion/preview', secret, { method: 'POST', body: JSON.stringify({ phone }) }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const remove = async () => {
+    setError('');
+    setDeleting(true);
+    try {
+      await adminApi('/api/admin/users/deletion/delete', secret, { method: 'POST', body: JSON.stringify({ userId: preview.user._id }) });
+      setDone(`The account of ${preview.user.firstName} (number ending ${preview.user.phoneEnding}) is deleted.`);
+      setPreview(null);
+      setPhone('');
+      setConfirming(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const who = preview && `${preview.user.firstName} · ${preview.user.role} · ${areaLabel(preview.user.area)} · number ending ${preview.user.phoneEnding}`;
+  const blocked = preview?.blockers.length > 0;
+  return (
+    <section className="mt-10">
+      <h2 className="text-section text-ink mb-1">Delete an account</h2>
+      <p className="text-body text-muted mb-4">
+        Removes the person, their ratings, trust links, offers and pending codes. Jobs where money was paid out or refunded stay for the other person, without them.
+      </p>
+      <form onSubmit={check} className="flex flex-wrap items-end gap-3">
+        <FormField label="Phone number" className="flex-1 min-w-[220px]">
+          {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="off" value={phone} onChange={e => setPhone(e.target.value)} placeholder="0788 123 456" required />}
+        </FormField>
+        <Button type="submit" size="md" variant="outline" className="h-[54px]" disabled={checking || !phone}>{checking ? 'Checking…' : 'Check'}</Button>
+      </form>
+      {done && <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mt-4" role="status">{done}</p>}
+      {error && !confirming && <p className="text-body text-danger mt-4" role="alert">{error}</p>}
+
+      {preview && (
+        <Card className="p-5 mt-4">
+          <h3 className="text-card text-ink">{who}</h3>
+          {blocked ? (
+            <>
+              <p className="text-body text-danger mt-2" role="alert">This account can't be deleted yet. Settle these jobs first:</p>
+              <ul className="mt-2 grid gap-1">
+                {preview.blockers.map(b => <li key={b.jobId} className="text-body text-ink">Job {String(b.jobId).slice(-6)}: {b.reason}</li>)}
+              </ul>
+            </>
+          ) : (
+            <>
+              <p className="text-body text-muted mt-1">Deleting would remove or change:</p>
+              <DeletionCounts counts={preview.counts} />
+              <Button className="mt-5" variant="dark" onClick={() => setConfirming(true)}>Delete account</Button>
+            </>
+          )}
+        </Card>
+      )}
+
+      <Sheet open={confirming} title="Delete this account?" onClose={() => !deleting && setConfirming(false)}>
+        {preview && (
+          <div className="space-y-4">
+            <p className="text-body text-ink">{who}</p>
+            <DeletionCounts counts={preview.counts} />
+            <p className="text-body text-muted">This cannot be undone.</p>
+            {error && <p className="text-small text-danger" role="alert">{error}</p>}
+            <Button onClick={remove} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete account'}</Button>
+            <Button variant="outline" onClick={() => setConfirming(false)} disabled={deleting}>Cancel</Button>
           </div>
         )}
       </Sheet>

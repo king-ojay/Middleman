@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { firstName } from '../greeting.js';
+import { DELETED_USER, firstName } from '../greeting.js';
 import { formatRwf, timeAgo } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
@@ -90,11 +90,13 @@ export default function JobDetail() {
   const paidOut = job.status === 'completed' && job.escrow?.status === 'released';
   // The client confirms (releasing escrow) and rates on one screen; it stays
   // until the rating is saved, which needs the payout to have gone through.
+  // Someone who has deleted their account can't be rated (or shown by name).
+  const gone = !counterpart;
   const confirming = isClient && (job.status === 'awaiting_confirmation'
-    || (job.status === 'completed' && !job.myRating && ['releasing', 'released'].includes(job.escrow?.status)));
+    || (job.status === 'completed' && !job.myRating && !gone && ['releasing', 'released'].includes(job.escrow?.status)));
   const escrowNote = escrowLabel(job.escrow, user.role);
   return (
-    <PageLayout {...layout} title={job.description} subtitle={[counterpart?.name, areaLabel(job.area)].filter(Boolean).join(' · ')}>
+    <PageLayout {...layout} title={job.description} subtitle={[counterpart?.name || DELETED_USER, areaLabel(job.area)].join(' · ')}>
       {!['disputed', 'resolved'].includes(job.status) && <JobStepper status={job.status} />}
 
       {confirming ? (
@@ -110,7 +112,8 @@ export default function JobDetail() {
             <JobActions job={job} role={user.role} onChange={load} stalled={stalled} />
           </Card>
           {['disputed', 'resolved'].includes(job.status) && job.disputedAt && <ProblemReported job={job} userId={user._id} />}
-          {!isClient && paidOut && <RateClient job={job} onRated={load} />}
+          {!isClient && paidOut && !gone && <RateClient job={job} onRated={load} />}
+          {gone && <p className="text-body text-muted mt-3">This person has deleted their account.</p>}
           {isClient && job.myRating && (
             <Card className="p-5 mt-3">
               <p className="text-body text-ink">You rated {firstName(job.worker)}</p>

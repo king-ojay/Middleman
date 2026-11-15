@@ -13,6 +13,7 @@ import { adminRouter, callbackRouter } from './modules/payments/payments.routes.
 import transactionsRouter from './modules/payments/transactions.routes.js';
 import { serverError } from './modules/serverError.js';
 import { verificationRouter } from './modules/users/verification.js';
+import { deletionRouter } from './modules/users/deletion.routes.js';
 
 // The Express app without a database connection or a listening port, so
 // tests can start it on their own (see test/).
@@ -36,6 +37,7 @@ app.use('/api/payments', callbackRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', verificationRouter);
+app.use('/api/admin', deletionRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

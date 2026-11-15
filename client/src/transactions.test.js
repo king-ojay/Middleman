@@ -21,5 +21,6 @@ test('date and time in Kigali, and the other person', () => {
   assert.equal(otherLabel({ type: 'received', other: 'Clara M.' }), 'from Clara M.');
   assert.equal(otherLabel({ type: 'paid_in', other: 'Walter N.' }), 'with Walter N.');
   assert.equal(otherLabel({ type: 'refunded', other: 'Walter N.' }), 'with Walter N.');
-  assert.equal(otherLabel({ type: 'released', other: null }), 'with a removed account');
+  assert.equal(otherLabel({ type: 'released', other: null }), 'with Deleted user');
+  assert.equal(otherLabel({ type: 'received', other: null }), 'from Deleted user');
 });
