@@ -1,0 +1,1073 @@
+{
+  "dataset": {
+    "key": "bitcoinotc",
+    "name": "Bitcoin OTC",
+    "file": "data/raw/soc-sign-bitcoinotc.csv",
+    "md5": "eeaf5cd1d29ab435505baeeb6816317b",
+    "expectedMd5": "eeaf5cd1d29ab435505baeeb6816317b",
+    "lines": 35592,
+    "expectedLines": 35592,
+    "edges": 35592,
+    "members": 5881,
+    "positive": 32029,
+    "negative": 3563,
+    "selfLoops": 0,
+    "duplicates": 0
+  },
+  "run": {
+    "startedAt": "2026-11-03T12:59:23.842Z",
+    "runtimeSeconds": 287.007,
+    "predictSeconds": 285.812,
+    "git": {
+      "commit": "1c5d50dcbd761f84a40cfa735194067f10d8dcfb",
+      "dirty": false,
+      "codeHash": "5b30d21b2e6d4f64"
+    },
+    "node": "v26.3.0",
+    "args": {
+      "seed": 2,
+      "tuneSplit": true,
+      "reciprocal": false,
+      "dataset": "bitcoinotc"
+    },
+    "testEdges": 35592
+  },
+  "settings": {
+    "graph": "weight = rating/10; rating > 0 positive evidence rating/10; rating <= 0 negative evidence |rating|/10; one node type",
+    "off": {
+      "referralBoost": "no referral edges",
+      "areaTrust": "no areas",
+      "verification": "everyone unverified"
+    },
+    "computeTrust": {
+      "depth": 3,
+      "decay": 0.5,
+      "referralBoost": 1.4,
+      "referralDecay": 0.65,
+      "lambda": 0.5,
+      "negativeDepth": 2,
+      "areaDiscount": 0.5,
+      "floorVerified": 0.3,
+      "floorUnverified": 0.1,
+      "negativeEpsilon": 0.01
+    },
+    "prediction": "clamp(positive - lambda * negative, -1, 1); no evidence -> floorUnverified",
+    "main": {
+      "lambda": 0.5,
+      "depth": 3
+    },
+    "lambdas": [
+      0.25,
+      0.5,
+      1
+    ],
+    "depths": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "moleTrust": {
+      "horizon": 3,
+      "threshold": 0.5
+    },
+    "coldStart": {
+      "min": 1,
+      "max": 3
+    },
+    "fallbacks": {
+      "flat": "global average",
+      "moletrust": "global average",
+      "tidaltrust": "global average",
+      "proposed": "floor 0.1",
+      "community": "target's average of its other ratings, else global average",
+      "reciprocal": "target's rating of the source, else proposed + community fallback"
+    }
+  },
+  "methods": {
+    "global": {
+      "label": "(a) Global average",
+      "n": 35592,
+      "rmse": 0.35621438972831787,
+      "mae": 0.17293094539608883,
+      "pcc": -0.999999999999841,
+      "signAccuracy": 0.8998932344347045,
+      "negativeSignAccuracy": 0,
+      "negatives": 3563,
+      "coverage": 1,
+      "coveredOnly": {
+        "n": 35592,
+        "rmse": 0.35621438972831787,
+        "mae": 0.17293094539608883,
+        "pcc": -0.999999999999841,
+        "signAccuracy": 0.8998932344347045,
+        "negativeSignAccuracy": 0,
+        "negatives": 3563
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.8014184397163089,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.7802797202797188,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.3457946023624092,
+        "mae": 0.15263054703574036,
+        "pcc": -1.0000000000000429,
+        "signAccuracy": 0.8865613922010958,
+        "negativeSignAccuracy": 0,
+        "negatives": 704,
+        "coverage": 1
+      },
+      "latencyMs": {
+        "median": 0.0002919999824371189,
+        "p95": 0.0010830000101123005
+      }
+    },
+    "flat": {
+      "label": "(b) Flat average of target",
+      "n": 35592,
+      "rmse": 0.31896083288562516,
+      "mae": 0.1789011090993553,
+      "pcc": 0.4744192626758147,
+      "signAccuracy": 0.9021409305461902,
+      "negativeSignAccuracy": 0.5879876508560202,
+      "negatives": 3563,
+      "coverage": 0.9318105192178018,
+      "coveredOnly": {
+        "n": 33165,
+        "rmse": 0.32086379607696386,
+        "mae": 0.1832716273836011,
+        "pcc": 0.4856497417438633,
+        "signAccuracy": 0.9017940600030152,
+        "negativeSignAccuracy": 0.6278094096493857,
+        "negatives": 3337
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.9409929078014156,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.9341258741258722,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.359296640708674,
+        "mae": 0.16790924152223632,
+        "pcc": 0.3367679674411704,
+        "signAccuracy": 0.9021914276506606,
+        "negativeSignAccuracy": 0.4602272727272727,
+        "negatives": 704,
+        "coverage": 0.6089268449887206
+      },
+      "latencyMs": {
+        "median": 0.00029200001154094934,
+        "p95": 0.0012909999932162464
+      }
+    },
+    "moletrust": {
+      "label": "(c) MoleTrust (h=3, t=0.5)",
+      "n": 35592,
+      "rmse": 0.34712653393407994,
+      "mae": 0.171425774849361,
+      "pcc": 0.30994772680570654,
+      "signAccuracy": 0.9055405709148123,
+      "negativeSignAccuracy": 0.15857423519506034,
+      "negatives": 3563,
+      "coverage": 0.25351202517419646,
+      "coveredOnly": {
+        "n": 9023,
+        "rmse": 0.34780230302443166,
+        "mae": 0.21024072593318144,
+        "pcc": 0.5568742984251586,
+        "signAccuracy": 0.9339465809597695,
+        "negativeSignAccuracy": 0.7089084065244667,
+        "negatives": 797
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.8889361702127617,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.8820979020978997,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.34242876177699155,
+        "mae": 0.15047377858784425,
+        "pcc": 0.16696457957391378,
+        "signAccuracy": 0.8889784079922656,
+        "negativeSignAccuracy": 0.03125,
+        "negatives": 704,
+        "coverage": 0.061875604253947794
+      },
+      "latencyMs": {
+        "median": 0.5035409999982221,
+        "p95": 2.96220799999719
+      }
+    },
+    "tidaltrust": {
+      "label": "(d) TidalTrust",
+      "n": 35592,
+      "rmse": 0.35778142593731654,
+      "mae": 0.19754650481052216,
+      "pcc": 0.4714605142985269,
+      "signAccuracy": 0.9136884693189481,
+      "negativeSignAccuracy": 0.5450463092899243,
+      "negatives": 3563,
+      "coverage": 0.8639581928523263,
+      "coveredOnly": {
+        "n": 30750,
+        "rmse": 0.34906548329810394,
+        "mae": 0.1975836421743503,
+        "pcc": 0.5191262454213744,
+        "signAccuracy": 0.920130081300813,
+        "negativeSignAccuracy": 0.658975229046488,
+        "negatives": 2947
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.9533333333333305,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.9422377622377598,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.34473567100924324,
+        "mae": 0.15832825756549232,
+        "pcc": 0.4056337455074038,
+        "signAccuracy": 0.9104092813406381,
+        "negativeSignAccuracy": 0.4403409090909091,
+        "negatives": 704,
+        "coverage": 0.5776667740895908
+      },
+      "latencyMs": {
+        "median": 0.015125000005355105,
+        "p95": 0.6123329999973066
+      }
+    },
+    "proposed": {
+      "label": "(e) Proposed, lambda 0.5",
+      "n": 35592,
+      "rmse": 0.3450950804869703,
+      "mae": 0.20770657732075692,
+      "pcc": 0.2894244462360272,
+      "signAccuracy": 0.9166666666666666,
+      "negativeSignAccuracy": 0.38927869772663487,
+      "negatives": 3563,
+      "coverage": 0.8136659923578332,
+      "coveredOnly": {
+        "n": 28960,
+        "rmse": 0.31472128520625614,
+        "mae": 0.2015294371547021,
+        "pcc": 0.4013689557718466,
+        "signAccuracy": 0.9372582872928177,
+        "negativeSignAccuracy": 0.5745650372825186,
+        "negatives": 2414
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.9443971631205634,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.9362237762237736,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.34420438376191326,
+        "mae": 0.18139151627457414,
+        "pcc": 0.07739197008986731,
+        "signAccuracy": 0.8989687399291009,
+        "negativeSignAccuracy": 0.16335227272727273,
+        "negatives": 704,
+        "coverage": 0.4361907831131163
+      },
+      "latencyMs": {
+        "median": 1.8961249999993015,
+        "p95": 5.66387499999837
+      }
+    },
+    "positiveOnly": {
+      "label": "(f) Proposed, lambda 0 (positive-only)",
+      "n": 35592,
+      "rmse": 0.3576444539691301,
+      "mae": 0.21088562036414116,
+      "pcc": 0.10690751668709578,
+      "signAccuracy": 0.8998932344347045,
+      "negativeSignAccuracy": 0,
+      "negatives": 3563,
+      "coverage": 0.7921162058889638,
+      "coveredOnly": {
+        "n": 28193,
+        "rmse": 0.2924211397973694,
+        "mae": 0.18534178696840128,
+        "pcc": 0.24814917787834728,
+        "signAccuracy": 0.9395949349129217,
+        "negativeSignAccuracy": 0,
+        "negatives": 1703
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.9245390070921942,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.9107692307692278,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.35081540175798875,
+        "mae": 0.1836478005156313,
+        "pcc": -0.0641104073414301,
+        "signAccuracy": 0.8865613922010958,
+        "negativeSignAccuracy": 0,
+        "negatives": 704,
+        "coverage": 0.41492104415082176
+      },
+      "latencyMs": {
+        "median": 1.8961249999993015,
+        "p95": 5.66387499999837
+      }
+    },
+    "community": {
+      "label": "(g) Proposed + community fallback, lambda 0.5",
+      "n": 35592,
+      "rmse": 0.3354260426672751,
+      "mae": 0.2057536932263437,
+      "pcc": 0.3820297354204831,
+      "signAccuracy": 0.9237750056192403,
+      "negativeSignAccuracy": 0.5882683132191973,
+      "negatives": 3563,
+      "coverage": 0.8136659923578332,
+      "coveredOnly": {
+        "n": 28960,
+        "rmse": 0.31472128520625614,
+        "mae": 0.2015294371547021,
+        "pcc": 0.4013689557718466,
+        "signAccuracy": 0.9372582872928177,
+        "negativeSignAccuracy": 0.5745650372825186,
+        "negatives": 2414
+      },
+      "precisionAt5": {
+        "k": 5,
+        "sources": 1410,
+        "precision": 0.948368794326238,
+        "baseRate": 0.9207667854760825
+      },
+      "precisionAt10": {
+        "k": 10,
+        "sources": 715,
+        "precision": 0.9388811188811165,
+        "baseRate": 0.9021403830356384
+      },
+      "coldStart": {
+        "n": 6206,
+        "rmse": 0.36955063559967083,
+        "mae": 0.1944344993372499,
+        "pcc": 0.19846417004795025,
+        "signAccuracy": 0.9044473090557525,
+        "negativeSignAccuracy": 0.4303977272727273,
+        "negatives": 704,
+        "coverage": 0.4361907831131163
+      },
+      "latencyMs": {
+        "median": 1.8961249999993015,
+        "p95": 5.66387499999837
+      }
+    }
+  },
+  "sweeps": {
+    "lambda": [
+      {
+        "lambda": 0,
+        "depth": 3,
+        "n": 35592,
+        "rmse": 0.3576444539691301,
+        "pcc": 0.10690751668709578,
+        "mae": 0.21088562036414116,
+        "signAccuracy": 0.8998932344347045,
+        "negativeSignAccuracy": 0,
+        "coverage": 0.7921162058889638,
+        "latencyMs": {
+          "median": 1.8961249999993015,
+          "p95": 5.66387499999837
+        }
+      },
+      {
+        "lambda": 0.25,
+        "depth": 3,
+        "n": 35592,
+        "rmse": 0.3483703477062547,
+        "pcc": 0.24434307367538236,
+        "mae": 0.20829689958418673,
+        "signAccuracy": 0.9195886716115981,
+        "negativeSignAccuracy": 0.34633735616053885,
+        "coverage": 0.8136659923578332,
+        "latencyMs": {
+          "median": 1.8961249999993015,
+          "p95": 5.66387499999837
+        }
+      },
+      {
+        "lambda": 0.5,
+        "depth": 3,
+        "n": 35592,
+        "rmse": 0.3450950804869703,
+        "pcc": 0.2894244462360272,
+        "mae": 0.20770657732075692,
+        "signAccuracy": 0.9166666666666666,
+        "negativeSignAccuracy": 0.38927869772663487,
+        "coverage": 0.8136659923578332,
+        "latencyMs": {
+          "median": 1.8961249999993015,
+          "p95": 5.66387499999837
+        }
+      },
+      {
+        "lambda": 1,
+        "depth": 3,
+        "n": 35592,
+        "rmse": 0.3405318705649685,
+        "pcc": 0.3385771772194723,
+        "mae": 0.2069971060912647,
+        "signAccuracy": 0.9086592492694988,
+        "negativeSignAccuracy": 0.41987089531293853,
+        "coverage": 0.8136659923578332,
+        "latencyMs": {
+          "median": 1.8961249999993015,
+          "p95": 5.66387499999837
+        }
+      }
+    ],
+    "depth": [
+      {
+        "lambda": 0.5,
+        "depth": 1,
+        "n": 35592,
+        "rmse": 0.34256562782315986,
+        "pcc": 0.3279053202159638,
+        "mae": 0.17350212126321088,
+        "signAccuracy": 0.8821926275567543,
+        "negativeSignAccuracy": 0.45607634016278414,
+        "coverage": 0.10901326140705776,
+        "latencyMs": {
+          "median": 0.058332999993581325,
+          "p95": 0.39945799999986775
+        }
+      },
+      {
+        "lambda": 0.5,
+        "depth": 2,
+        "n": 35592,
+        "rmse": 0.34239102451759273,
+        "pcc": 0.3043425457798136,
+        "mae": 0.1947126461002585,
+        "signAccuracy": 0.9142222971454259,
+        "negativeSignAccuracy": 0.4066797642436149,
+        "coverage": 0.6262924252641043,
+        "latencyMs": {
+          "median": 0.2017919999998412,
+          "p95": 1.141834000009112
+        }
+      },
+      {
+        "lambda": 0.5,
+        "depth": 3,
+        "n": 35592,
+        "rmse": 0.3450950804869703,
+        "pcc": 0.2894244462360272,
+        "mae": 0.20770657732075692,
+        "signAccuracy": 0.9166666666666666,
+        "negativeSignAccuracy": 0.38927869772663487,
+        "coverage": 0.8136659923578332,
+        "latencyMs": {
+          "median": 1.8961249999993015,
+          "p95": 5.66387499999837
+        }
+      },
+      {
+        "lambda": 0.5,
+        "depth": 4,
+        "n": 35592,
+        "rmse": 0.3450800771765582,
+        "pcc": 0.29437383381283105,
+        "mae": 0.20958320549562687,
+        "signAccuracy": 0.9166947628680603,
+        "negativeSignAccuracy": 0.3861914117316868,
+        "coverage": 0.8443751404810069,
+        "latencyMs": {
+          "median": 3.863459000000148,
+          "p95": 7.955792000007932
+        }
+      }
+    ]
+  },
+  "heldOut": {
+    "seed": 3,
+    "share": 0.2,
+    "grid": {
+      "lambdas": [
+        0.25,
+        0.5,
+        1,
+        1.5,
+        2
+      ],
+      "depths": [
+        1,
+        2,
+        3,
+        4
+      ]
+    },
+    "tuneEdges": 7118,
+    "reportEdges": 28474,
+    "tunedFloor": {
+      "lambda": 1.5,
+      "depth": 2,
+      "rmse": 0.3380364545922892
+    },
+    "tunedCommunity": {
+      "lambda": 1.5,
+      "depth": 2,
+      "rmse": 0.32787244436253055
+    },
+    "calibration": {
+      "a": 0.07770342534396912,
+      "b": 1.2789922461307943,
+      "n": 4473
+    },
+    "methods": {
+      "global": {
+        "label": "(a) Global average",
+        "n": 28474,
+        "rmse": 0.3556685539529318,
+        "mae": 0.17277550077867815,
+        "pcc": -1.0000000000000544,
+        "signAccuracy": 0.8998384491114702,
+        "negativeSignAccuracy": 0,
+        "negatives": 2852,
+        "coverage": 1,
+        "coveredOnly": {
+          "n": 28474,
+          "rmse": 0.3556685539529318,
+          "mae": 0.17277550077867815,
+          "pcc": -1.0000000000000544,
+          "signAccuracy": 0.8998384491114702,
+          "negativeSignAccuracy": 0,
+          "negatives": 2852
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.8025146689019264,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.7737762237762229,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.3443135772285313,
+          "mae": 0.15166943141544564,
+          "pcc": -0.9999999999999928,
+          "signAccuracy": 0.8869059554842591,
+          "negativeSignAccuracy": 0,
+          "negatives": 564,
+          "coverage": 1
+        },
+        "latencyMs": {
+          "median": 0.0002919999824371189,
+          "p95": 0.0010830000101123005
+        }
+      },
+      "flat": {
+        "label": "(b) Flat average of target",
+        "n": 28474,
+        "rmse": 0.3186840553366275,
+        "mae": 0.17886946576696872,
+        "pcc": 0.4736188828057658,
+        "signAccuracy": 0.9019105148556578,
+        "negativeSignAccuracy": 0.5890603085553997,
+        "negatives": 2852,
+        "coverage": 0.9314813514083023,
+        "coveredOnly": {
+          "n": 26523,
+          "rmse": 0.32093949480748163,
+          "mae": 0.18346408988005516,
+          "pcc": 0.4844898375902853,
+          "signAccuracy": 0.9012178109565283,
+          "negativeSignAccuracy": 0.6270996640537514,
+          "negatives": 2679
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9396479463537284,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9298951048951033,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.35618083772198056,
+          "mae": 0.1668359960617364,
+          "pcc": 0.3455772192057504,
+          "signAccuracy": 0.9047523561259274,
+          "negativeSignAccuracy": 0.4787234042553192,
+          "negatives": 564,
+          "coverage": 0.6087828353719671
+        },
+        "latencyMs": {
+          "median": 0.00029200001154094934,
+          "p95": 0.0012909999932162464
+        }
+      },
+      "moletrust": {
+        "label": "(c) MoleTrust (h=3, t=0.5)",
+        "n": 28474,
+        "rmse": 0.34617244224734905,
+        "mae": 0.17126585772806363,
+        "pcc": 0.31197185092582935,
+        "signAccuracy": 0.9049308140759992,
+        "negativeSignAccuracy": 0.1584852734922861,
+        "negatives": 2852,
+        "coverage": 0.25279202079089697,
+        "coveredOnly": {
+          "n": 7198,
+          "rmse": 0.34461144309304365,
+          "mae": 0.20962187717990335,
+          "pcc": 0.56275078817223,
+          "signAccuracy": 0.9317866073909419,
+          "negativeSignAccuracy": 0.710691823899371,
+          "negatives": 636
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.889186923721707,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.8776223776223764,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.34000867489407915,
+          "mae": 0.14876207606197048,
+          "pcc": 0.17720659554987991,
+          "signAccuracy": 0.8895127331060758,
+          "negativeSignAccuracy": 0.031914893617021274,
+          "negatives": 564,
+          "coverage": 0.05935432123521155
+        },
+        "latencyMs": {
+          "median": 0.5009579999896232,
+          "p95": 2.9613749999844003
+        }
+      },
+      "tidaltrust": {
+        "label": "(d) TidalTrust",
+        "n": 28474,
+        "rmse": 0.3567522462881216,
+        "mae": 0.19696513618349443,
+        "pcc": 0.47449562860533395,
+        "signAccuracy": 0.9133946758446302,
+        "negativeSignAccuracy": 0.5483870967741935,
+        "negatives": 2852,
+        "coverage": 0.8636299782257498,
+        "coveredOnly": {
+          "n": 24591,
+          "rmse": 0.34819233451993037,
+          "mae": 0.1972692354835751,
+          "pcc": 0.5222180996395437,
+          "signAccuracy": 0.9196047334390631,
+          "negativeSignAccuracy": 0.6618705035971223,
+          "negatives": 2363
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9518860016764433,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9349650349650332,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.3432132073594385,
+          "mae": 0.15702460072991073,
+          "pcc": 0.41145559335305615,
+          "signAccuracy": 0.9119711249248045,
+          "negativeSignAccuracy": 0.45390070921985815,
+          "negatives": 564,
+          "coverage": 0.5771004611991177
+        },
+        "latencyMs": {
+          "median": 0.01504199999908451,
+          "p95": 0.6149159999913536
+        }
+      },
+      "proposed": {
+        "label": "(e) Proposed, lambda 0.5",
+        "n": 28474,
+        "rmse": 0.3445242515186079,
+        "mae": 0.20752432043268323,
+        "pcc": 0.2907786658591942,
+        "signAccuracy": 0.9164500948233476,
+        "negativeSignAccuracy": 0.38955119214586253,
+        "negatives": 2852,
+        "coverage": 0.8128116878555876,
+        "coveredOnly": {
+          "n": 23144,
+          "rmse": 0.3145314878523126,
+          "mae": 0.20180813601797667,
+          "pcc": 0.4034004261067963,
+          "signAccuracy": 0.9370463187003111,
+          "negativeSignAccuracy": 0.5756476683937823,
+          "negatives": 1930
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9430008382229641,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9277972027972007,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.3414087596775744,
+          "mae": 0.1795855724884716,
+          "pcc": 0.10367578966393756,
+          "signAccuracy": 0.9003408863043915,
+          "negativeSignAccuracy": 0.17375886524822695,
+          "negatives": 564,
+          "coverage": 0.43392821335472226
+        },
+        "latencyMs": {
+          "median": 1.885874999978114,
+          "p95": 5.661250000001019
+        }
+      },
+      "positiveOnly": {
+        "label": "(f) Proposed, lambda 0 (positive-only)",
+        "n": 28474,
+        "rmse": 0.35695797917083893,
+        "mae": 0.2106400927161717,
+        "pcc": 0.11025588565832141,
+        "signAccuracy": 0.8998384491114702,
+        "negativeSignAccuracy": 0,
+        "negatives": 2852,
+        "coverage": 0.7915291142796937,
+        "coveredOnly": {
+          "n": 22538,
+          "rmse": 0.2926904471721441,
+          "mae": 0.18587567663501897,
+          "pcc": 0.2522158923735141,
+          "signAccuracy": 0.939346880823498,
+          "negativeSignAccuracy": 0,
+          "negatives": 1367
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9213746856663843,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9017482517482502,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.3487411983669835,
+          "mae": 0.18201689392420473,
+          "pcc": -0.049026717547897294,
+          "signAccuracy": 0.8869059554842591,
+          "negativeSignAccuracy": 0,
+          "negatives": 564,
+          "coverage": 0.4112693001804692
+        },
+        "latencyMs": {
+          "median": 1.885874999978114,
+          "p95": 5.661250000001019
+        }
+      },
+      "community": {
+        "label": "(g) Proposed + community fallback, lambda 0.5",
+        "n": 28474,
+        "rmse": 0.33458378146174433,
+        "mae": 0.20560473346251293,
+        "pcc": 0.38458816819557473,
+        "signAccuracy": 0.9240710823909531,
+        "negativeSignAccuracy": 0.5908134642356241,
+        "negatives": 2852,
+        "coverage": 0.8128116878555876,
+        "coveredOnly": {
+          "n": 23144,
+          "rmse": 0.3145314878523126,
+          "mae": 0.20180813601797667,
+          "pcc": 0.4034004261067963,
+          "signAccuracy": 0.9370463187003111,
+          "negativeSignAccuracy": 0.5756476683937823,
+          "negatives": 1930
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9463537300922018,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9335664335664322,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.36906431426375996,
+          "mae": 0.19515828401040503,
+          "pcc": 0.1926440097162009,
+          "signAccuracy": 0.9059554842590736,
+          "negativeSignAccuracy": 0.4432624113475177,
+          "negatives": 564,
+          "coverage": 0.43392821335472226
+        },
+        "latencyMs": {
+          "median": 1.885874999978114,
+          "p95": 5.661250000001019
+        }
+      },
+      "tuned": {
+        "label": "(e*) Proposed, tuned on 20% (lambda 1.5, depth 2)",
+        "n": 28474,
+        "rmse": 0.3358689195786583,
+        "mae": 0.19385149610171085,
+        "pcc": 0.35519419089675036,
+        "signAccuracy": 0.902577790264803,
+        "negativeSignAccuracy": 0.4396914446002805,
+        "negatives": 2852,
+        "coverage": 0.6257638547446793,
+        "coveredOnly": {
+          "n": 17818,
+          "rmse": 0.31248239651844845,
+          "mae": 0.20619752497474458,
+          "pcc": 0.5112614043154581,
+          "signAccuracy": 0.9148613761364912,
+          "negativeSignAccuracy": 0.7862068965517242,
+          "negatives": 1595
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9381391450125703,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9249999999999978,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.33428961068797225,
+          "mae": 0.15940645678764984,
+          "pcc": 0.23055373421556044,
+          "signAccuracy": 0.9003408863043915,
+          "negativeSignAccuracy": 0.17375886524822695,
+          "negatives": 564,
+          "coverage": 0.21375576498897134
+        },
+        "latencyMs": {
+          "median": 0.20083299999987503,
+          "p95": 1.1367920000047889
+        }
+      },
+      "communityTuned": {
+        "label": "(g*) Proposed + community fallback, tuned on 20% (lambda 1.5, depth 2)",
+        "n": 28474,
+        "rmse": 0.32637309107202955,
+        "mae": 0.19845894751696433,
+        "pcc": 0.43718455743401025,
+        "signAccuracy": 0.9038421015663413,
+        "negativeSignAccuracy": 0.6784712482468443,
+        "negatives": 2852,
+        "coverage": 0.6257638547446793,
+        "coveredOnly": {
+          "n": 17818,
+          "rmse": 0.31248239651844845,
+          "mae": 0.20619752497474458,
+          "pcc": 0.5112614043154581,
+          "signAccuracy": 0.9148613761364912,
+          "negativeSignAccuracy": 0.7862068965517242,
+          "negatives": 1595
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9453478625314307,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9311188811188797,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.3657865705956256,
+          "mae": 0.18174676405852916,
+          "pcc": 0.2346616050399228,
+          "signAccuracy": 0.9055544415480249,
+          "negativeSignAccuracy": 0.4698581560283688,
+          "negatives": 564,
+          "coverage": 0.21375576498897134
+        },
+        "latencyMs": {
+          "median": 0.20083299999987503,
+          "p95": 1.1367920000047889
+        }
+      },
+      "communityCalibrated": {
+        "label": "(g*c) (g*) + linear calibration fitted on 20%",
+        "n": 28474,
+        "rmse": 0.317018061411194,
+        "mae": 0.17318241205052212,
+        "pcc": 0.46957729985069613,
+        "signAccuracy": 0.913254196811126,
+        "negativeSignAccuracy": 0.6104488078541375,
+        "negatives": 2852,
+        "coverage": 0.6257638547446793,
+        "coveredOnly": {
+          "n": 17818,
+          "rmse": 0.2966929293304251,
+          "mae": 0.16580443535349354,
+          "pcc": 0.5112614043154735,
+          "signAccuracy": 0.9299023459423056,
+          "negativeSignAccuracy": 0.664576802507837,
+          "negatives": 1595
+        },
+        "precisionAt5": {
+          "k": 5,
+          "sources": 1193,
+          "precision": 0.9490360435875924,
+          "baseRate": 0.9162459514936925
+        },
+        "precisionAt10": {
+          "k": 10,
+          "sources": 572,
+          "precision": 0.9360139860139848,
+          "baseRate": 0.8928607356064605
+        },
+        "coldStart": {
+          "n": 4987,
+          "rmse": 0.3635251017093188,
+          "mae": 0.17014029022218127,
+          "pcc": 0.24847268721998061,
+          "signAccuracy": 0.9041507920593543,
+          "negativeSignAccuracy": 0.4397163120567376,
+          "negatives": 564,
+          "coverage": 0.21375576498897134
+        },
+        "latencyMs": {
+          "median": 0.20083299999987503,
+          "p95": 1.1367920000047889
+        }
+      }
+    }
+  },
+  "paperTableIV": {
+    "Reciprocal": [
+      0.32,
+      0.46
+    ],
+    "PageRank": [
+      0.37,
+      0.07
+    ],
+    "Signed-HITS": [
+      0.37,
+      0.34
+    ],
+    "Bias&Deserve": [
+      0.36,
+      0.32
+    ],
+    "TidalTrust": [
+      0.39,
+      0.38
+    ],
+    "EigenTrust": [
+      0.37,
+      0.01
+    ],
+    "MDS": [
+      0.35,
+      0.41
+    ],
+    "Goodness": [
+      0.32,
+      0.48
+    ],
+    "FxG": [
+      0.31,
+      0.49
+    ]
+  }
+}
