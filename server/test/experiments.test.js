@@ -70,7 +70,7 @@ test('reads .csv and .csv.gz alike: same text, MD5 of the uncompressed CSV, line
   }
 });
 
-test('graph conversion follows CLAUDE.md: weight rating/10, > 0 positive, <= 0 negative |rating|/10, nothing referred', () => {
+test('graph conversion follows the dataset mapping: weight rating/10, > 0 positive, <= 0 negative |rating|/10, nothing referred', () => {
   const graph = buildRatingGraph(parseRatings(csv([[1, 2, 7], [1, 3, -3], [1, 4, -10]])));
   assert.deepEqual(graph.out['1'], [
     { to: '2', weight: 0.7, positive: 0.7, negative: 0, referred: false },

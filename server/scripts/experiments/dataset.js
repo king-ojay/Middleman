@@ -1,4 +1,4 @@
-// Public signed-network datasets for Part A (CLAUDE.md, "Evaluation design").
+// Public signed-network datasets for Part A (see the evaluation design in the report).
 // Real data only: nothing here generates or simulates ratings.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
