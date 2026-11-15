@@ -4,7 +4,7 @@
 import { DEFAULTS, computeTrust } from '../../modules/trust/computeTrust.js';
 
 /**
- * Converts ratings exactly as CLAUDE.md says: weight = rating/10; rating > 0
+ * Converts ratings as the evaluation design specifies: weight = rating/10; rating > 0
  * is positive evidence of rating/10; rating <= 0 is negative evidence of
  * |rating|/10. Every member is one node type. There are no referral edges, no
  * areas and no verification, so `in` (area trust) and `users` stay empty and

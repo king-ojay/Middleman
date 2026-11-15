@@ -1,5 +1,5 @@
 // Metrics for leave-one-out predictions. truth and predictions are on [-1, 1].
-// A rating counts as negative when it is <= 0 (CLAUDE.md mapping), and so
+// A rating counts as negative when it is <= 0 (the dataset mapping), and so
 // does a prediction: sign agreement means both > 0 or both <= 0.
 
 /** RMSE (0-2) and Pearson correlation, as in Kumar et al. 2016, plus MAE and sign accuracy. */

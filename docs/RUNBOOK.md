@@ -58,7 +58,7 @@ node scripts/experiments/run.js --dataset bitcoinalpha                        # 
   metrics only). Commit only the runs you report. The JSON records the git
   commit and a hash of the experiment code, and flags a dirty `server/` tree.
 - Compare against Kumar et al. (2016) Table IV only (unsupervised
-  leave-one-out). Reported OTC numbers are in CLAUDE.md / the README.
+  leave-one-out). Reported OTC numbers are in the README.
 
 ## 3. Start a pilot session
 
