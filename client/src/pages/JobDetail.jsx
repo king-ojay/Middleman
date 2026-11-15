@@ -8,14 +8,14 @@ import { DELETED_USER, firstName } from '../greeting.js';
 import { formatRwf, timeAgo } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
-  Avatar, Button, Card, FormField, JobStepper, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, Switch, TextArea,
+  Avatar, Badge, Button, Card, FormField, JobStepper, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, Switch, TextArea,
   VerifiedBadge
 } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
 import ReportProblem from '../components/ReportProblem.jsx';
 import DisputeSummary from '../components/DisputeSummary.jsx';
 import LoadError from '../components/LoadError.jsx';
-import RankedItem from '../components/RankedItem.jsx';
+import TrustPath from '../components/TrustPath.jsx';
 import ProfileButton from '../components/ProfileButton.jsx';
 import { reasonSentence, topLabel } from '../trustReason.js';
 
@@ -64,22 +64,15 @@ export default function JobDetail() {
   const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
   if (error) return <PageLayout {...layout} title="Job"><LoadError prefix="Couldn't load this job" error={error} retrying={retrying} onRetry={tryAgain} /></PageLayout>;
-  if (!job && isClient && expectOffers) return <PageLayout {...layout} title="Offers for your job"><OffersSkeleton /></PageLayout>;
+  if (!job && isClient && expectOffers) return <PageLayout {...layout}><OffersSkeleton /></PageLayout>;
   if (!job) return <PageLayout {...layout}><JobSkeleton /></PageLayout>;
 
   if (isClient && job.status === 'open') {
     return (
-      <PageLayout {...layout} title="Offers for your job">
-        <div className="bg-mint rounded-card p-5 flex items-center justify-between gap-4 mb-6">
-          <div className="min-w-0">
-            <h2 className="text-card text-heading">{job.description}</h2>
-            <p className="text-body text-muted">{categoryLabel(job.category)} · {areaLabel(job.area)}</p>
-          </div>
-          {/* the label sits with the amount it describes */}
-          <div className="shrink-0 text-right">
-            <p className="text-small text-muted">Your price</p>
-            <p className="text-section text-heading whitespace-nowrap">{formatRwf(job.proposedPrice)}</p>
-          </div>
+      <PageLayout {...layout} eyebrow="Offers for your job" title={job.description} subtitle={`${categoryLabel(job.category)} · ${areaLabel(job.area)}`}>
+        <div className="-mt-2 mb-6">
+          <p className="text-small text-muted">Your price</p>
+          <p className="text-amount-xl text-ink whitespace-nowrap">{formatRwf(job.proposedPrice)}</p>
         </div>
         <Offers job={job} onChosen={load} />
       </PageLayout>
@@ -104,10 +97,10 @@ export default function JobDetail() {
       ) : (
         <>
           <Card className="p-5">
-            <p className="text-body font-medium text-heading">{statusLabel(job.status, user.role)}</p>
+            <p className="text-body font-medium text-ink">{statusLabel(job.status, user.role)}</p>
             {escrowNote && <p className="text-body text-muted mt-1">{escrowNote}</p>}
             <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
-            <p className="text-title text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
+            <p className="text-amount text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
             {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
             <JobActions job={job} role={user.role} onChange={load} stalled={stalled} />
           </Card>
@@ -168,51 +161,67 @@ function JobSkeleton() {
   );
 }
 
-// The shape of the open-job page with offers: the mint job summary, the
-// note, and offer cards in one column.
+// The shape of the open-job page with offers: the title, the price, the
+// most trusted offer's large card, then smaller offer cards.
 function OffersSkeleton() {
   return (
     <LoadingState label="Loading offers">
-      <Skeleton on="canvas" className="h-[88px] w-full rounded-card mb-6" />
-      <div>
-        <SkeletonText on="canvas" className="w-56" />
-        <SkeletonText on="canvas" className="w-72 mb-3" />
-        <ul className="grid gap-3">
-          {[0, 1, 2].map(i => (
-            <Card as="li" key={i} className="p-5">
-              <div className="flex items-start gap-3">
-                <Skeleton className="w-11 h-11 shrink-0 rounded-full" />
-                <div className="min-w-0 flex-1">
-                  <SkeletonText size="card" className="w-1/2" />
-                  <SkeletonText className="w-1/3" />
-                  <SkeletonText className="w-full mt-1" />
-                </div>
+      <SkeletonText on="canvas" className="w-40" />
+      <SkeletonText size="display" on="canvas" className="w-3/4" />
+      <SkeletonText on="canvas" className="w-1/2 mt-2" />
+      <SkeletonText size="small" on="canvas" className="w-20 mt-4" />
+      <Skeleton on="canvas" className="h-11 w-48 mb-6 rounded-full" />
+      <ul className="grid gap-3">
+        <Card as="li" className="p-5">
+          <Skeleton className="w-44 h-[26px] rounded-full" />
+          <div className="flex items-center gap-3 mt-4">
+            <Skeleton className="w-[52px] h-[52px] shrink-0 rounded-full" />
+            <SkeletonText size="section" className="flex-1" />
+            <SkeletonText size="title" className="w-28" />
+          </div>
+          <Skeleton className="h-[72px] w-full mt-4 rounded-tile" />
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            <Skeleton className="h-14 rounded-full" />
+            <Skeleton className="h-14 col-span-2 rounded-full" />
+          </div>
+        </Card>
+        {[0, 1].map(i => (
+          <Card as="li" key={i} className="p-4">
+            <div className="flex items-start gap-3">
+              <Skeleton className="w-11 h-11 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1">
+                <SkeletonText size="card" className="w-1/2" />
+                <SkeletonText className="w-full mt-1" />
               </div>
-              <div className="flex items-end justify-between gap-4 pt-4">
-                <div className="flex-1">
-                  <SkeletonText size="title" className="w-32" />
-                  <SkeletonText className="w-24" />
-                </div>
-                <div className="flex gap-2">
-                  <Skeleton className="h-11 w-32 rounded-full" />
-                  <Skeleton className="h-11 w-24 rounded-full" />
-                </div>
-              </div>
-            </Card>
-          ))}
-        </ul>
-      </div>
+            </div>
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <SkeletonText size="card" className="w-40" />
+              <Skeleton className="h-11 w-24 rounded-full" />
+            </div>
+          </Card>
+        ))}
+      </ul>
     </LoadingState>
   );
 }
 
-// "Your price", "2,000 RWF more" or "1,500 RWF less" than the client's price.
-const comparedWithYours = (amount, proposed) =>
-  amount === proposed ? 'Your price' : `${formatRwf(Math.abs(amount - proposed))} ${amount > proposed ? 'more' : 'less'}`;
+// How an offer compares with the client's price, as a small tinted label:
+// the same ("Your price"), above it in amber, below it in green.
+function PriceDifference({ amount, proposed, top = false }) {
+  if (amount === proposed) return <Badge tone={top ? 'trust' : 'soft'}>{top ? 'Accepts your price' : 'Your price'}</Badge>;
+  const more = amount > proposed;
+  return <Badge tone={more ? 'action' : 'trust'}>{formatRwf(Math.abs(amount - proposed))} {more ? 'more' : 'less'}</Badge>;
+}
+
+const ShieldIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 mt-0.5">
+    <path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6l-7-3Z" /><path d="m9 12 2 2 4-4" />
+  </svg>
+);
 
 // Every worker response to the client's price, in trust order (FR-05b), each
-// with why that worker ranks there. The first gets the emphasised card when
-// they are trusted through the network or the area.
+// with why that worker ranks there. The first gets the large card when they
+// are trusted through the network or the area.
 function Offers({ job, onChosen }) {
   const [choosing, setChoosing] = useState(null);
   const [error, setError] = useState('');
@@ -235,44 +244,83 @@ function Offers({ job, onChosen }) {
 
   return (
     <>
-      <p className="text-body text-muted">Ranked by trust in your network</p>
-      <p className="text-body text-muted mb-3">Choosing an offer fixes the price. You then pay it into escrow.</p>
+      <h2 className="text-section text-ink mb-3">Ranked by trust in your network</h2>
       {error && <p className="text-body text-danger mb-3" role="alert">{error}</p>}
       <ul className="grid gap-3">
         {job.responses.map((r, i) => {
           const label = i === 0 ? topLabel(r.reason) : null;
-          return (
-            <RankedItem key={r._id} highlighted={Boolean(label)} className="p-5">
-              {label && <p className="text-label font-semibold text-heading mb-2">{label}</p>}
-              <div className="flex items-start gap-3">
-                <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
-                <div className="min-w-0">
-                  <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
-                  <p className="text-body text-muted">{(r.worker.skills || []).map(categoryLabel).join(', ')} · {areaLabel(r.worker.area)}</p>
-                  <p className="text-body text-ink mt-1">{reasonSentence(r.reason)}</p>
-                  {r.worker.verifiedStatus === 'verified' && <div className="mt-2"><VerifiedBadge /></div>}
-                </div>
-              </div>
-              {/* On a phone the buttons wrap under the amount rather than squeeze it. */}
-              <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 pt-4">
-                <div className="shrink-0">
-                  <p className="text-title text-ink whitespace-nowrap">{formatRwf(r.amount)}</p>
-                  <p className="text-body font-medium text-heading">{comparedWithYours(r.amount, job.proposedPrice)}</p>
-                  {r.depositAmount > 0 && <p className="text-body text-muted">Needs {formatRwf(r.depositAmount)} upfront for materials</p>}
-                </div>
-                {/* Choose stays the main action; View profile sits beside it in outline. */}
-                <div className="flex flex-wrap justify-end gap-2 ml-auto">
-                  <ProfileButton worker={r.worker} />
-                  <Button size="md" disabled={choosing !== null} onClick={() => choose(r._id)}>
-                    {choosing === r._id ? 'Choosing…' : 'Choose'}
-                  </Button>
-                </div>
-              </div>
-            </RankedItem>
-          );
+          const props = { offer: r, job, busy: choosing !== null, choosing: choosing === r._id, onChoose: () => choose(r._id) };
+          return label ? <TopOffer key={r._id} label={label} {...props} /> : <OfferCard key={r._id} {...props} />;
         })}
       </ul>
+      <p className="flex items-start gap-2 text-body text-muted mt-5">
+        <ShieldIcon />
+        Choosing an offer fixes the price. You then pay it into escrow.
+      </p>
     </>
+  );
+}
+
+const Deposit = ({ offer }) => offer.depositAmount > 0
+  ? <p className="text-body text-muted mt-2">Needs {formatRwf(offer.depositAmount)} upfront for materials</p>
+  : null;
+
+// The most trusted offer: chip and price comparison, who, the amount, the
+// path and sentence on a grey inset, then "Profile" (a third) and "Choose".
+function TopOffer({ offer: r, job, label, busy, choosing, onChoose }) {
+  return (
+    <Card as="li" className="p-5">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge tone="trust">{label}</Badge>
+        <PriceDifference amount={r.amount} proposed={job.proposedPrice} top />
+        {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
+      </div>
+      <div className="flex items-center gap-3 mt-4">
+        <Avatar name={r.worker.name} tier={r.trustSource} size={52} />
+        <div className="min-w-0 flex-1">
+          <Link to={`/people/${r.worker._id}`} className="block text-section text-ink hover:underline">{r.worker.name}</Link>
+          <p className="text-small text-muted">{(r.worker.skills || []).map(categoryLabel).join(', ')} · {areaLabel(r.worker.area)}</p>
+        </div>
+      </div>
+      <p className="text-amount text-ink whitespace-nowrap mt-4">{formatRwf(r.amount)}</p>
+      <Deposit offer={r} />
+      <div className="flex items-center gap-3 bg-soft rounded-tile p-3 mt-4">
+        <TrustPath reason={r.reason} ring="ring-soft" />
+        <p className="text-body text-ink">{reasonSentence(r.reason)}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2 mt-4">
+        <ProfileButton worker={r.worker} label="Profile" size="lg" />
+        <Button className="col-span-2" disabled={busy} onClick={onChoose}>
+          {choosing ? 'Choosing…' : `Choose ${firstName(r.worker)}`}
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+// Any other offer: who, why, the amount with how it compares, and "Choose".
+function OfferCard({ offer: r, job, busy, choosing, onChoose }) {
+  return (
+    <Card as="li" className="p-4">
+      <div className="flex items-start gap-3">
+        <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
+        <div className="min-w-0 flex-1">
+          <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
+          {r.worker.verifiedStatus === 'verified' && <div className="mt-1"><VerifiedBadge /></div>}
+          <p className="text-body text-muted mt-1">{reasonSentence(r.reason)}</p>
+          <Deposit offer={r} />
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-card font-extrabold text-ink whitespace-nowrap">{formatRwf(r.amount)}</p>
+          <PriceDifference amount={r.amount} proposed={job.proposedPrice} />
+        </div>
+        <Button variant="secondary" size="md" disabled={busy} onClick={onChoose}>
+          {choosing ? 'Choosing…' : <>Choose<span className="sr-only"> {r.worker.name}</span></>}
+        </Button>
+      </div>
+    </Card>
   );
 }
 
@@ -313,15 +361,15 @@ function ConfirmAndRate({ job, onChange, stalled }) {
 
   return (
     <>
-      <div className="bg-mint rounded-card p-5 mb-8">
-        <p className="text-card text-heading">{confirmed ? 'You confirmed this job' : `${worker} marked this job complete`}</p>
-        <p className="text-body text-muted mt-1">
+      <div className="bg-trust text-on-trust rounded-card p-5 mb-8">
+        <p className="text-card">{confirmed ? 'You confirmed this job' : `${worker} marked this job complete`}</p>
+        <p className="text-body mt-1">
           {paying ? `Paying ${worker} from escrow… You can send your rating once the payment arrives.`
             : confirmed ? `${worker} has been paid. Send your rating to finish.`
             : `Confirming pays ${worker} from escrow.`}
         </p>
-        <p className="text-title text-heading mt-3">{formatRwf(job.agreedPrice)}</p>
-        <p className="text-small text-muted">agreed price</p>
+        <p className="text-amount mt-3">{formatRwf(job.agreedPrice)}</p>
+        <p className="text-small">agreed price</p>
       </div>
 
       <h2 className="text-section text-ink mb-2">How was {worker}'s work?</h2>

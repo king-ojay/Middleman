@@ -2,7 +2,7 @@
 // sandbox (or the fake provider), so no real money ever moves.
 export default function SandboxBanner() {
   return (
-    <p role="note" className="bg-accent-soft text-heading text-micro text-center px-4 py-1.5">
+    <p role="note" className="bg-warn text-on-warn text-micro text-center px-4 py-1.5">
       Sandbox – no real money
     </p>
   );

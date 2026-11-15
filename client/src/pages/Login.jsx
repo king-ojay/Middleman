@@ -36,7 +36,7 @@ export default function Login() {
       {/* from 1024px the logo and the trust card are on the side panel */}
       <div className="flex items-center gap-3 mb-12 lg:hidden">
         <LogoMark size={36} />
-        <span className="text-title text-heading">Middleman</span>
+        <span className="text-title text-ink">Middleman</span>
       </div>
 
       <h1 className="text-display tracking-tight text-ink">Welcome back</h1>
@@ -78,17 +78,17 @@ export default function Login() {
         </div>
       </form>
       <div className="flex flex-col items-center mt-4">
-        <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted hover:text-heading hover:underline">Forgot your PIN?</Link>
-        <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-heading hover:underline">New here? Create an account</Link>
+        <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted hover:text-ink hover:underline">Forgot your PIN?</Link>
+        <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-ink hover:underline">New here? Create an account</Link>
       </div>
 
       <section className="mt-12 bg-brand rounded-hero p-6 lg:hidden">
         <h2 className="text-title text-on-brand-soft">Find someone trusted by people you trust.</h2>
-        <p className="text-body text-white mt-2">See the workers your network already trusts.</p>
-        <div className="mt-5 flex items-center gap-3 bg-white/10 rounded-card p-3">
+        <p className="text-body text-on-brand mt-2">See the workers your network already trusts.</p>
+        <div className="mt-5 flex items-center gap-3 bg-on-brand/10 rounded-card p-3">
           <Avatar name="Eric Habimana" tier="area" size={44} />
           <div>
-            <p className="text-body font-semibold text-white">Eric Habimana</p>
+            <p className="text-body font-semibold text-on-brand">Eric Habimana</p>
             <p className="text-small text-on-brand-soft">Trusted in your network</p>
           </div>
         </div>

@@ -1,5 +1,5 @@
-// The researcher's page, separate from the user app: verify workers met in
-// person (FR-04), settle disputes (FR-14) and delete accounts. It asks for ADMIN_SECRET and
+// The researcher's page, separate from the user app: verify workers after a
+// manual review (FR-04), settle disputes (FR-14) and delete accounts. It asks for ADMIN_SECRET and
 // keeps it in memory only, so it is gone on reload or "Lock". Uses the
 // existing admin routes (adminAuth.js); not linked from any tab bar.
 import { useEffect, useState } from 'react';
@@ -99,7 +99,7 @@ function Verification({ secret }) {
       <p className="text-body text-muted mb-4">Workers not yet verified. Mark one only after reviewing them.</p>
       {error && <LoadError prefix="Couldn't load workers" error={error} retrying={retrying} onRetry={tryAgain} />}
       {!error && !items && <p className="text-body text-muted">Loading…</p>}
-      {done && <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mb-3" role="status">{done}</p>}
+      {done && <p className="text-body text-on-trust bg-trust rounded-field px-4 py-3 mb-3" role="status">{done}</p>}
       {actionError && <p className="text-body text-danger mb-3" role="alert">{actionError}</p>}
       {items?.length === 0 && <p className="text-body text-muted">Every worker is verified.</p>}
       {items?.length > 0 && (
@@ -160,7 +160,7 @@ function Disputes({ secret }) {
       <p className="text-body text-muted mb-4">Jobs where someone reported a problem. The money stays locked until you settle it.</p>
       {error && <LoadError prefix="Couldn't load disputes" error={error} retrying={retrying} onRetry={tryAgain} />}
       {!error && !items && <p className="text-body text-muted">Loading…</p>}
-      {done && <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mb-3" role="status">{done}</p>}
+      {done && <p className="text-body text-on-trust bg-trust rounded-field px-4 py-3 mb-3" role="status">{done}</p>}
       {items?.length === 0 && <p className="text-body text-muted">No open disputes.</p>}
       {items?.length > 0 && (
         <ul className="grid gap-3">
@@ -304,7 +304,7 @@ function DeleteAccount({ secret }) {
         </FormField>
         <Button type="submit" size="md" variant="outline" className="h-[54px]" disabled={checking || !phone}>{checking ? 'Checking…' : 'Check'}</Button>
       </form>
-      {done && <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mt-4" role="status">{done}</p>}
+      {done && <p className="text-body text-on-trust bg-trust rounded-field px-4 py-3 mt-4" role="status">{done}</p>}
       {error && !confirming && <p className="text-body text-danger mt-4" role="alert">{error}</p>}
 
       {preview && (

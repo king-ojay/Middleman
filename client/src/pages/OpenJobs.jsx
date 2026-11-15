@@ -75,9 +75,9 @@ export default function OpenJobs() {
           onChange={e => setQuery(e.target.value)}
           maxLength={100}
           placeholder="Search jobs, e.g. tap"
-          className="w-full h-14 bg-surface rounded-full shadow-card pl-5 pr-16 text-body text-ink placeholder:text-faint focus:outline-none"
+          className="w-full h-14 bg-surface border border-field rounded-full pl-5 pr-16 text-body text-ink placeholder:text-faint focus:outline-none"
         />
-        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-accent text-on-accent flex items-center justify-center transition-[filter] hover:brightness-95 active:brightness-90">
+        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-ink text-on-ink flex items-center justify-center transition-opacity hover:opacity-90 active:opacity-80">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
             <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -86,13 +86,13 @@ export default function OpenJobs() {
       {q && (
         <p className="text-small text-muted mb-2" role="status">
           Showing jobs matching “{q}”.{' '}
-          <button type="button" onClick={clearSearch} className="font-semibold text-heading underline">Clear</button>
+          <button type="button" onClick={clearSearch} className="font-semibold text-ink underline">Clear</button>
         </p>
       )}
 
       <div className="flex items-center justify-between gap-3 mt-2">
         <p className="text-body text-muted min-w-0">{areaText} · {tradeText} · {sortText}</p>
-        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(v => !v)} className="h-11 px-1 shrink-0 text-body font-semibold text-heading hover:underline">
+        <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(v => !v)} className="h-11 px-1 shrink-0 text-body font-semibold text-ink hover:underline">
           {showFilters ? 'Done' : 'Filters'}
         </button>
       </div>
@@ -115,7 +115,7 @@ export default function OpenJobs() {
             ))}
           </ChipRow>
           {!isDefault && (
-            <button type="button" onClick={() => { setFilters(DEFAULTS); clearSearch(); }} className="h-11 px-1 text-body font-semibold text-heading hover:underline">
+            <button type="button" onClick={() => { setFilters(DEFAULTS); clearSearch(); }} className="h-11 px-1 text-body font-semibold text-ink hover:underline">
               Back to jobs near you
             </button>
           )}
@@ -125,7 +125,7 @@ export default function OpenJobs() {
       <div className="mt-4">
         {loading && (
           <LoadingState label="Loading jobs">
-            <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <ul className="grid gap-3 md:grid-cols-2">
               {[0, 1, 2].map(i => <JobCardSkeleton key={i} />)}
             </ul>
           </LoadingState>
@@ -140,10 +140,10 @@ export default function OpenJobs() {
         )}
       </div>
 
-      <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <ul className="grid gap-3 md:grid-cols-2">
         {!loading && jobs.map(job => (
           <Card as="li" key={job._id} className="p-5 flex flex-col">
-            {job.myResponse && <div className="mb-2"><Badge tone="mint">You responded</Badge></div>}
+            {job.myResponse && <div className="mb-2"><Badge tone="trust">You responded</Badge></div>}
             <h2 className="text-card text-ink break-words">{job.description}</h2>
             <p className="text-body text-muted mt-1">
               {categoryLabel(job.category)} · {areaLabel(job.area)} · posted {timeAgo(job.createdAt)}
@@ -158,7 +158,7 @@ export default function OpenJobs() {
             {/* mt-auto: in a row of cards, prices and actions line up at the bottom */}
             <div className="mt-auto">
               <p className="text-small text-muted mt-4">Client's price</p>
-              <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
+              <p className="text-amount text-ink">{formatRwf(job.proposedPrice)}</p>
               {job.canRespond || job.myResponse
                 ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
                 : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
@@ -205,7 +205,7 @@ function ResponseControls({ job, onSent }) {
   if (job.myResponse) {
     const r = job.myResponse;
     return (
-      <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mt-4">
+      <p className="text-body text-on-trust bg-trust rounded-field px-4 py-3 mt-4">
         {r.isCounter ? `You countered at ${formatRwf(r.amount)}` : `You accepted ${formatRwf(r.amount)}`}
         {r.depositAmount > 0 && `, needing ${formatRwf(r.depositAmount)} upfront for materials`}. Waiting for the client to choose.
       </p>

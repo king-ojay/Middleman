@@ -83,13 +83,16 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
 
   await test.step('5. the client sees the ranked offers with the reason sentence', async () => {
     await asClient.getByRole('link', { name: 'See offers' }).click();
-    await expect(asClient.getByRole('heading', { name: 'Offers for your job' })).toBeVisible();
+    await expect(asClient.getByText('Offers for your job')).toBeVisible();
+    await expect(asClient.getByRole('heading', { name: JOB })).toBeVisible();
+    await expect(asClient.getByText(PRICE).first()).toBeVisible(); // "Your price" in the header
     jobUrl = asClient.url();
     const offer = asClient.getByRole('listitem').filter({ hasText: worker.name });
     await expect(offer.getByText('Most trusted for you')).toBeVisible();
     await expect(offer.getByText('You invited Walter.')).toBeVisible();
-    await expect(offer.getByText('Your price')).toBeVisible();
-    await expect(offer.getByRole('link', { name: `View profile of ${worker.name}` })).toBeVisible();
+    await expect(offer.getByText('Accepts your price')).toBeVisible();
+    await expect(offer.getByRole('link', { name: `Profile of ${worker.name}` })).toBeVisible();
+    await expect(offer.getByRole('button', { name: `Choose ${worker.name.split(' ')[0]}` })).toBeVisible();
     await asClient.screenshot({ path: '.logs/05-offers.png', fullPage: true });
   });
 
@@ -134,12 +137,13 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
   await test.step("11. the worker's Transactions page shows the payment received", async () => {
     await asWorker.getByRole('link', { name: 'View transactions' }).click();
     await expect(asWorker.getByRole('heading', { name: 'Transactions' })).toBeVisible();
-    const row = asWorker.getByRole('listitem').filter({ hasText: 'Received' });
+    await expect(asWorker.getByText('Only you can see this')).toBeVisible();
+    const row = asWorker.getByRole('listitem').filter({ has: asWorker.getByRole('link', { name: JOB }) });
     await expect(row).toHaveCount(1);
-    await expect(row.getByRole('link', { name: JOB })).toBeVisible();
-    await expect(row).toContainText(`from ${client.name.split(' ')[0]} ${client.name.split(' ')[1][0]}.`);
+    await expect(row).toContainText(`From ${client.name.split(' ')[0]} ${client.name.split(' ')[1][0]}.`);
     await expect(row).toContainText(`+${PRICE}`);
-    await expect(row).toContainText('Completed');
+    await expect(row).toContainText('Received');
+    await expect(row.getByText('Released (done)')).toHaveCount(1);
     await expect(asWorker.getByText('1 completed job')).toBeVisible();
     await asWorker.screenshot({ path: '.logs/11-transactions.png', fullPage: true });
   });

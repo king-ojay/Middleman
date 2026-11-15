@@ -29,7 +29,7 @@ export default function TrustGraphMark({ className = '' }) {
       <circle cx="90" cy="112" r="24" className="fill-signal" />
       <text x="40" y="34" textAnchor="middle" className="fill-brand font-sans text-micro font-semibold">You</text>
       <text x="150" y="34" textAnchor="middle" className="fill-brand font-sans text-micro font-semibold">Amina</text>
-      <text x="90" y="116" textAnchor="middle" className="fill-on-signal font-sans text-micro font-semibold">Eric</text>
+      <text x="90" y="116" textAnchor="middle" className="fill-on-ink font-sans text-micro font-semibold">Eric</text>
     </svg>
   );
 }
@@ -40,7 +40,7 @@ export default function TrustGraphMark({ className = '' }) {
 export function TrustExample({ markClassName = '' }) {
   return (
     <>
-      <h2 className="text-section text-white">Because you trust Amina, you can trust Eric</h2>
+      <h2 className="text-section text-on-brand">Because you trust Amina, you can trust Eric</h2>
       <TrustGraphMark className={`w-full h-auto mt-4 ${markClassName}`} />
       {/* caption for the dashed line, outside the picture so it stays caption-sized */}
       <p className="flex items-center gap-2 text-small text-on-brand-soft mt-2">
@@ -49,7 +49,7 @@ export function TrustExample({ markClassName = '' }) {
         </svg>
         Inferred from Amina's trust
       </p>
-      <p className="text-body text-white mt-4">You know Amina, and Amina has worked with Eric. She hired him and rated him highly.</p>
+      <p className="text-body text-on-brand mt-4">You know Amina, and Amina has worked with Eric. She hired him and rated him highly.</p>
       <p className="text-small text-on-brand-soft mt-1">Because you trust Amina, Eric ranks higher for you, even though you have never met him.</p>
     </>
   );

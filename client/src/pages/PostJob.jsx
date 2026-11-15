@@ -40,12 +40,12 @@ export default function PostJob() {
   return (
     <PageLayout title="Post a job" subtitle="Takes under a minute." tabBar role="client" width="medium">
       {posted && (
-        <div role="status" className="bg-mint rounded-card p-4 mb-6">
-          <p className="text-card text-heading">Job posted</p>
-          <p className="text-body text-ink mt-1">
+        <div role="status" className="bg-trust text-on-trust rounded-card p-5 mb-6">
+          <p className="text-card">Job posted</p>
+          <p className="text-body mt-1">
             “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatRwf(posted.proposedPrice)}
           </p>
-          <p className="text-body text-muted mt-1">
+          <p className="text-body mt-1">
             {posted.matchingWorkers.length > 0
               ? `Visible to ${posted.matchingWorkers.length} ${categoryLabel(posted.category).toLowerCase()} worker${posted.matchingWorkers.length === 1 ? '' : 's'} in ${areaLabel(posted.area)}.`
               : `No ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)} yet.`}

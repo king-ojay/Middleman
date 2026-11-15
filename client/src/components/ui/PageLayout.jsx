@@ -16,7 +16,7 @@ function BackButton({ back }) {
       type="button"
       onClick={goBack}
       aria-label="Back"
-      className="-ml-3 w-11 h-11 inline-flex items-center justify-center rounded-full text-ink transition-colors hover:bg-soft"
+      className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-surface text-ink transition-colors hover:bg-soft"
     >
       <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
         <path d="M10 2 2 10l8 8" className="stroke-current" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -27,26 +27,27 @@ function BackButton({ back }) {
 
 // Content width from 768px up. Phones always use the full width.
 //   narrow: forms and sign-in (a centred column; the form half of AuthLayout from 1024px)
-//   medium: single-column pages such as a profile or a job
-//   wide:   lists and dashboards (cards flow into columns)
+//   column: every signed-in page and the admin page: a centred column of
+//           720px (plus the side padding) on the grey page
+//   wide:   the landing page
 const WIDTHS = {
   narrow: 'max-w-md md:max-w-xl lg:max-w-lg',
-  medium: 'max-w-3xl',
+  column: 'max-w-[768px] lg:max-w-[800px]',
   wide: 'max-w-[1280px]'
 };
 
 // Screen scaffold: status-safe top padding, optional back chevron and right
 // slot, eyebrow + title + subtitle, content, and the role's navigation
-// (bottom tab bar on phones, top bar from 768px).
+// (floating buttons on phones and tablets, a top bar from 1024px).
 export default function PageLayout({ back, right, eyebrow, title, subtitle, tabBar, role, width, children }) {
   const hasHeaderRow = back || right;
-  const size = width || (tabBar ? 'wide' : 'narrow');
+  const size = tabBar || width === 'medium' ? 'column' : width || 'narrow';
   return (
     <>
       {tabBar && <TabBar role={role} />}
       {/* Side padding matches the top bar (24px, 40px from 1024px) so content lines up with the logo. */}
       <div className={`mx-auto w-full ${WIDTHS[size]}`}>
-        <div className={`px-screen lg:px-10 pt-[max(env(safe-area-inset-top),24px)] md:pt-8 ${tabBar ? 'pb-[calc(100px+env(safe-area-inset-bottom))] md:pb-12' : 'pb-10'}`}>
+        <div className={`px-screen lg:px-10 pt-[max(env(safe-area-inset-top),24px)] lg:pt-6 ${tabBar ? 'pb-[calc(100px+env(safe-area-inset-bottom))] lg:pb-12' : 'pb-10'}`}>
           {hasHeaderRow && (
             <div className="flex items-center justify-between h-11 mb-4">
               <div>{back && <BackButton back={back} />}</div>

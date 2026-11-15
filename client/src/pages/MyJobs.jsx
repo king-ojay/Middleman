@@ -57,7 +57,7 @@ export default function MyJobs() {
           <div className="py-1 mb-5 flex gap-2 overflow-hidden">
             {[0, 1, 2, 3].map(i => <Skeleton key={i} on="canvas" className="h-11 w-28 shrink-0 rounded-full" />)}
           </div>
-          <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <ul className="grid gap-3 md:grid-cols-2">
             {[0, 1, 2].map(i => <JobCardSkeleton key={i} />)}
           </ul>
         </LoadingState>
@@ -90,11 +90,11 @@ export default function MyJobs() {
                   aria-controls="job-group"
                   onClick={() => showTab(g.key)}
                   className={`inline-flex items-center gap-2 h-11 shrink-0 px-4 rounded-full text-label whitespace-nowrap transition-colors ${
-                    selected ? 'bg-brand text-white' : 'bg-surface border border-line text-ink hover:border-heading'
+                    selected ? 'bg-ink text-on-ink' : 'bg-surface border border-line text-ink hover:border-ink'
                   }`}
                 >
                   {g.label}
-                  <span className={`min-w-6 h-6 px-1.5 rounded-full inline-flex items-center justify-center text-micro ${selected ? 'bg-white/20' : 'bg-soft text-muted'}`}>
+                  <span className={`min-w-6 h-6 px-1.5 rounded-full inline-flex items-center justify-center text-micro ${selected ? 'bg-on-ink/20' : 'bg-soft text-muted'}`}>
                     {g.jobs.length}
                   </span>
                 </button>
@@ -106,7 +106,7 @@ export default function MyJobs() {
             {current.jobs.length === 0
               ? <GroupEmpty group={current.key} role={role} groups={groups} showTab={showTab} />
               : (
-                <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                <ul className="grid gap-3 md:grid-cols-2">
                   {current.jobs.map(job => <JobCard key={job._id} job={job} role={role} onChange={load} />)}
                 </ul>
               )}
@@ -118,7 +118,7 @@ export default function MyJobs() {
 }
 
 // Status chip tones (options.js statusChip) as Badge tones.
-const CHIP_TONES = { action: 'action', wait: 'soft', done: 'mint', problem: 'problem' };
+const CHIP_TONES = { action: 'action', wait: 'soft', done: 'trust', problem: 'problem' };
 
 function JobCard({ job, role, onChange }) {
   const isClient = role === 'client';
@@ -146,11 +146,11 @@ function JobCard({ job, role, onChange }) {
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
           <p className="text-small text-muted">{job.agreedPrice != null ? 'Agreed price' : 'Your price'}</p>
-          <p className="text-section text-ink whitespace-nowrap">{formatRwf(price)}</p>
+          <p className="text-card font-extrabold text-ink whitespace-nowrap">{formatRwf(price)}</p>
         </div>
         {money && (
-          <p className="text-label text-heading inline-flex items-center gap-2">
-            <span aria-hidden="true" className={`w-2 h-2 rounded-full ${job.escrow?.status === 'released' ? 'bg-signal' : job.escrow?.status === 'held' ? 'bg-accent' : 'bg-faint'}`} />
+          <p className="text-label text-ink inline-flex items-center gap-2">
+            <span aria-hidden="true" className={`w-2 h-2 rounded-full ${job.escrow?.status === 'released' ? 'bg-signal' : job.escrow?.status === 'held' ? 'bg-ink' : 'bg-faint'}`} />
             <span className="sr-only">Money: </span>{money}
           </p>
         )}
