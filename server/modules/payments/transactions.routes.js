@@ -28,6 +28,8 @@ const TYPES = {
 // A payment into escrow that went through shows where the money is now.
 const FUNDED = { released: 'completed', refunded: 'refunded' };
 const SETTLED = { fund: null, release: 'completed', refund: 'refunded' };
+// Paid in and not yet paid out or refunded (a payout or refund may be on its way).
+const IN_ESCROW = ['held', 'releasing', 'refunding'];
 
 function statusOf(kind, outcome, job) {
   if (!outcome) return 'pending';
@@ -37,7 +39,7 @@ function statusOf(kind, outcome, job) {
 
 /** Every money movement of `userId`'s, newest first, and the totals. */
 export async function transactionsOf(userId) {
-  const jobs = await Job.find({ $or: [{ client: userId }, { worker: userId }] }, 'client worker category description escrow.status')
+  const jobs = await Job.find({ $or: [{ client: userId }, { worker: userId }] }, 'client worker category description disputedAt escrow.status escrow.amount')
     .populate('client', 'name').populate('worker', 'name').lean();
   const byId = new Map(jobs.map(j => [String(j._id), j]));
   const ledger = await Transaction.find({ job: { $in: jobs.map(j => j._id) }, providerRef: { $type: 'string' } }, 'job event amount currency providerRef createdAt')
@@ -65,26 +67,35 @@ export async function transactionsOf(userId) {
       amount,
       currency,
       other: other?.name ? shortName(other.name) : null,
-      job: { _id: job._id, category: job.category, description: job.description }
+      // disputed: a problem was reported on this job (both parties already see that on the job page)
+      job: { _id: job._id, category: job.category, description: job.description, disputed: Boolean(job.disputedAt) }
     };
   }).sort((a, b) => new Date(b.at) - new Date(a.at));
 
   // Money that reached the worker: what the worker earned, what the client paid.
   const done = rows.filter(r => (r.type === 'received' || r.type === 'released') && r.status === 'completed');
-  return {
-    rows,
-    totals: { total: done.reduce((sum, r) => sum + r.amount, 0), jobs: new Set(done.map(r => String(r.job._id))).size }
+  const totals = { total: done.reduce((sum, r) => sum + r.amount, 0), jobs: new Set(done.map(r => String(r.job._id))).size };
+  // The three tiles on the page, from this person's own jobs only: money in
+  // escrow now, money released (the totals above), and money refunded to the
+  // client. Amounts and counts only.
+  const sum = list => ({ total: list.reduce((n, j) => n + (j.escrow?.amount || 0), 0), jobs: list.length });
+  const summary = {
+    inEscrow: sum(jobs.filter(j => IN_ESCROW.includes(j.escrow?.status))),
+    released: totals,
+    refunded: sum(jobs.filter(j => j.escrow?.status === 'refunded'))
   };
+  return { rows, totals, summary };
 }
 
 // ?offset=20 for the next page. `totals` cover every row, not just the page.
 router.get('/', requireUser, async (req, res) => {
   try {
     const offset = Math.max(0, Number.parseInt(req.query.offset, 10) || 0);
-    const { rows, totals } = await transactionsOf(req.user._id);
+    const { rows, totals, summary } = await transactionsOf(req.user._id);
     res.json({
       role: req.user.role,
       totals,
+      summary,
       transactions: rows.slice(offset, offset + PAGE_SIZE),
       nextOffset: offset + PAGE_SIZE < rows.length ? offset + PAGE_SIZE : null
     });

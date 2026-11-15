@@ -6,7 +6,7 @@ const COMPLETED = { quote_accepted: 1, escrow_held: 2, in_progress: 3, awaiting_
 function Check() {
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <path d="m3 7.5 2.5 2.5L11 4.5" className="stroke-on-signal" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m3 7.5 2.5 2.5L11 4.5" className="stroke-on-ink" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -28,7 +28,7 @@ export default function JobStepper({ status }) {
             >
               {isDone && <Check />}
             </span>
-            <span className={`mt-2 text-small ${isCurrent ? 'font-semibold text-heading' : 'text-muted'}`}>
+            <span className={`mt-2 text-small ${isCurrent ? 'font-semibold text-ink' : 'text-muted'}`}>
               {label}
               <span className="sr-only">{isDone ? ' (done)' : isCurrent ? ' (current)' : ''}</span>
             </span>

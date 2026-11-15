@@ -6,7 +6,7 @@ import { useSlowNotice } from '../../slowNotice.js';
 // The pulse is off for people who ask for reduced motion (motion-reduce), not
 // just shortened: index.css cuts every animation to 0.01ms, which would make
 // an endless pulse flicker.
-const FILL = { surface: 'bg-soft', canvas: 'bg-line' };
+const FILL = { surface: 'bg-soft', canvas: 'bg-shade' };
 
 // One grey block. `on` is what it sits on: inside a Card (surface) or straight
 // on the page (canvas), where soft would barely show.

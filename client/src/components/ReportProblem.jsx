@@ -37,7 +37,7 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
   return (
     <Sheet open={open} title="Report a problem" onClose={() => !sending && onClose()}>
       <div className="space-y-5">
-        <p className="text-body text-heading bg-accent-soft rounded-field px-4 py-3">
+        <p className="text-body text-on-warn bg-warn rounded-field px-4 py-3">
           The money stays locked in escrow until an admin reviews this and decides to pay the worker or refund the client.
         </p>
 
@@ -54,7 +54,7 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
                   aria-checked={selected}
                   onClick={() => setReason(r.value)}
                   className={`min-h-[52px] px-4 py-3 rounded-field border text-left text-body font-medium transition-colors ${
-                    selected ? 'bg-accent-soft border-accent ring-1 ring-inset ring-accent text-heading' : 'bg-surface border-line text-ink hover:border-heading'
+                    selected ? 'bg-surface border-ink ring-1 ring-inset ring-ink text-ink' : 'bg-surface border-line text-ink hover:border-ink'
                   }`}
                 >
                   {r.label}

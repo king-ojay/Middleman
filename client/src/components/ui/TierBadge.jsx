@@ -3,8 +3,8 @@ import Badge from './Badge.jsx';
 // Labelled trust tier, never a raw score (Section 3.3.3). Accepts the API's
 // trustSource values too ('fallback' is the "new" tier).
 const TIERS = {
-  network: { tone: 'signal', label: 'Trusted in your network' },
-  area: { tone: 'mint', label: 'Trusted in this area' },
+  network: { tone: 'trust', label: 'Trusted in your network' },
+  area: { tone: 'trust', label: 'Trusted in this area' },
   new: { tone: 'soft', label: 'New · not yet rated' }
 };
 

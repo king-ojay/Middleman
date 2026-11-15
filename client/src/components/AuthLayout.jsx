@@ -14,10 +14,10 @@ export default function AuthLayout({ children, ...layout }) {
           <span className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center">
             <LogoMark size={32} />
           </span>
-          <span className="text-title text-white">Middleman</span>
+          <span className="text-title text-on-brand">Middleman</span>
         </div>
         <div className="max-w-lg">
-          <p className="text-display tracking-tight text-white">Find someone trusted by people you trust.</p>
+          <p className="text-display tracking-tight text-on-brand">Find someone trusted by people you trust.</p>
           <p className="text-body text-on-brand-soft mt-3">Agree a fair price and pay safely when the job is done.</p>
         </div>
         <div className="max-w-lg">

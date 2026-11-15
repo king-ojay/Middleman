@@ -106,7 +106,7 @@ function Earnings({ earnings, role }) {
   return (
     <Card className="p-5 mt-3">
       <p className="text-body font-semibold text-ink">{role === 'worker' ? 'Earned on Middleman' : 'Paid through Middleman'}</p>
-      <p className="text-title text-heading mt-2">{formatRwf(earnings.total)}</p>
+      <p className="text-amount text-ink mt-2">{formatRwf(earnings.total)}</p>
       <p className="text-small text-muted mt-1">
         {earnings.jobs} completed job{earnings.jobs === 1 ? '' : 's'} · only you can see this
       </p>
@@ -225,7 +225,7 @@ function ProfileSkeleton() {
 function Stat({ value, label }) {
   return (
     <div>
-      <p className="text-title text-heading">{value}</p>
+      <p className="text-title text-ink">{value}</p>
       <p className="text-small text-muted mt-1">{label}</p>
     </div>
   );

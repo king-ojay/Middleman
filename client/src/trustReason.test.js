@@ -2,7 +2,7 @@
 // pattern is built only from what the reason object carries.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { reasonSentence, monthPhrase, topLabel } from './trustReason.js';
+import { reasonSentence, monthPhrase, topLabel, reasonTiles, reasonPath } from './trustReason.js';
 
 const now = new Date(2026, 10, 11); // 11 November 2026
 const rating = (stars, extra) => ({ type: 'rating', stars, hired: true, month: '2026-03', ...extra });
@@ -76,4 +76,78 @@ test('the first-ranked card label: network or area only', () => {
   assert.equal(topLabel({ tier: 'area' }), 'Most trusted in your area');
   assert.equal(topLabel({ tier: 'new' }), null);
   assert.equal(topLabel(undefined), null);
+});
+
+test('tiles for a direct link: 1 step from you, your stars, your vouch', () => {
+  assert.deepEqual(reasonTiles({ tier: 'network', name: 'Diane', via: null, hops: [rating(4)] }), [
+    { value: '1 step', label: 'from you' }, { value: '4★', label: 'from you' }
+  ]);
+  assert.deepEqual(reasonTiles({ tier: 'network', name: 'Diane', via: null, hops: [rating(5, { type: 'vouch' })] }), [
+    { value: '1 step', label: 'from you' }, { value: '5★', label: 'from you' }, { value: 'Vouched', label: 'by you' }
+  ]);
+  assert.deepEqual(reasonTiles({ tier: 'network', name: 'Irene', via: null, hops: [{ type: 'invite', month: '2026-04' }] }), [
+    { value: '1 step', label: 'from you' }, { value: 'Invited', label: 'by you' }
+  ]);
+});
+
+test('tiles for 2 hops name hop 1 only when the sentence does', () => {
+  assert.deepEqual(reasonTiles({ tier: 'network', name: 'Eric', via: 'Amina', hops: [rating(5), rating(5, { type: 'vouch' })] }), [
+    { value: '2 steps', label: 'from you' }, { value: '5★', label: 'from Amina' }, { value: 'Vouched', label: 'by Amina' }
+  ]);
+  assert.deepEqual(reasonTiles({ tier: 'network', name: 'Eric', via: 'Amina', hops: [rating(5), { type: 'invite', month: '2026-03' }] }), [
+    { value: '2 steps', label: 'from you' }, { value: 'Invited', label: 'by Amina' }
+  ]);
+  // hop 1's rating isn't on the profile: the sentence says "someone", so do the tiles
+  const anonymous = { tier: 'network', name: 'Jean', via: null, hops: [rating(5), rating(4, { type: 'vouch' })] };
+  assert.deepEqual(reasonTiles(anonymous), [
+    { value: '2 steps', label: 'from you' }, { value: '4★', label: 'from someone' }, { value: 'Vouched', label: 'by someone' }
+  ]);
+});
+
+test('tiles for 3 hops never name the middle person', () => {
+  const reason = { tier: 'network', name: 'Eric', via: 'Amina', hops: [rating(5), rating(4), rating(3)] };
+  assert.deepEqual(reasonTiles(reason), [{ value: '3 steps', label: 'from you' }, { value: '3★', label: 'from someone' }]);
+  assert.equal(reasonSentence(reason, now), 'You rated Amina 5★. Someone Amina hired rated Eric 3★.');
+});
+
+test('tiles for area trust: how many people, where, and the lowest stars; none for a new worker', () => {
+  assert.deepEqual(reasonTiles({ tier: 'area', name: 'Kevin', area: 'kimironko', people: 3, minStars: 4 }), [
+    { value: '3 people', label: 'in Kimironko' }, { value: '4★', label: 'lowest rating' }
+  ]);
+  assert.deepEqual(reasonTiles({ tier: 'area', name: 'Kevin', area: 'gikondo', people: 1, minStars: 5 }), [
+    { value: '1 person', label: 'in Gikondo' }, { value: '5★', label: 'lowest rating' }
+  ]);
+  assert.deepEqual(reasonTiles({ tier: 'new', name: 'Lucie', verified: true, rated: false, joined: '2026-11' }), []);
+  assert.deepEqual(reasonTiles(undefined), []);
+});
+
+test('tiles hold no score and no name the reason does not carry', () => {
+  const reasons = [
+    { tier: 'network', name: 'Eric', via: 'Amina', hops: [rating(5), rating(4), rating(5, { type: 'vouch' })] },
+    { tier: 'network', name: 'Jean', via: null, hops: [rating(5), rating(5)] },
+    { tier: 'area', name: 'Kevin', area: 'remera', people: 2, minStars: 3 }
+  ];
+  for (const reason of reasons) {
+    const text = JSON.stringify(reasonTiles(reason));
+    assert.equal(/\d\.\d|score/.test(text), false, text);
+    const names = text.match(/\b[A-Z][a-z]+\b/g) || [];
+    for (const name of names) assert.ok(['Amina', 'Invited', 'Vouched', 'Remera'].includes(name), `${name} in ${text}`);
+  }
+});
+
+test('the avatar path: you, hop 1 when named, anonymous people after, then the worker', () => {
+  assert.deepEqual(reasonPath({ tier: 'network', name: 'Diane', via: null, hops: [rating(4)] }), [
+    { name: 'You', you: true }, { name: 'Diane', worker: true }
+  ]);
+  assert.deepEqual(reasonPath({ tier: 'network', name: 'Eric', via: 'Amina', hops: [rating(5), rating(5)] }), [
+    { name: 'You', you: true }, { name: 'Amina' }, { name: 'Eric', worker: true }
+  ]);
+  assert.deepEqual(reasonPath({ tier: 'network', name: 'Jean', via: null, hops: [rating(5), rating(5)] }), [
+    { name: 'You', you: true }, { anonymous: true }, { name: 'Jean', worker: true }
+  ]);
+  assert.deepEqual(reasonPath({ tier: 'network', name: 'Eric', via: 'Amina', hops: [rating(5), rating(4), rating(5)] }), [
+    { name: 'You', you: true }, { name: 'Amina' }, { anonymous: true }, { name: 'Eric', worker: true }
+  ]);
+  assert.deepEqual(reasonPath({ tier: 'area', name: 'Kevin', area: 'remera', people: 2, minStars: 4 }), []);
+  assert.deepEqual(reasonPath({ tier: 'new', name: 'Lucie' }), []);
 });

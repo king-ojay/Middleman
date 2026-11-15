@@ -18,7 +18,7 @@ export default function Landing() {
         <div>
           <div className="flex items-center gap-3 mb-10">
             <LogoMark size={36} />
-            <span className="text-title text-heading">Middleman</span>
+            <span className="text-title text-ink">Middleman</span>
           </div>
 
           <h1 className="text-display tracking-tight text-ink">Find someone trusted by people you trust.</h1>
@@ -40,7 +40,7 @@ export default function Landing() {
         <ol className="grid gap-3 md:grid-cols-3">
           {steps.map((s, i) => (
             <Card as="li" key={s.title} className="flex gap-4">
-              <span className="w-11 h-11 shrink-0 rounded-full bg-mint text-heading text-card flex items-center justify-center">{i + 1}</span>
+              <span className="w-11 h-11 shrink-0 rounded-full bg-trust text-on-trust text-card flex items-center justify-center">{i + 1}</span>
               <div>
                 <h3 className="text-card text-ink">{s.title}</h3>
                 <p className="text-body text-muted mt-1">{s.body}</p>

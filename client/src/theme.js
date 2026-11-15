@@ -21,7 +21,7 @@ export function applyTheme(theme) {
   else root.setAttribute('data-theme', theme);
   // Match the browser chrome to the page background.
   const dark = theme === 'dark' || (theme === 'system' && systemDark());
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0E131D' : '#F4F5F8');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0B0F17' : '#F2F4F7');
 }
 
 export function saveTheme(theme) {

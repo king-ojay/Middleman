@@ -146,6 +146,9 @@ test('the client sees their own payments in, releases and refunds, failed and pe
   const times = data.transactions.map(r => new Date(r.at).getTime());
   assert.deepEqual(times, [...times].sort((a, b) => b - a));
   assert.deepEqual(data.transactions.map(r => r.direction), ['moved', 'out', 'out', 'moved', 'out', 'in', 'out', 'out', 'moved', 'out']);
+  // Jobs with a reported problem say so, whether the money was then released or refunded.
+  const disputed = [...new Set(data.transactions.filter(r => r.job.disputed).map(r => r.job.description))];
+  assert.deepEqual(disputed, ['Unblock the drain', 'Paint the gate']);
 });
 
 test('the worker sees only what was released to them, from both of their jobs\' clients, not the other worker\'s job', { skip }, async () => {
@@ -171,7 +174,10 @@ test('totals match the completed rows; failed, pending, held and refunded money 
 });
 
 test('someone with no jobs gets an empty list and zero totals, never anyone else\'s rows', { skip }, async () => {
-  assert.deepEqual(await list('stranger'), { role: 'client', totals: { total: 0, jobs: 0 }, transactions: [], nextOffset: null });
+  const zero = { total: 0, jobs: 0 };
+  assert.deepEqual(await list('stranger'), {
+    role: 'client', totals: zero, summary: { inEscrow: zero, released: zero, refunded: zero }, transactions: [], nextOffset: null
+  });
   assert.equal((await call('GET', '/api/transactions')).status, 401);
 });
 
@@ -188,6 +194,17 @@ test('no phone numbers, provider references or other people\'s ids in the respon
     for (const ref of ledgerRefs) assert.equal(text.includes(ref), false, `${as}: provider reference`);
     assert.equal(/phone|providerRef|provider"|fundRef|releaseRef|refundRef/.test(text), false, as);
   }
+});
+
+test('the summary tiles: in escrow, released (the same as the totals) and refunded, for client and worker', { skip }, async () => {
+  const client = await list('client');
+  assert.deepEqual(client.summary, { inEscrow: { total: 0, jobs: 0 }, released: client.totals, refunded: { total: 9000, jobs: 1 } });
+  const worker = await list('worker');
+  assert.deepEqual(worker.summary, { inEscrow: { total: 21000, jobs: 21 }, released: worker.totals, refunded: { total: 9000, jobs: 1 } });
+  const busy = await list('busy');
+  assert.deepEqual(busy.summary, { inEscrow: { total: 21000, jobs: 21 }, released: { total: 0, jobs: 0 }, refunded: { total: 0, jobs: 0 } });
+  // The worker's figures cover their own jobs only: the other worker's job is not in them.
+  assert.deepEqual((await list('other')).summary.released, { total: 4000, jobs: 1 });
 });
 
 test('20 rows a page; the totals cover every row', { skip }, async () => {

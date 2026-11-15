@@ -1,26 +1,29 @@
-// The one button style for the app: primary, dark, soft, outline and plain
-// variants in two sizes; renders a router Link when given `to`.
+// The one button style for the app: pills in primary (ink), secondary
+// (white with a thin border), soft and plain variants, in two sizes, both at
+// least 44px tall; renders a router Link when given `to`.
 import { Link } from 'react-router-dom';
 
 // Hover (pointer devices only, see tailwind.config.js) and pressed states:
-// filled buttons darken slightly, outline ones take a soft fill, plain text
-// actions turn the heading colour.
+// ink buttons lighten slightly, white ones take the neutral tint, plain text
+// actions turn ink.
 const VARIANTS = {
-  primary: 'bg-accent text-on-accent hover:brightness-95 active:brightness-90',
-  dark: 'bg-brand text-white hover:brightness-110 active:brightness-125',
-  soft: 'bg-mint text-heading hover:brightness-95 active:brightness-90',
-  outline: 'bg-surface border border-line text-ink hover:bg-soft active:bg-soft',
-  plain: 'bg-transparent text-muted hover:text-heading active:text-heading' // low-emphasis text action, e.g. "Report a problem"
+  primary: 'bg-ink text-on-ink hover:opacity-90 active:opacity-80',
+  secondary: 'bg-surface border border-line text-ink hover:bg-soft active:bg-soft',
+  soft: 'bg-soft text-ink hover:brightness-95 active:brightness-90',
+  plain: 'bg-transparent text-muted hover:text-ink active:text-ink' // low-emphasis text action, e.g. "Report a problem"
 };
+// Older names for the same looks.
+VARIANTS.dark = VARIANTS.primary;
+VARIANTS.outline = VARIANTS.secondary;
 
 const SIZES = {
-  lg: 'h-14 w-full px-6',
-  md: 'h-11 px-5'
+  lg: 'min-h-14 w-full px-6',
+  md: 'min-h-11 px-5'
 };
 
 export function buttonClasses({ variant = 'primary', size = 'lg', className = '' } = {}) {
   return [
-    'inline-flex items-center justify-center rounded-full text-body font-semibold transition-[opacity,filter,background-color,color]',
+    'inline-flex items-center justify-center gap-2 rounded-full text-body font-bold text-center transition-[opacity,filter,background-color,color]',
     'disabled:opacity-50 disabled:cursor-not-allowed disabled:filter-none aria-disabled:opacity-50',
     VARIANTS[variant],
     SIZES[size],

@@ -4,7 +4,7 @@ import { onInlineChange } from '../slowNotice.js';
 
 // Shown while any API request has been waiting more than 3 seconds, which on
 // the free host almost always means the server is waking from sleep. Sits
-// above the phone tab bar; from 768px at the bottom of the window. Hidden
+// above the floating navigation; from 1024px at the bottom of the window. Hidden
 // while the page shows its own loading state (Skeleton.jsx), which carries
 // its own notice.
 export default function ServerWaking() {
@@ -16,9 +16,9 @@ export default function ServerWaking() {
   return (
     <div
       role="status"
-      className="fixed inset-x-0 bottom-[calc(theme(height.tabbar)+12px+env(safe-area-inset-bottom))] md:bottom-6 z-30 flex justify-center px-screen pointer-events-none"
+      className="fixed inset-x-0 bottom-[calc(theme(height.tabbar)+12px+env(safe-area-inset-bottom))] lg:bottom-6 z-30 flex justify-center px-screen pointer-events-none"
     >
-      <p className="max-w-md rounded-2xl bg-surface shadow-card px-4 py-3 text-body text-ink text-center">
+      <p className="max-w-md rounded-2xl bg-surface shadow-float px-4 py-3 text-body text-ink text-center">
         Waking up the server, this can take up to a minute
       </p>
     </div>
