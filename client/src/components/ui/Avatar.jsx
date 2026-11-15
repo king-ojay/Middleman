@@ -1,6 +1,6 @@
 // Round initials avatar. Its fill follows the person's trust tier (never a
-// number), so the tier reads at a glance in lists: ink for your network, the
-// green tint for area trust, neutral for new. `anonymous` draws a blank grey
+// number), so the tier reads at a glance in lists: the green tint for your
+// network (and your own profile), the neutral tint for everyone else. `anonymous` draws a blank grey
 // circle for someone on a trust path who is never named.
 import { tierKey } from './TierBadge.jsx';
 
@@ -13,9 +13,9 @@ const SIZES = {
 };
 
 const TIER_FILL = {
-  network: 'bg-ink text-on-ink',
-  area: 'bg-trust text-on-trust',
-  new: 'bg-soft text-muted'
+  network: 'bg-trust text-on-trust',
+  area: 'bg-soft text-ink',
+  new: 'bg-soft text-ink'
 };
 
 export const initials = name =>
@@ -25,7 +25,7 @@ export default function Avatar({ name, tier = 'network', size = 44, anonymous = 
   return (
     <span
       aria-hidden="true"
-      className={`inline-flex shrink-0 items-center justify-center rounded-full font-bold ${SIZES[size]} ${anonymous ? 'bg-soft' : TIER_FILL[tierKey(tier)]} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${SIZES[size]} ${anonymous ? 'bg-soft' : TIER_FILL[tierKey(tier)]} ${className}`}
     >
       {anonymous ? '' : initials(name)}
     </span>

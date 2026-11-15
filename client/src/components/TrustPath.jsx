@@ -13,7 +13,7 @@ const FILL = {
   you: 'bg-surface text-ink border border-line',
   named: 'bg-trust text-on-trust',
   anonymous: 'bg-shade',
-  worker: 'bg-ink text-on-ink'
+  worker: 'bg-trust text-on-trust'
 };
 
 export default function TrustPath({ reason, ring = 'ring-surface' }) {
@@ -26,7 +26,7 @@ export default function TrustPath({ reason, ring = 'ring-surface' }) {
         return (
           <span
             key={i}
-            className={`relative ${STACK[i]} w-10 h-10 rounded-full ring-2 ${ring} inline-flex items-center justify-center text-[11px] font-bold ${i > 0 ? '-ml-2' : ''} ${FILL[kind]}`}
+            className={`relative ${STACK[i]} w-10 h-10 rounded-full ring-2 ${ring} inline-flex items-center justify-center text-[11px] font-semibold ${i > 0 ? '-ml-2' : ''} ${FILL[kind]}`}
           >
             {p.you ? 'You' : p.anonymous ? '' : initials(p.name)}
           </span>

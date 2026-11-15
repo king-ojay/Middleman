@@ -1,6 +1,6 @@
 import { useId, useRef } from 'react';
 
-const INPUT = 'w-full bg-surface border border-field rounded-field px-4 text-body text-ink placeholder:text-faint focus:border-ink focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0';
+const INPUT = 'w-full bg-surface border border-field rounded-field px-4 text-body text-ink placeholder:text-faint focus:border-primary focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0';
 
 // Label above, helper or error below. Children receive the generated id via
 // render prop so the label is always wired to the input. An error replaces
@@ -35,7 +35,7 @@ const formatDigits = digits => (digits ? Number(digits).toLocaleString('en-US') 
 // Big price entry: digits only, shown with thousands separators, RWF suffix.
 export function PriceInput({ value, onChange, className = '', ...props }) {
   return (
-    <div className={`flex items-center h-[72px] bg-surface border-2 border-ink rounded-field px-5 ${className}`}>
+    <div className={`flex items-center h-[72px] bg-surface border-2 border-primary rounded-field px-5 ${className}`}>
       <input
         type="text"
         inputMode="numeric"
@@ -92,7 +92,7 @@ export function PinBoxes({ value, onChange, id, label = 'PIN', ...props }) {
             update(current.current.slice(0, cut));
             refs.current[cut]?.focus();
           }}
-          className="h-[72px] w-full bg-surface border border-field rounded-field text-center text-title text-ink focus:border-2 focus:border-ink focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-[72px] w-full bg-surface border border-field rounded-field text-center text-title text-ink focus:border-2 focus:border-primary focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
           {...(i === 0 ? props : {})}
         />
       ))}

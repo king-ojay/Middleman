@@ -1,13 +1,13 @@
-// The one button style for the app: pills in primary (ink), secondary
+// The one button style for the app: pills in primary (green), secondary
 // (white with a thin border), soft and plain variants, in two sizes, both at
 // least 44px tall; renders a router Link when given `to`.
 import { Link } from 'react-router-dom';
 
 // Hover (pointer devices only, see tailwind.config.js) and pressed states:
-// ink buttons lighten slightly, white ones take the neutral tint, plain text
+// green buttons darken, white ones take the neutral tint, plain text
 // actions turn ink.
 const VARIANTS = {
-  primary: 'bg-ink text-on-ink hover:opacity-90 active:opacity-80',
+  primary: 'bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-hover',
   secondary: 'bg-surface border border-line text-ink hover:bg-soft active:bg-soft',
   soft: 'bg-soft text-ink hover:brightness-95 active:brightness-90',
   plain: 'bg-transparent text-muted hover:text-ink active:text-ink' // low-emphasis text action, e.g. "Report a problem"
@@ -23,7 +23,7 @@ const SIZES = {
 
 export function buttonClasses({ variant = 'primary', size = 'lg', className = '' } = {}) {
   return [
-    'inline-flex items-center justify-center gap-2 rounded-full text-body font-bold text-center transition-[opacity,filter,background-color,color]',
+    'inline-flex items-center justify-center gap-2 rounded-full text-body font-semibold text-center transition-[opacity,filter,background-color,color]',
     'disabled:opacity-50 disabled:cursor-not-allowed disabled:filter-none aria-disabled:opacity-50',
     VARIANTS[variant],
     SIZES[size],

@@ -16,8 +16,11 @@ export default {
       colors: {
         canvas: v('canvas'),           // page background (soft grey)
         surface: v('surface'),         // cards, sheets, inputs, floating nav buttons
-        ink: v('ink'),                 // text, primary buttons, selected pills, active nav
+        ink: v('ink'),                 // text only
         'on-ink': v('on-ink'),         // text and icons on ink
+        primary: v('primary'),         // primary buttons, selected pills, active nav, focus ring
+        'primary-hover': v('primary-hover'), // hover and pressed on primary
+        'on-primary': v('on-primary'), // text and icons on primary
         muted: v('muted'),             // secondary text
         faint: v('faint'),             // placeholders
         line: v('line'),               // secondary button and pill borders, dividers
@@ -32,33 +35,36 @@ export default {
         step: v('step'),               // grey marks: a refunded job's steps
         danger: v('danger'),           // form and request errors
         'danger-soft': v('danger-soft'), // behind "Failed"
-        brand: v('brand'),             // the dark panel on landing and sign-in
+        brand: v('brand'),             // the deep green panel on landing and sign-in
         'on-brand': v('on-brand'),     // text on that panel
-        'on-brand-soft': v('on-brand-soft') // light text and marks on that panel
+        'on-brand-soft': v('on-brand-soft'), // light text and marks on that panel
+        scrim: v('scrim')              // dimmed page behind a sheet
       },
       fontFamily: {
         sans: ['Manrope', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif']
       },
-      // Manrope is shipped in 500-800 only, so "normal" text is 500.
+      // Manrope is shipped in 500-700 only, so "normal" text is 500. Nothing
+      // is heavier than 700: page titles and big money 700, card titles,
+      // names and buttons 600, body and small labels 500.
       fontWeight: {
         normal: '500',
         medium: '500',
         semibold: '600',
-        bold: '700',
-        extrabold: '800'
+        bold: '700'
       },
       fontSize: {
-        display: ['32px', { lineHeight: '1.15', fontWeight: '800', letterSpacing: '-0.02em' }],
-        title: ['26px', { lineHeight: '1.2', fontWeight: '800', letterSpacing: '-0.01em' }],
-        section: ['18px', { lineHeight: '1.3', fontWeight: '700' }],
-        card: ['17px', { lineHeight: '1.3', fontWeight: '700' }],
-        body: ['16px', { lineHeight: '1.5' }],
-        label: ['14px', { lineHeight: '1.4', fontWeight: '600' }],
-        small: ['13px', { lineHeight: '1.4' }],
-        micro: ['12px', { lineHeight: '1.3', fontWeight: '600' }],
-        // Money: large and bold.
-        amount: ['28px', { lineHeight: '1.1', fontWeight: '800', letterSpacing: '-0.02em' }],
-        'amount-xl': ['44px', { lineHeight: '1.05', fontWeight: '800', letterSpacing: '-0.03em' }]
+        // Page titles: 24px on phones, 28px from 1024px (src/styles/index.css).
+        display: ['var(--title-size)', { lineHeight: '1.25', fontWeight: '700', letterSpacing: '-0.01em' }],
+        title: ['var(--title-size)', { lineHeight: '1.25', fontWeight: '700', letterSpacing: '-0.01em' }],
+        section: ['18px', { lineHeight: '1.35', fontWeight: '600' }],
+        card: ['16px', { lineHeight: '1.35', fontWeight: '600' }],
+        body: ['15px', { lineHeight: '1.55' }],
+        label: ['14px', { lineHeight: '1.45', fontWeight: '500' }],
+        small: ['13px', { lineHeight: '1.45' }],
+        micro: ['12px', { lineHeight: '1.35', fontWeight: '500' }],
+        // Money: bold, 32px at most.
+        amount: ['22px', { lineHeight: '1.2', fontWeight: '700', letterSpacing: '-0.01em' }],
+        'amount-xl': ['32px', { lineHeight: '1.15', fontWeight: '700', letterSpacing: '-0.02em' }]
       },
       borderRadius: {
         card: '22px',

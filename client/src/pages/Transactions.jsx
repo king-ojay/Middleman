@@ -109,7 +109,7 @@ const LockIcon = () => (
 // The three tiles (server: transactions.routes.js summary). Released is the
 // same figure as the total above.
 const TILES = [
-  { key: 'inEscrow', client: 'In escrow', worker: 'In escrow', fill: 'bg-ink text-on-ink' },
+  { key: 'inEscrow', client: 'In escrow', worker: 'In escrow', fill: 'bg-soft text-ink' },
   { key: 'released', client: 'Released', worker: 'Received', fill: 'bg-trust text-on-trust' },
   { key: 'refunded', client: 'Refunded', worker: 'Refunded to client', fill: 'bg-surface text-ink' }
 ];
@@ -118,7 +118,7 @@ function Tile({ label, value, fill }) {
   return (
     <div className={`rounded-tile p-3 min-w-0 ${fill}`}>
       <p className="text-small font-semibold">{label}</p>
-      <p className="mt-2 text-card font-extrabold break-words">
+      <p className="mt-2 text-card font-bold break-words">
         {value.total.toLocaleString('en-US')}<span className="text-micro"> RWF</span>
       </p>
       <p className="text-small">{value.jobs} job{value.jobs === 1 ? '' : 's'}</p>
@@ -145,7 +145,7 @@ function JobMoney({ card, role }) {
           </p>
         </div>
         <div className="shrink-0 flex flex-col items-end gap-1">
-          <p className={`text-card font-extrabold whitespace-nowrap ${failedOnly ? 'text-muted line-through' : 'text-ink'}`}>
+          <p className={`text-card font-bold whitespace-nowrap ${failedOnly ? 'text-muted line-through' : 'text-ink'}`}>
             <span className="sr-only">Amount: </span>{amountLabel(card.main)}
           </p>
           <Badge tone={state.tone}>{stateLabel(card.state, role)}</Badge>

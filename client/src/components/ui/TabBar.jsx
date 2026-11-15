@@ -1,6 +1,7 @@
 // Role-based navigation. Phones and tablets: separate round buttons floating
-// above the bottom edge, the active one filled ink with its label. From
-// 1024px: a top bar of pills beside the logo.
+// above the bottom edge, the active one filled green with its label. From
+// 1024px: a top bar of pills beside the logo (inactive ones white with a
+// thin border).
 import { Link, NavLink } from 'react-router-dom';
 import LogoMark from './LogoMark.jsx';
 
@@ -55,7 +56,7 @@ export default function TabBar({ role }) {
                   aria-label={tab.label}
                   className={({ isActive }) =>
                     `h-[52px] rounded-full shadow-float inline-flex items-center justify-center gap-2 transition-colors ${
-                      isActive ? 'px-5 bg-ink text-on-ink' : 'w-[52px] bg-surface text-ink hover:bg-soft'
+                      isActive ? 'px-5 bg-primary text-on-primary' : 'w-[52px] bg-surface text-ink hover:bg-soft'
                     }`
                   }
                 >
@@ -86,8 +87,8 @@ export default function TabBar({ role }) {
                   <NavLink
                     to={tab.to}
                     className={({ isActive }) =>
-                      `h-11 px-4 rounded-full inline-flex items-center gap-2 text-body font-bold transition-colors ${
-                        isActive ? 'bg-ink text-on-ink' : 'bg-surface text-ink hover:bg-soft'
+                      `h-11 px-4 rounded-full inline-flex items-center gap-2 text-body font-semibold border transition-colors ${
+                        isActive ? 'bg-primary border-primary text-on-primary' : 'bg-surface border-line text-ink hover:bg-soft'
                       }`
                     }
                   >

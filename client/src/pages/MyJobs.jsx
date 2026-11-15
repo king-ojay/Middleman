@@ -90,11 +90,11 @@ export default function MyJobs() {
                   aria-controls="job-group"
                   onClick={() => showTab(g.key)}
                   className={`inline-flex items-center gap-2 h-11 shrink-0 px-4 rounded-full text-label whitespace-nowrap transition-colors ${
-                    selected ? 'bg-ink text-on-ink' : 'bg-surface border border-line text-ink hover:border-ink'
+                    selected ? 'bg-primary text-on-primary' : 'bg-surface border border-line text-ink hover:border-primary'
                   }`}
                 >
                   {g.label}
-                  <span className={`min-w-6 h-6 px-1.5 rounded-full inline-flex items-center justify-center text-micro ${selected ? 'bg-on-ink/20' : 'bg-soft text-muted'}`}>
+                  <span className={`min-w-6 h-6 px-1.5 rounded-full inline-flex items-center justify-center text-micro ${selected ? 'bg-on-primary/20' : 'bg-soft text-muted'}`}>
                     {g.jobs.length}
                   </span>
                 </button>
@@ -146,7 +146,7 @@ function JobCard({ job, role, onChange }) {
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
           <p className="text-small text-muted">{job.agreedPrice != null ? 'Agreed price' : 'Your price'}</p>
-          <p className="text-card font-extrabold text-ink whitespace-nowrap">{formatRwf(price)}</p>
+          <p className="text-card font-bold text-ink whitespace-nowrap">{formatRwf(price)}</p>
         </div>
         {money && (
           <p className="text-label text-ink inline-flex items-center gap-2">
