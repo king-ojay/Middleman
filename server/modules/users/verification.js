@@ -1,4 +1,4 @@
-// Verification (FR-04): the researcher checks a participant in person and
+// Verification (FR-04): the researcher reviews a participant manually and
 // marks them verified; it can be revoked. Nothing else is collected: no
 // documents, photos or ID numbers. Verified workers get the higher trust
 // floor (computeTrust floorVerified 0.3 vs floorUnverified 0.1) and a
@@ -17,7 +17,7 @@
 // to another.
 import express from 'express';
 import mongoose from 'mongoose';
-import User from './user.model.js';
+import User, { VERIFICATION_METHOD } from './user.model.js';
 import { normalisePhone } from './phone.js';
 import { HttpError } from '../httpError.js';
 import { requireAdmin } from '../adminAuth.js';
@@ -42,14 +42,14 @@ export const findUser = async ({ userId, phone } = {}) => {
   return user._id;
 };
 
-/** Marks the person verified by the researcher, in person, now. */
+/** Marks the person verified by the researcher, by manual review, now. */
 export async function verifyUser(who) {
   const id = await findUser(who);
   return User.findByIdAndUpdate(id, {
     verifiedStatus: 'verified',
     verifiedBy: 'researcher',
     verifiedAt: new Date(),
-    verificationMethod: 'in-person'
+    verificationMethod: VERIFICATION_METHOD
   }, { new: true, projection: FIELDS }).lean();
 }
 
