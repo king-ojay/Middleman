@@ -12,7 +12,7 @@ export default function ReasonTiles({ reason, className = '' }) {
     <ul className={`grid gap-2 ${COLUMNS[tiles.length]} ${className}`}>
       {tiles.map(t => (
         <li key={`${t.value} ${t.label}`} className="bg-soft rounded-tile px-3 py-2.5 min-w-0">
-          <p className="text-card font-extrabold text-ink">{t.value}</p>
+          <p className="text-card font-bold text-ink">{t.value}</p>
           <p className="text-small text-muted">{t.label}</p>
         </li>
       ))}

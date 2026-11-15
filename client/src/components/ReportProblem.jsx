@@ -54,7 +54,7 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
                   aria-checked={selected}
                   onClick={() => setReason(r.value)}
                   className={`min-h-[52px] px-4 py-3 rounded-field border text-left text-body font-medium transition-colors ${
-                    selected ? 'bg-surface border-ink ring-1 ring-inset ring-ink text-ink' : 'bg-surface border-line text-ink hover:border-ink'
+                    selected ? 'bg-surface border-primary ring-1 ring-inset ring-primary text-ink' : 'bg-surface border-line text-ink hover:border-primary'
                   }`}
                 >
                   {r.label}

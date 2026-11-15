@@ -313,7 +313,7 @@ function OfferCard({ offer: r, job, busy, choosing, onChoose }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-card font-extrabold text-ink whitespace-nowrap">{formatRwf(r.amount)}</p>
+          <p className="text-card font-bold text-ink whitespace-nowrap">{formatRwf(r.amount)}</p>
           <PriceDifference amount={r.amount} proposed={job.proposedPrice} />
         </div>
         <Button variant="secondary" size="md" disabled={busy} onClick={onChoose}>

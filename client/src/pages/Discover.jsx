@@ -107,9 +107,9 @@ export default function Discover() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="e.g. electrician, plumber"
-          className="w-full h-14 bg-surface border border-field rounded-full pl-5 pr-16 text-body text-ink placeholder:text-faint focus:border-ink focus:outline-none"
+          className="w-full h-14 bg-surface border border-field rounded-full pl-5 pr-16 text-body text-ink placeholder:text-faint focus:border-primary focus:outline-none"
         />
-        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-ink text-on-ink flex items-center justify-center transition-opacity hover:opacity-90 active:opacity-80">
+        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center transition-colors hover:bg-primary-hover active:bg-primary-hover">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
             <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

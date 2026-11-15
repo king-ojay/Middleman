@@ -10,7 +10,7 @@ export default function AuthLayout({ children, ...layout }) {
     <div className="lg:grid lg:grid-cols-2 lg:items-start">
       <aside className="hidden lg:flex lg:sticky lg:top-0 lg:h-dvh flex-col justify-center gap-10 bg-brand px-10 xl:px-16 py-12">
         <div className="flex items-center gap-3">
-          {/* the navy mark needs a light tile on the navy panel */}
+          {/* the ink mark sits on its own tile on the green panel */}
           <span className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center">
             <LogoMark size={32} />
           </span>
