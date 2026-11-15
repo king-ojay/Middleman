@@ -94,7 +94,7 @@ test('verify records who, when and how; the answer has no name or phone; revoke 
   assert.equal(res.status, 200);
   assert.equal(res.data.verifiedStatus, 'verified');
   assert.equal(res.data.verifiedBy, 'researcher');
-  assert.equal(res.data.verificationMethod, 'in-person');
+  assert.equal(res.data.verificationMethod, 'manual-review');
   assert.ok(new Date(res.data.verifiedAt).getTime() >= before);
   assert.deepEqual(Object.keys(res.data).sort(), ['_id', 'role', 'verificationMethod', 'verifiedAt', 'verifiedBy', 'verifiedStatus']);
 
@@ -123,6 +123,26 @@ test('the trust floor is exactly as before: 0.1 unverified, 0.3 verified, back t
   assert.deepEqual(await floorOf(users.worker._id), { score: 0.1, tier: 'fallback' });
 });
 
+test('a worker verified under an earlier method name still counts: 0.3 floor and the badge, and the record stays valid', { skip }, async () => {
+  // Written straight to the collection, as an older version of the app stored it.
+  await User.collection.updateOne({ _id: users.other._id }, {
+    $set: { verifiedStatus: 'verified', verifiedBy: 'researcher', verifiedAt: new Date(), verificationMethod: 'earlier-method' }
+  });
+  try {
+    const loaded = await User.findById(users.other._id);
+    await loaded.validate();
+    assert.equal(loaded.verificationMethod, 'manual-review');
+    assert.deepEqual(await floorOf(users.other._id), { score: 0.3, tier: 'fallback' });
+    const discover = (await call('GET', '/api/discover?category=tiler', { as: 'viewer' })).data;
+    assert.equal(discover.find(w => w.name === 'Other Ver').verified, true);
+    const profile = (await call('GET', `/api/users/${users.other._id}/profile`, { as: 'viewer' })).data;
+    assert.equal(profile.user?.verifiedStatus ?? profile.verifiedStatus, 'verified');
+    assert.equal((await call('GET', '/api/admin/verification/unverified', { secret: ADMIN_SECRET })).data.some(w => String(w._id) === String(users.other._id)), false);
+  } finally {
+    await admin('revoke', { userId: String(users.other._id) });
+  }
+});
+
 test('other users see only the badge: Discover sends verified true/false and ranks the verified worker first; no who/when/how anywhere', { skip }, async () => {
   await admin('verify', { userId: String(users.other._id) });
   const discover = (await call('GET', '/api/discover?category=tiler', { as: 'viewer' })).data;
@@ -130,14 +150,14 @@ test('other users see only the badge: Discover sends verified true/false and ran
   const profile = (await call('GET', `/api/users/${users.other._id}/profile`, { as: 'viewer' })).data;
   assert.equal(profile.user?.verifiedStatus ?? profile.verifiedStatus, 'verified');
   for (const text of [JSON.stringify(discover), JSON.stringify(profile)]) {
-    for (const field of ['verifiedBy', 'verifiedAt', 'verificationMethod', 'researcher', 'in-person']) assert.equal(text.includes(field), false, field);
+    for (const field of ['verifiedBy', 'verifiedAt', 'verificationMethod', 'researcher', 'manual-review']) assert.equal(text.includes(field), false, field);
   }
   await admin('revoke', { userId: String(users.other._id) });
 });
 
 test('nobody can verify themselves through their own profile', { skip }, async () => {
   const res = await call('PATCH', '/api/users/me', {
-    as: 'worker', body: { area: 'kimironko', verifiedStatus: 'verified', verifiedBy: 'researcher', verifiedAt: new Date(), verificationMethod: 'in-person' }
+    as: 'worker', body: { area: 'kimironko', verifiedStatus: 'verified', verifiedBy: 'researcher', verifiedAt: new Date(), verificationMethod: 'manual-review' }
   });
   assert.equal(res.status, 200);
   const stored = await User.findById(users.worker._id).lean();
@@ -204,7 +224,7 @@ test('scripts/verifyUser.js verifies and revokes through the route, printing no 
   const env = { ...process.env, API_URL: base, ADMIN_SECRET };
   const verified = await run(process.execPath, [script, '--phone', '0788700002'], { env });
   assert.match(verified.stdout, /^Verified: .*"verifiedStatus":"verified".*"verifiedBy":"researcher"/);
-  assert.equal((await User.findById(users.worker._id).lean()).verificationMethod, 'in-person');
+  assert.equal((await User.findById(users.worker._id).lean()).verificationMethod, 'manual-review');
   const revoked = await run(process.execPath, [script, '--id', String(users.worker._id), '--revoke'], { env });
   assert.match(revoked.stdout, /^Revoked: .*"verifiedStatus":"unverified"/);
   for (const out of [verified.stdout, revoked.stdout]) {

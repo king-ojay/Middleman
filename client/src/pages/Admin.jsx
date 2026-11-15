@@ -70,7 +70,7 @@ function useAdminList(path, secret) {
 }
 
 // Section 1: workers not yet verified. Marking one records researcher,
-// now and in-person on the server (verification.js).
+// now and manual-review on the server (verification.js).
 function Verification({ secret }) {
   const { items, setItems, error, retrying, tryAgain } = useAdminList('/api/admin/verification/unverified', secret);
   const [busy, setBusy] = useState(null);
@@ -95,7 +95,7 @@ function Verification({ secret }) {
   return (
     <section>
       <h2 className="text-section text-ink mb-1">Verification</h2>
-      <p className="text-body text-muted mb-4">Workers not yet verified. Mark one only after checking them in person.</p>
+      <p className="text-body text-muted mb-4">Workers not yet verified. Mark one only after reviewing them.</p>
       {error && <LoadError prefix="Couldn't load workers" error={error} retrying={retrying} onRetry={tryAgain} />}
       {!error && !items && <p className="text-body text-muted">Loading…</p>}
       {done && <p className="text-body text-heading bg-mint rounded-field px-4 py-3 mb-3" role="status">{done}</p>}
@@ -112,7 +112,7 @@ function Verification({ secret }) {
                 </p>
               </div>
               <Button size="md" onClick={() => verify(w)} disabled={busy !== null}>
-                {busy === w._id ? 'Saving…' : 'Mark verified (in person)'}
+                {busy === w._id ? 'Saving…' : 'Mark verified'}
               </Button>
             </Card>
           ))}

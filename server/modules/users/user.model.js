@@ -4,6 +4,8 @@ import mongoose from 'mongoose';
 import { AREAS } from '../../config/areas.js';
 import { CATEGORIES } from '../../config/categories.js';
 
+export const VERIFICATION_METHOD = 'manual-review';
+
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   phone: { type: String, required: true, unique: true },
@@ -20,12 +22,21 @@ const userSchema = new mongoose.Schema({
   // documents or photos are collected. Never sent to other users.
   verifiedBy: { type: String, enum: ['researcher', null], default: null },
   verifiedAt: { type: Date, default: null },
-  verificationMethod: { type: String, enum: ['in-person', null], default: null },
+  // Only verifiedStatus decides the badge and the trust floor; the method is
+  // a record of how. Records verified under an earlier method name load as
+  // 'manual-review' (see the post('init') hook below).
+  verificationMethod: { type: String, enum: [VERIFICATION_METHOD, null], default: null },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // FR-03
   pinHash: { type: String, select: false }, // scrypt hash of the 4-digit login PIN, never returned
   sessionVersion: { type: Number, default: 0, select: false } // bump to end every session (e.g. PIN reset)
 }, { timestamps: true });
 
 userSchema.index({ role: 1, area: 1, skills: 1 });
+
+// A verified record stored under an earlier method name stays valid: it loads
+// (and saves back) as the current one. Lean reads never validate.
+userSchema.post('init', doc => {
+  if (doc.verificationMethod != null && doc.verificationMethod !== VERIFICATION_METHOD) doc.verificationMethod = VERIFICATION_METHOD;
+});
 
 export default mongoose.model('User', userSchema);

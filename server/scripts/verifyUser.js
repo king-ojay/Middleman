@@ -1,7 +1,7 @@
-// Marks a participant verified after the researcher has checked them in
-// person, or revokes it, through the admin route (modules/users/verification.js).
+// Marks a participant verified after the researcher has reviewed them
+// manually, or revokes it, through the admin route (modules/users/verification.js).
 // Needs ADMIN_SECRET (the same value as on the API); nothing else is recorded
-// than who (researcher), when and how (in-person). Prints ids and the
+// than who (researcher), when and how (manual-review). Prints ids and the
 // verification fields only, no name or phone.
 //
 //   API_URL=https://middleman-api-74zb.onrender.com ADMIN_SECRET=... \

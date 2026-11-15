@@ -113,15 +113,15 @@ main**: repeat that flow on the live URLs once the merge has deployed.
      escrow; confirm the job is done and rate the worker.
    - Worker: find the job in Open jobs; accept or counter; start; mark complete;
      rate the client after payment.
-5. **Verification** (optional, in person): after checking a participant face to
-   face, mark them verified; revoke it the same way. No documents or photos.
+5. **Verification** (optional, manual review): after reviewing a participant,
+   mark them verified; revoke it the same way. No documents or photos.
    ```bash
    cd server
    API_URL=$API ADMIN_SECRET=$ADMIN_SECRET node scripts/verifyUser.js --phone 07XXXXXXXX
    API_URL=$API ADMIN_SECRET=$ADMIN_SECRET node scripts/verifyUser.js --phone 07XXXXXXXX --revoke
    ```
    It records `verifiedBy: researcher`, `verifiedAt` and
-   `verificationMethod: in-person`, and prints ids only. Verified workers get
+   `verificationMethod: manual-review`, and prints ids only. Verified workers get
    the 0.3 trust floor (unverified 0.1) and a "Verified" badge.
 6. **Disputes** ("Report a problem", open to either side once the money is
    held) lock the money. Settle them with the admin routes:

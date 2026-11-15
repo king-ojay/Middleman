@@ -1,4 +1,4 @@
-// "Verified" (checked in person by the researcher): an outlined pill with a
+// "Verified" (reviewed manually by the researcher): an outlined pill with a
 // check, so it never reads as part of the solid green "Trusted in your
 // network" tier badge it often sits next to.
 export default function VerifiedBadge() {

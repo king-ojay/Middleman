@@ -1,4 +1,4 @@
-// GET /api/transactions — the signed-in person's own money movements, read
+// GET /api/transactions — the signed-in user's own money movements, read
 // from the escrow ledger. Only jobs they are the client or the worker on, and
 // only the movements that are theirs:
 //   client: fund    "Paid into escrow"     (out)
