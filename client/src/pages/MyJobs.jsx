@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatRwf } from '../format.js';
+import { DELETED_USER } from '../greeting.js';
 import { JOB_GROUPS, categoryLabel, areaLabel, moneyLabel, statusChip } from '../options.js';
 import { Badge, Button, Card, LoadingState, PageLayout, Skeleton, SkeletonText } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
@@ -124,9 +125,10 @@ function JobCard({ job, role, onChange }) {
   const chip = statusChip(job, role);
   const money = moneyLabel(job, role);
   const price = job.agreedPrice ?? job.proposedPrice;
+  // Nobody chosen yet on an open job; a missing person otherwise deleted their account.
   const who = isClient
-    ? (job.worker ? job.worker.name : null)
-    : job.client?.name;
+    ? (job.worker ? job.worker.name : job.status === 'open' ? null : DELETED_USER)
+    : job.client?.name || DELETED_USER;
 
   return (
     <Card as="li" className="p-5 flex flex-col gap-4">
@@ -183,7 +185,7 @@ function NextStep({ job, role, onChange }) {
   const to = `/my-jobs/${job._id}`;
   const released = job.escrow?.status === 'released';
   if (role === 'client' && job.status === 'open' && job.responseCount > 0) return <Button to={to} state={offersState(job, role)}>See offers</Button>;
-  if (job.status === 'completed' && released && !job.rated) {
+  if (job.status === 'completed' && released && !job.rated && job[role === 'client' ? 'worker' : 'client']) {
     return <Button to={to}>{role === 'client' ? 'Send rating' : 'Rate the client'}</Button>;
   }
   if (job.escrow?.pending || hasPrimaryAction(job, role)) return <JobActions job={job} role={role} onChange={onChange} primaryOnly />;

@@ -25,7 +25,7 @@ import { serverError } from '../serverError.js';
 
 const FIELDS = '_id role verifiedStatus verifiedBy verifiedAt verificationMethod';
 
-const findUser = async ({ userId, phone } = {}) => {
+export const findUser = async ({ userId, phone } = {}) => {
   let filter;
   if (typeof userId === 'string' && userId) {
     if (!mongoose.isValidObjectId(userId)) throw new HttpError(404, 'User not found');

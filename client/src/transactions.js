@@ -1,4 +1,5 @@
 import { formatRwf } from './format.js';
+import { DELETED_USER } from './greeting.js';
 
 // Words for a row on the Transactions page (server/modules/payments/
 // transactions.routes.js). No colour carries meaning on its own: the status
@@ -33,8 +34,8 @@ export const dateTimeLabel = at => new Date(at).toLocaleString('en-GB', {
   day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali'
 });
 
-// "with Walter N." for a client's row, "from Clara M." for a worker's.
+// "with Walter N." for a client's row, "from Clara M." for a worker's;
+// "Deleted user" when that person has deleted their account.
 export function otherLabel({ type, other }) {
-  if (!other) return 'with a removed account';
-  return `${type === 'received' ? 'from' : 'with'} ${other}`;
+  return `${type === 'received' ? 'from' : 'with'} ${other || DELETED_USER}`;
 }

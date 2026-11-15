@@ -171,6 +171,8 @@ const settledJob = async (jobId, user, role) => {
   if (job.escrow?.pending) job = await sync(job._id);
   return job;
 };
+// The other party deleted their account (users/deleteUser.js): nobody to rate.
+const DELETED_ACCOUNT = 'This person has deleted their account, so they can no longer be rated';
 const isSettled = job => job.status === 'completed' && job.escrow?.status === 'released';
 
 /**
@@ -192,6 +194,7 @@ export async function confirmAndRate(jobId, client, body) {
       ? "The payment to the worker didn't go through. The money is still held. Please try again."
       : `Can't confirm a job that is ${job.status.replaceAll('_', ' ')}`);
   }
+  if (!job.worker) throw new HttpError(409, DELETED_ACCOUNT);
   try {
     const myRating = await writeRating({ job: job._id, fromUser: client._id, toUser: job.worker, score, referredFlag, comment });
     return { job, myRating };
@@ -209,6 +212,7 @@ export async function rateClient(jobId, worker, body) {
   const { score, comment } = parseRating(body);
   const job = await settledJob(jobId, worker, 'worker');
   if (!isSettled(job)) throw new HttpError(409, 'You can rate the client once they have confirmed the job and the payment has been released to you');
+  if (!job.client) throw new HttpError(409, DELETED_ACCOUNT);
   try {
     return await writeRating({ job: job._id, fromUser: worker._id, toUser: job.client, score, comment });
   } catch (err) {
