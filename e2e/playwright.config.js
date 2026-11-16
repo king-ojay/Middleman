@@ -2,9 +2,16 @@
 // local database (E2E_MONGO_URI, see resetDb.mjs), the console OTP provider
 // and the fake payment provider: no SMS, no MoMo, no Atlas, no live site.
 // The API runs from this folder so it never reads server/.env; every setting
-// it needs is given here. Uses the installed Google Chrome.
+// it needs is given here.
+//
+// Five projects: desktop Chromium (the installed Google Chrome), Firefox and
+// WebKit, and Pixel 7 and iPhone 14 emulation. The flow registers fixed phone
+// numbers, so each project needs its own fresh API and database: run them
+// one at a time with runAll.sh, which also merges the results into one HTML
+// report (playwright-report/).
 //   E2E_MONGO_URI='mongodb://127.0.0.1:27099/middleman_e2e?directConnection=true' npm test
-import { defineConfig } from '@playwright/test';
+//   E2E_MONGO_URI=... npx playwright test --project=iphone-14     (one project)
+import { defineConfig, devices } from '@playwright/test';
 import { checkE2eUri } from './resetDb.mjs';
 
 const API_PORT = 4199;
@@ -29,8 +36,16 @@ export default defineConfig({
   testMatch: '*.spec.js',
   timeout: 180_000,
   workers: 1,
-  reporter: [['list']],
-  use: { channel: 'chrome', baseURL: `http://localhost:${WEB_PORT}`, viewport: { width: 390, height: 844 } },
+  // runAll.sh sets E2E_PROJECT so each project's results land in their own blob.
+  reporter: [['list'], ['blob', { outputFile: `blob-report/${process.env.E2E_PROJECT || 'run'}.zip` }]],
+  use: { baseURL: `http://localhost:${WEB_PORT}` },
+  projects: [
+    { name: 'desktop-chromium', use: { ...devices['Desktop Chrome'], channel: 'chrome' } },
+    { name: 'desktop-firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'desktop-webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'pixel-7', use: { ...devices['Pixel 7'], channel: 'chrome' } },
+    { name: 'iphone-14', use: { ...devices['iPhone 14'] } }
+  ],
   webServer: [
     {
       command: `mkdir -p .logs && node resetDb.mjs && node ../server/server.js > ${API_LOG} 2>&1`,
