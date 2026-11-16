@@ -4,6 +4,7 @@ import Quote from './quote.model.js';
 import { validateRatingInput, writeRating } from '../trust/ratings.js';
 import { HttpError } from '../httpError.js';
 import { recordDispute, release, sync } from '../payments/escrow.js';
+import { AT_LIMIT_MESSAGE, WORKER_BUSY_MESSAGE, assertBelowLimit, claimSlot } from './workload.js';
 import { cleanDisputeDetails, DISPUTE_DETAILS_MAX, DISPUTE_DETAILS_MIN, disputeReasonLabel } from '../../config/disputeReasons.js';
 
 export { HttpError };
@@ -94,6 +95,8 @@ export async function respond(jobId, worker, { amount, depositAmount = 0 }) {
   if (!(worker.skills || []).includes(job.category)) {
     throw new HttpError(403, 'This job is outside your trades');
   }
+  // Browsing stays open at the limit; taking on more work does not (workload.js).
+  await assertBelowLimit(worker._id, AT_LIMIT_MESSAGE);
 
   const price = Number(amount ?? job.proposedPrice);
   const deposit = Number(depositAmount || 0);
@@ -119,36 +122,47 @@ export async function respond(jobId, worker, { amount, depositAmount = 0 }) {
 
 /**
  * The client picks one response (FR-05b): fixes the agreed price and deposit,
- * assigns the worker, and declines every other response.
+ * assigns the worker, and declines every other response, in one
+ * transaction. A worker at the active-job limit can't be chosen; the limit is
+ * checked inside the transaction (workload.js claimSlot), so simultaneous
+ * choices can't take a worker past it.
  */
 export async function selectResponse(jobId, quoteId, client) {
   if (!mongoose.isValidObjectId(jobId) || !mongoose.isValidObjectId(quoteId)) {
     throw new HttpError(404, 'Job or response not found');
   }
-  const quote = await Quote.findOne({ _id: quoteId, job: jobId }).lean();
-  if (!quote) throw new HttpError(404, 'Response not found for this job');
+  return mongoose.connection.transaction(async session => {
+    const quote = await Quote.findOne({ _id: quoteId, job: jobId }).session(session).lean();
+    if (!quote) throw new HttpError(404, 'Response not found for this job');
+    // Only the job's own client, while it is open, learns that a worker is
+    // busy; anyone else gets the usual refusal below.
+    const current = await Job.findById(jobId, 'client status').session(session).lean();
+    if (current?.status === 'open' && String(current.client) === String(client._id)) {
+      await claimSlot(quote.worker, session, WORKER_BUSY_MESSAGE);
+    }
 
-  const job = await Job.findOneAndUpdate(
-    { _id: jobId, client: client._id, status: 'open' },
-    {
-      status: 'quote_accepted',
-      worker: quote.worker,
-      agreedPrice: quote.amount,
-      depositAmount: quote.depositAmount,
-      acceptedAt: new Date()
-    },
-    { new: true }
-  );
-  if (!job) {
-    const existing = await Job.findById(jobId).lean();
-    if (!existing) throw new HttpError(404, 'Job not found');
-    if (String(existing.client) !== String(client._id)) throw new HttpError(403, 'This is not your job');
-    throw new HttpError(409, 'A worker has already been chosen for this job');
-  }
+    const job = await Job.findOneAndUpdate(
+      { _id: jobId, client: client._id, status: 'open' },
+      {
+        status: 'quote_accepted',
+        worker: quote.worker,
+        agreedPrice: quote.amount,
+        depositAmount: quote.depositAmount,
+        acceptedAt: new Date()
+      },
+      { new: true, session }
+    );
+    if (!job) {
+      const existing = await Job.findById(jobId).session(session).lean();
+      if (!existing) throw new HttpError(404, 'Job not found');
+      if (String(existing.client) !== String(client._id)) throw new HttpError(403, 'This is not your job');
+      throw new HttpError(409, 'A worker has already been chosen for this job');
+    }
 
-  await Quote.updateOne({ _id: quote._id }, { status: 'accepted' });
-  await Quote.updateMany({ job: job._id, _id: { $ne: quote._id } }, { status: 'declined' });
-  return job;
+    await Quote.updateOne({ _id: quote._id }, { status: 'accepted' }, { session });
+    await Quote.updateMany({ job: job._id, _id: { $ne: quote._id } }, { status: 'declined' }, { session });
+    return job;
+  });
 }
 
 const parseRating = body => {

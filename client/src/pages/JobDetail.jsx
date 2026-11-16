@@ -232,7 +232,8 @@ const ShieldIcon = () => (
 );
 
 // Every worker response to the client's price, in trust order (FR-05b), each
-// with why that worker ranks there. The first gets the large card when they
+// with why that worker ranks there. A worker at the active-job limit keeps
+// their place but shows "Busy right now" and can't be chosen. The first gets the large card when they
 // are trusted through the network or the area.
 function Offers({ job, onChosen }) {
   const [choosing, setChoosing] = useState(null);
@@ -261,7 +262,7 @@ function Offers({ job, onChosen }) {
       <ul className="grid gap-3">
         {job.responses.map((r, i) => {
           const label = i === 0 ? topLabel(r.reason) : null;
-          const props = { offer: r, job, busy: choosing !== null, choosing: choosing === r._id, onChoose: () => choose(r._id) };
+          const props = { offer: r, job, disabled: choosing !== null || r.busy, choosing: choosing === r._id, onChoose: () => choose(r._id) };
           return label ? <TopOffer key={r._id} label={label} {...props} /> : <OfferCard key={r._id} {...props} />;
         })}
       </ul>
@@ -279,11 +280,12 @@ const Deposit = ({ offer }) => offer.depositAmount > 0
 
 // The most trusted offer: chip and price comparison, who, the amount, the
 // path and sentence on a grey inset, then "Profile" (a third) and "Choose".
-function TopOffer({ offer: r, job, label, busy, choosing, onChoose }) {
+function TopOffer({ offer: r, job, label, disabled, choosing, onChoose }) {
   return (
     <Card as="li" className="p-5">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone="trust">{label}</Badge>
+        {r.busy && <Badge tone="soft">Busy right now</Badge>}
         <PriceDifference amount={r.amount} proposed={job.proposedPrice} top />
         {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
       </div>
@@ -302,7 +304,7 @@ function TopOffer({ offer: r, job, label, busy, choosing, onChoose }) {
       </div>
       <div className="grid grid-cols-3 gap-2 mt-4">
         <ProfileButton worker={r.worker} label="Profile" size="lg" />
-        <Button className="col-span-2" disabled={busy} onClick={onChoose}>
+        <Button className="col-span-2" disabled={disabled} onClick={onChoose}>
           {choosing ? 'Choosing…' : `Choose ${firstName(r.worker)}`}
         </Button>
       </div>
@@ -311,14 +313,19 @@ function TopOffer({ offer: r, job, label, busy, choosing, onChoose }) {
 }
 
 // Any other offer: who, why, the amount with how it compares, and "Choose".
-function OfferCard({ offer: r, job, busy, choosing, onChoose }) {
+function OfferCard({ offer: r, job, disabled, choosing, onChoose }) {
   return (
     <Card as="li" className="p-4">
       <div className="flex items-start gap-3">
         <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
         <div className="min-w-0 flex-1">
           <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
-          {r.worker.verifiedStatus === 'verified' && <div className="mt-1"><VerifiedBadge /></div>}
+          {(r.busy || r.worker.verifiedStatus === 'verified') && (
+            <div className="flex flex-wrap gap-2 mt-1">
+              {r.busy && <Badge tone="soft">Busy right now</Badge>}
+              {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
+            </div>
+          )}
           <p className="text-body text-muted mt-1">{reasonSentence(r.reason)}</p>
           <Deposit offer={r} />
         </div>
@@ -328,7 +335,7 @@ function OfferCard({ offer: r, job, busy, choosing, onChoose }) {
           <p className="text-card font-bold text-ink whitespace-nowrap">{formatRwf(r.amount)}</p>
           <PriceDifference amount={r.amount} proposed={job.proposedPrice} />
         </div>
-        <Button variant="secondary" size="md" disabled={busy} onClick={onChoose}>
+        <Button variant="secondary" size="md" disabled={disabled} onClick={onChoose}>
           {choosing ? 'Choosing…' : <>Choose<span className="sr-only"> {r.worker.name}</span></>}
         </Button>
       </div>

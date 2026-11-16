@@ -18,7 +18,8 @@ export const JOB_STATUSES = [
 // confirmed (completed), settled after a dispute (resolved: released or
 // refunded) or reopened (open again, with no worker). Disputed jobs are
 // active. While a job is active its two parties can call each other
-// (jobs.routes.js GET /:id).
+// (jobs.routes.js GET /:id), and it counts towards its worker's active-job
+// limit (workload.js).
 export const ACTIVE_STATUSES = ['quote_accepted', 'escrow_held', 'in_progress', 'awaiting_confirmation', 'disputed'];
 
 // Where the escrowed money is (modules/payments/escrow.js). funding,
