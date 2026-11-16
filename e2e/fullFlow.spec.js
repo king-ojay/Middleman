@@ -111,10 +111,13 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
     await asWorker.getByRole('button', { name: 'Start job' }).click();
     await asWorker.getByRole('button', { name: 'Mark as complete' }).click();
     await expect(asWorker.getByRole('button', { name: 'Mark as complete' })).toHaveCount(0);
+    // FR-13: the deadline for the automatic release
+    await expect(asWorker.getByText(/^Payment releases automatically on .+ unless the client confirms or reports a problem\.$/)).toBeVisible();
   });
 
   await test.step('8. the client confirms and rates 5 stars', async () => {
     await asClient.goto(new URL(jobUrl).pathname);
+    await expect(asClient.getByText(/^Payment releases automatically on .+ unless you confirm or report a problem\.$/)).toBeVisible();
     await asClient.getByRole('radio', { name: '5 stars' }).click();
     await asClient.getByRole('button', { name: 'Confirm job is done' }).click();
     await expect(asClient).toHaveURL(/\/my-jobs$/);

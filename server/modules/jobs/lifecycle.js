@@ -179,7 +179,8 @@ const isSettled = job => job.status === 'completed' && job.escrow?.status === 'r
  * Client confirms completion and rates the worker in one request (FR-12):
  * the rating is required, and "vouch" sets the referred flag (FR-17).
  * Confirming releases escrow to the worker; the rating is written once the
- * payout has succeeded. Returns { job, myRating }: myRating is null while the
+ * payout has succeeded. After an automatic release (FR-13) the same request
+ * just rates. Returns { job, myRating }: myRating is null while the
  * payout is still in flight (send the same request again to rate). If the
  * rating can't be written, the job stays confirmed and paid, and sending the
  * request again writes it.
@@ -187,7 +188,15 @@ const isSettled = job => job.status === 'completed' && job.escrow?.status === 'r
 export async function confirmAndRate(jobId, client, body) {
   const { score, comment, referredFlag } = parseRating(body);
   let job = await settledJob(jobId, client, 'client');
-  if (job.status === 'awaiting_confirmation') job = await release(jobId, client);
+  if (job.status === 'awaiting_confirmation') {
+    // An automatic release (FR-13) may claim the job at the same moment: then
+    // carry on with that payout and rate as usual.
+    job = await release(jobId, client).catch(async err => {
+      const now = err.status === 409 && await Job.findById(jobId).lean();
+      if (!now?.autoReleased) throw err;
+      return now;
+    });
+  }
   if (!isSettled(job)) {
     if (job.escrow?.status === 'releasing') return { job, myRating: null };
     throw new HttpError(409, job.status === 'awaiting_confirmation'

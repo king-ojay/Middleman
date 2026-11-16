@@ -13,6 +13,7 @@ import { withPublicReasons } from '../trust/reason.js';
 import Rating from '../trust/rating.model.js';
 import { HttpError, confirmAndRate, dispute, rateClient, respond, selectResponse, transition } from './lifecycle.js';
 import { fund, sync } from '../payments/escrow.js';
+import { autoReleaseAt, releaseIfDue } from '../payments/autoRelease.js';
 import { serverError } from '../serverError.js';
 
 const router = express.Router();
@@ -115,9 +116,14 @@ router.get('/mine', handle(async (req, res) => {
 // (FR-05b) with why each worker ranks there (reason.js); for a worker, their
 // own response. While the job is active, its client and its worker also get
 // the other's phone number (otherPartyPhone) for the call button; nobody else
-// does, and no other route sends it.
+// does, and no other route sends it. Both parties also get autoReleaseAt:
+// when the money is released automatically if the client neither confirms
+// nor reports a problem (FR-13), or null.
 router.get('/:id', handle(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw new HttpError(404, 'Job not found');
+  // FR-13: a job past its confirmation window is released as its client or
+  // worker opens it (the host may have slept through the deadline).
+  await releaseIfDue(req.params.id, req.user._id);
   const job = await Job.findById(req.params.id)
     .populate('client', 'name area verifiedStatus')
     .populate('worker', 'name area')
@@ -138,7 +144,7 @@ router.get('/:id', handle(async (req, res) => {
       reason
     }));
     const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
-    return res.json({ ...job, responses, myRating, ...withPhone(await otherPartyPhone(job, req.user._id)) });
+    return res.json({ ...job, responses, myRating, autoReleaseAt: autoReleaseAt(job), ...withPhone(await otherPartyPhone(job, req.user._id)) });
   }
 
   const myResponse = await Quote.findOne({ job: job._id, worker: req.user._id }).lean();
@@ -146,7 +152,7 @@ router.get('/:id', handle(async (req, res) => {
   // What was reported about a job is for its two parties (and the admin) only.
   const isWorker = job.worker && String(job.worker._id) === String(req.user._id);
   const { disputeReason, disputeDetails, disputedBy, ...shown } = job;
-  res.json({ ...(isWorker ? job : shown), myResponse, myRating, ...withPhone(await otherPartyPhone(job, req.user._id)) });
+  res.json({ ...(isWorker ? job : shown), myResponse, myRating, autoReleaseAt: isWorker ? autoReleaseAt(job) : null, ...withPhone(await otherPartyPhone(job, req.user._id)) });
 }));
 
 // POST /api/jobs/:id/responses — worker accepts the price or counters (FR-05).

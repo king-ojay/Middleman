@@ -80,8 +80,20 @@ export function stepsFor(card) {
   return state;
 }
 
-// The pill's words: a worker's released money is "Received".
-export const stateLabel = (state, role) => (state === 'released' && role === 'worker' ? 'Received' : JOB_STATES[state].label);
+// The pill's words: a worker's released money is "Received"; money the
+// system released after the confirmation window (FR-13) is "Released
+// automatically" for both.
+export function stateLabel(state, role, automatic = false) {
+  if (state === 'released' && automatic) return 'Released automatically';
+  return state === 'released' && role === 'worker' ? 'Received' : JOB_STATES[state].label;
+}
+
+// "Payment releases automatically on 18 Nov 2026, 14:05 unless you confirm or
+// report a problem." for the client; the worker's says "the client".
+export function autoReleaseNote(at, role) {
+  const who = role === 'client' ? 'you confirm or report' : 'the client confirms or reports';
+  return `Payment releases automatically on ${dateTimeLabel(at)} unless ${who} a problem.`;
+}
 
 // "To Walter N." on a client's card, "From Clara M." on a worker's.
 export const counterpartLabel = (other, role) => `${role === 'worker' ? 'From' : 'To'} ${other || DELETED_USER}`;
