@@ -33,6 +33,9 @@ export default function OpenJobs() {
   const [q, setQ] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [reload, setReload] = useState(0);
+  // The server's message when this worker holds the most active jobs allowed
+  // (server/config/workload.js); null below the limit.
+  const [atLimit, setAtLimit] = useState(null);
 
   useEffect(() => {
     // Only the latest filters may fill the list: a slow answer for filters
@@ -47,6 +50,15 @@ export default function OpenJobs() {
       .finally(() => current && setLoading(false));
     return () => { current = false; };
   }, [user, filters, q, reload]);
+
+  // The server refuses offers at the limit anyway; this only says so up front.
+  useEffect(() => {
+    let current = true;
+    api('/api/jobs/workload')
+      .then(w => current && setAtLimit(w.message))
+      .catch(() => current && setAtLimit(null));
+    return () => { current = false; };
+  }, [user, reload]);
 
   const set = patch => setFilters(f => ({ ...f, ...patch }));
   const search = e => {
@@ -66,6 +78,7 @@ export default function OpenJobs() {
 
   return (
     <PageLayout eyebrow={`Hello, ${firstName(user)}`} title={isDefault ? 'Jobs near you' : 'Find jobs'} tabBar role="worker">
+      {atLimit && <p role="status" className="text-body text-on-warn bg-warn rounded-field px-4 py-3 mb-4">{atLimit}</p>}
       <form onSubmit={search} role="search" className="relative mb-2">
         <label htmlFor="job-search" className="sr-only">Search jobs</label>
         <input
@@ -160,7 +173,7 @@ export default function OpenJobs() {
               <p className="text-small text-muted mt-4">Client's price</p>
               <p className="text-amount text-ink">{formatRwf(job.proposedPrice)}</p>
               {job.canRespond || job.myResponse
-                ? <ResponseControls job={job} onSent={() => setReload(n => n + 1)} />
+                ? <ResponseControls job={job} atLimit={Boolean(atLimit)} onSent={() => setReload(n => n + 1)} />
                 : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
             </div>
           </Card>
@@ -194,7 +207,7 @@ function JobCardSkeleton() {
   );
 }
 
-function ResponseControls({ job, onSent }) {
+function ResponseControls({ job, atLimit, onSent }) {
   const [mode, setMode] = useState(null); // 'accept' | 'counter' | null
   const [price, setPrice] = useState(String(job.proposedPrice));
   const [needsMaterials, setNeedsMaterials] = useState(false);
@@ -244,8 +257,8 @@ function ResponseControls({ job, onSent }) {
   return (
     <div className="mt-4">
       <div className="flex gap-3">
-        <Button size="md" className="flex-1" onClick={() => open('accept')}>Accept</Button>
-        <Button variant="outline" size="md" className="flex-1" onClick={() => open('counter')}>Counter</Button>
+        <Button size="md" className="flex-1" disabled={atLimit} onClick={() => open('accept')}>Accept</Button>
+        <Button variant="outline" size="md" className="flex-1" disabled={atLimit} onClick={() => open('counter')}>Counter</Button>
       </div>
 
       <Sheet open={mode !== null} title={mode === 'accept' ? 'Accept this price' : 'Your price'} onClose={() => setMode(null)}>

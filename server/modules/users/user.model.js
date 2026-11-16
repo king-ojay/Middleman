@@ -28,7 +28,10 @@ const userSchema = new mongoose.Schema({
   verificationMethod: { type: String, enum: [VERIFICATION_METHOD, null], default: null },
   referredBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }, // FR-03
   pinHash: { type: String, select: false }, // scrypt hash of the 4-digit login PIN, never returned
-  sessionVersion: { type: Number, default: 0, select: false } // bump to end every session (e.g. PIN reset)
+  sessionVersion: { type: Number, default: 0, select: false }, // bump to end every session (e.g. PIN reset)
+  // Bumped inside the transaction that gives this worker a job, so two
+  // simultaneous choices collide and the active-job limit holds (jobs/workload.js).
+  workloadLock: { type: Number, default: 0, select: false }
 }, { timestamps: true });
 
 userSchema.index({ role: 1, area: 1, skills: 1 });

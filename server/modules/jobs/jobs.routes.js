@@ -13,6 +13,8 @@ import { withPublicReasons } from '../trust/reason.js';
 import Rating from '../trust/rating.model.js';
 import { HttpError, confirmAndRate, dispute, rateClient, respond, selectResponse, transition } from './lifecycle.js';
 import { fund, sync } from '../payments/escrow.js';
+import { activeJobCounts, workload } from './workload.js';
+import { MAX_ACTIVE_JOBS } from '../../config/workload.js';
 import { serverError } from '../serverError.js';
 
 const router = express.Router();
@@ -78,6 +80,12 @@ router.get('/feed', requireRole('worker'), handle(async (req, res) => {
   })));
 }));
 
+// GET /api/jobs/workload — worker: how many active jobs they hold, the limit,
+// and, at the limit, the message their screen shows (workload.js).
+router.get('/workload', requireRole('worker'), handle(async (req, res) => {
+  res.json(await workload(req.user._id));
+}));
+
 // GET /api/jobs/mine — client: jobs they posted; worker: jobs assigned to them;
 // each with its number of responses and whether this user has rated it.
 router.get('/mine', handle(async (req, res) => {
@@ -99,8 +107,9 @@ router.get('/mine', handle(async (req, res) => {
 }));
 
 // GET /api/jobs/:id — the job; for its client, every response ranked by trust
-// (FR-05b) with why each worker ranks there (reason.js); for a worker, their
-// own response.
+// (FR-05b) with why each worker ranks there (reason.js) and, while the job is
+// open, whether that worker is at the active-job limit (busy; the order is
+// unchanged); for a worker, their own response.
 router.get('/:id', handle(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw new HttpError(404, 'Job not found');
   const job = await Job.findById(req.params.id)
@@ -116,11 +125,13 @@ router.get('/:id', handle(async (req, res) => {
       .filter(q => q.worker);
     const quoteByWorker = new Map(quotes.map(q => [String(q.worker._id), q]));
     const rankedWorkers = await withPublicReasons(await rankByTrust(req.user._id, quotes.map(q => q.worker), {}, { explain: true }));
+    const active = job.status === 'open' ? await activeJobCounts(quotes.map(q => q.worker._id)) : new Map();
     const responses = rankedWorkers.map(({ trustScore, trustSource, reason, ...worker }) => ({
       ...quoteByWorker.get(String(worker._id)),
       worker,
       trustSource,
-      reason
+      reason,
+      busy: (active.get(String(worker._id)) || 0) >= MAX_ACTIVE_JOBS
     }));
     const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
     return res.json({ ...job, responses, myRating });
