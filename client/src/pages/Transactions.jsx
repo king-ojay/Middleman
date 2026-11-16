@@ -148,7 +148,7 @@ function JobMoney({ card, role }) {
           <p className={`text-card font-bold whitespace-nowrap ${failedOnly ? 'text-muted line-through' : 'text-ink'}`}>
             <span className="sr-only">Amount: </span>{amountLabel(card.main)}
           </p>
-          <Badge tone={state.tone}>{stateLabel(card.state, role)}</Badge>
+          <Badge tone={state.tone}>{stateLabel(card.state, role, card.main.automatic)}</Badge>
         </div>
       </div>
 

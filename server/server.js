@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import app from './app.js';
 import { getMongoUri } from './config/db.js';
 import { getPaymentProvider } from './modules/payments/providers/index.js';
+import { startAutoRelease } from './modules/payments/autoRelease.js';
 
 const PORT = process.env.PORT || 4000;
 
@@ -19,6 +20,9 @@ console.log(`Connecting to MongoDB at ${mongo.description}...`);
 mongoose.connect(mongo.uri)
   .then(() => {
     app.listen(PORT, () => console.log(`Middleman API running on port ${PORT}`));
+    // FR-13: release jobs whose confirmation window has passed, now (the host
+    // may have slept through deadlines) and every 15 minutes.
+    startAutoRelease();
   })
   .catch(err => {
     console.error('MongoDB connection failed:', err.message);

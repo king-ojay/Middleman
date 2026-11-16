@@ -7,7 +7,8 @@
 //   worker: release "Received"             (in)
 // One row per movement (a requested record and, once settled, its succeeded
 // or failed record). Pending and failed attempts are listed as such and never
-// counted in the totals. The other person appears by short name only; no
+// counted in the totals. A release the system started after the confirmation
+// window (FR-13) has automatic: true. The other person appears by short name only; no
 // phone numbers, provider references or other people's ids are sent.
 import express from 'express';
 import Job from '../jobs/job.model.js';
@@ -42,7 +43,7 @@ export async function transactionsOf(userId) {
   const jobs = await Job.find({ $or: [{ client: userId }, { worker: userId }] }, 'client worker category description disputedAt escrow.status escrow.amount')
     .populate('client', 'name').populate('worker', 'name').lean();
   const byId = new Map(jobs.map(j => [String(j._id), j]));
-  const ledger = await Transaction.find({ job: { $in: jobs.map(j => j._id) }, providerRef: { $type: 'string' } }, 'job event amount currency providerRef createdAt')
+  const ledger = await Transaction.find({ job: { $in: jobs.map(j => j._id) }, providerRef: { $type: 'string' } }, 'job event amount currency providerRef actorRole createdAt')
     .sort({ createdAt: 1, _id: 1 }).lean();
 
   const movements = new Map(); // providerRef -> row being built
@@ -52,12 +53,16 @@ export async function transactionsOf(userId) {
     const role = String(job.client?._id ?? job.client) === String(userId) ? 'client' : 'worker';
     const shape = TYPES[role][kind];
     if (!shape) continue;
-    const row = movements.get(t.providerRef) || { id: String(t._id), job, kind, role, shape, amount: t.amount, currency: t.currency, startedAt: t.createdAt };
+    const row = movements.get(t.providerRef) || {
+      id: String(t._id), job, kind, role, shape, amount: t.amount, currency: t.currency, startedAt: t.createdAt,
+      // a release the system requested (not the client or an admin): the automatic one
+      automatic: kind === 'release' && step === 'requested' && t.actorRole === 'system'
+    };
     if (step === 'succeeded' || step === 'failed') Object.assign(row, { outcome: step, settledAt: t.createdAt });
     movements.set(t.providerRef, row);
   }
 
-  const rows = [...movements.values()].map(({ id, job, kind, role, shape, amount, currency, startedAt, outcome, settledAt }) => {
+  const rows = [...movements.values()].map(({ id, job, kind, role, shape, amount, currency, startedAt, outcome, settledAt, automatic }) => {
     const other = role === 'client' ? job.worker : job.client;
     return {
       id, // the ledger record that started it
@@ -66,6 +71,7 @@ export async function transactionsOf(userId) {
       status: statusOf(kind, outcome, job),
       amount,
       currency,
+      automatic,
       other: other?.name ? shortName(other.name) : null,
       // disputed: a problem was reported on this job (both parties already see that on the job page)
       job: { _id: job._id, category: job.category, description: job.description, disputed: Boolean(job.disputedAt) }

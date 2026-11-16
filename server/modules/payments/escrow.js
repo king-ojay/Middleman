@@ -4,6 +4,8 @@
 //
 //   quote_accepted --fund--> escrow_held -> in_progress -> awaiting_confirmation
 //     --client confirms (release)--> completed
+//     --or, AUTO_RELEASE_AFTER_MS after the worker marked it done, the
+//       same release started by the system (autoRelease)--> completed
 //   escrow_held | in_progress | awaiting_confirmation --dispute--> disputed
 //     --admin release--> resolved (released)   --admin refund--> resolved (refunded)
 //
@@ -31,6 +33,8 @@ import Transaction from './transaction.model.js';
 import { getPaymentProvider } from './providers/index.js';
 import { jobNote, safeExternalId } from './providers/safeText.js';
 import { HttpError } from '../httpError.js';
+import { now } from '../clock.js';
+import { AUTO_RELEASE_AFTER_MS } from '../../config/autoRelease.js';
 
 const MOVES = {
   fund: { api: 'collection', from: 'none', pending: 'funding', done: 'held', back: 'none', stamp: 'heldAt', fundsTo: 'escrow' },
@@ -57,7 +61,7 @@ const record = (job, entry, session) => Transaction.create([{
  * calls the provider. Returns the job after a first status check, or null
  * when no job matched (the caller explains why).
  */
-async function move(kind, { filter, jobStatus, doneStatus, backStatus, extra = {}, actor, actorRole }) {
+async function move(kind, { filter, jobStatus, doneStatus, backStatus, extra = {}, actor, actorRole, reason }) {
   const m = MOVES[kind];
   const provider = getPaymentProvider();
   const ref = randomUUID();
@@ -80,7 +84,7 @@ async function move(kind, { filter, jobStatus, doneStatus, backStatus, extra = {
       { new: true, session }
     ).lean();
     if (!claimed) return null;
-    await record(claimed, { event: `${kind}_requested`, escrowFrom: m.from, escrowTo: m.pending, providerRef: ref, actor, actorRole }, session);
+    await record(claimed, { event: `${kind}_requested`, escrowFrom: m.from, escrowTo: m.pending, providerRef: ref, actor, actorRole, ...(reason ? { reason } : {}) }, session);
     return claimed;
   });
   if (!job) return null;
@@ -136,8 +140,9 @@ export async function settle(jobId, ref, { status, reason = '', expired = false 
           'escrow.status': m.back,
           'escrow.pending': null,
           'escrow.lastFailure': { kind: p.kind, reason: expired ? 'expired' : 'failed', at: now },
-          // a failed release after confirming: the job is not confirmed after all
-          ...(p.backStatus === 'awaiting_confirmation' ? { completedAt: null } : {})
+          // a failed release after confirming (or after the deadline): the
+          // job is not confirmed after all
+          ...(p.backStatus === 'awaiting_confirmation' ? { completedAt: null, autoReleased: false } : {})
         };
     const updated = await Job.findOneAndUpdate({ _id: jobId, 'escrow.pending.ref': ref }, update, { new: true, session }).lean();
     if (!updated) return Job.findById(jobId).session(session).lean();
@@ -240,7 +245,7 @@ export async function release(jobId, client) {
   const job = await move('release', {
     filter: { _id: jobId, client: client._id, status: 'awaiting_confirmation' },
     jobStatus: 'completed',
-    extra: { completedAt: new Date() },
+    extra: { completedAt: new Date(), autoReleased: false },
     doneStatus: 'completed',
     backStatus: 'awaiting_confirmation',
     actor: client._id,
@@ -248,6 +253,29 @@ export async function release(jobId, client) {
   });
   if (job) return job;
   throw escrowConflict(await ownJob(jobId, client, 'client'), 'confirm');
+}
+
+/**
+ * FR-13: the release a client confirmation would start, started by the
+ * system once the job has awaited confirmation for AUTO_RELEASE_AFTER_MS
+ * (counted from workerCompletedAt) with no dispute. The same claim, provider
+ * call, idempotency key and ledger records as release(); the requested
+ * record has actorRole 'system', and the job is marked autoReleased. Returns
+ * the job, or null when it is not due (not yet, disputed, confirmed, or
+ * already claimed by another check running at the same moment). A refused
+ * payout puts the job back, as for the client, and the next check retries.
+ */
+export async function autoRelease(jobId) {
+  const at = now();
+  return move('release', {
+    filter: { _id: jobId, status: 'awaiting_confirmation', workerCompletedAt: { $lte: new Date(at.getTime() - AUTO_RELEASE_AFTER_MS) } },
+    jobStatus: 'completed',
+    extra: { completedAt: at, autoReleased: true },
+    doneStatus: 'completed',
+    backStatus: 'awaiting_confirmation',
+    actorRole: 'system',
+    reason: `released automatically ${AUTO_RELEASE_AFTER_MS / 3600000} hours after the work was marked done`
+  });
 }
 
 /** An admin settles a dispute: `release` pays the worker, `refund` repays the client. */

@@ -79,6 +79,8 @@ const jobSchema = new mongoose.Schema({
   startedAt: { type: Date, default: null },
   workerCompletedAt: { type: Date, default: null }, // starts the confirmation window
   completedAt: { type: Date, default: null },
+  // Released by the system after the confirmation window (FR-13), not by the client.
+  autoReleased: { type: Boolean, default: false },
   disputedAt: { type: Date, default: null },
   disputedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   // What the person who reported the problem said (config/disputeReasons.js).
