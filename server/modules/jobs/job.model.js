@@ -14,6 +14,13 @@ export const JOB_STATUSES = [
   'resolved'               // dispute settled: escrow released to the worker or refunded to the client
 ];
 
+// A job is active from the moment the client chooses the worker until it is
+// confirmed (completed), settled after a dispute (resolved: released or
+// refunded) or reopened (open again, with no worker). Disputed jobs are
+// active. While a job is active its two parties can call each other
+// (jobs.routes.js GET /:id).
+export const ACTIVE_STATUSES = ['quote_accepted', 'escrow_held', 'in_progress', 'awaiting_confirmation', 'disputed'];
+
 // Where the escrowed money is (modules/payments/escrow.js). funding,
 // releasing and refunding mean a provider call is in flight (escrow.pending).
 export const ESCROW_STATUSES = ['none', 'funding', 'held', 'releasing', 'released', 'refunding', 'refunded'];

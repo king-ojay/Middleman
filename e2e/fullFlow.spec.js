@@ -101,10 +101,13 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
     await asClient.getByRole('button', { name: 'Pay into escrow' }).click();
     await expect(asClient.getByRole('button', { name: 'Pay into escrow' })).toHaveCount(0);
     await expect(asClient.getByText(/held/i).first()).toBeVisible();
+    // an active job: the client can call the worker
+    await expect(asClient.getByRole('link', { name: `Call ${worker.name.split(' ')[0]}` })).toHaveAttribute('href', `tel:+250${worker.phone.slice(1)}`);
   });
 
   await test.step('7. the worker starts and marks the job done', async () => {
     await asWorker.goto(new URL(jobUrl).pathname);
+    await expect(asWorker.getByRole('link', { name: `Call ${client.name.split(' ')[0]}` })).toHaveAttribute('href', `tel:+250${client.phone.slice(1)}`);
     await asWorker.getByRole('button', { name: 'Start job' }).click();
     await asWorker.getByRole('button', { name: 'Mark as complete' }).click();
     await expect(asWorker.getByRole('button', { name: 'Mark as complete' })).toHaveCount(0);
@@ -122,6 +125,8 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
     await asWorker.getByRole('radio', { name: '4 stars' }).click();
     await asWorker.getByRole('button', { name: 'Send rating' }).click();
     await expect(asWorker.getByText('You rated Clara')).toBeVisible();
+    // confirmed: no longer active, so no call button
+    await expect(asWorker.getByRole('link', { name: /^Call / })).toHaveCount(0);
   });
 
   await test.step("10. the worker's private earnings show the amount", async () => {

@@ -4,7 +4,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import User from '../users/user.model.js';
-import Job from './job.model.js';
+import Job, { ACTIVE_STATUSES } from './job.model.js';
 import Quote from './quote.model.js';
 import { FEED_LIMIT, feedQuery } from './feed.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
@@ -28,6 +28,19 @@ const handle = fn => async (req, res) => {
     serverError(res, err, req);
   }
 };
+
+// The other party's phone number, for the call button: only for this job's
+// own client or worker, and only while the job is active (ACTIVE_STATUSES).
+// This is the one route that sends one user's phone number to another; null
+// for anyone else, at any other time, or when the other account is deleted.
+async function otherPartyPhone(job, userId) {
+  if (!ACTIVE_STATUSES.includes(job.status) || !job.client || !job.worker) return null;
+  const me = String(userId);
+  const other = me === String(job.client._id) ? job.worker._id : me === String(job.worker._id) ? job.client._id : null;
+  if (!other) return null;
+  return (await User.findById(other, 'phone').lean())?.phone ?? null;
+}
+const withPhone = phone => (phone ? { otherPartyPhone: phone } : {});
 
 const tierById = ranked => new Map(ranked.map(u => [String(u._id), u.trustSource]));
 
@@ -100,7 +113,9 @@ router.get('/mine', handle(async (req, res) => {
 
 // GET /api/jobs/:id — the job; for its client, every response ranked by trust
 // (FR-05b) with why each worker ranks there (reason.js); for a worker, their
-// own response.
+// own response. While the job is active, its client and its worker also get
+// the other's phone number (otherPartyPhone) for the call button; nobody else
+// does, and no other route sends it.
 router.get('/:id', handle(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw new HttpError(404, 'Job not found');
   const job = await Job.findById(req.params.id)
@@ -123,7 +138,7 @@ router.get('/:id', handle(async (req, res) => {
       reason
     }));
     const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
-    return res.json({ ...job, responses, myRating });
+    return res.json({ ...job, responses, myRating, ...withPhone(await otherPartyPhone(job, req.user._id)) });
   }
 
   const myResponse = await Quote.findOne({ job: job._id, worker: req.user._id }).lean();
@@ -131,7 +146,7 @@ router.get('/:id', handle(async (req, res) => {
   // What was reported about a job is for its two parties (and the admin) only.
   const isWorker = job.worker && String(job.worker._id) === String(req.user._id);
   const { disputeReason, disputeDetails, disputedBy, ...shown } = job;
-  res.json({ ...(isWorker ? job : shown), myResponse, myRating });
+  res.json({ ...(isWorker ? job : shown), myResponse, myRating, ...withPhone(await otherPartyPhone(job, req.user._id)) });
 }));
 
 // POST /api/jobs/:id/responses — worker accepts the price or counters (FR-05).
