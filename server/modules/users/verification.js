@@ -13,8 +13,10 @@
 // with ids and verification fields only, no name or phone.
 // scripts/verifyUser.js calls them. The unverified list is for the admin page
 // (/admin), so the researcher can find and call the person in front of them:
-// name, area, trades and phone number. No other route sends one user's phone
-// to another.
+// name, area, trades and phone number. The only other route that sends one
+// user's phone number to another is GET /api/jobs/:id: the other party's
+// number, to that job's own client or worker, while the job is active
+// (jobs.routes.js otherPartyPhone).
 import express from 'express';
 import mongoose from 'mongoose';
 import User, { VERIFICATION_METHOD } from './user.model.js';

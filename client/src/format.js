@@ -12,3 +12,12 @@ export function timeAgo(date, now = new Date()) {
   if (days === 1) return 'yesterday';
   return `${days} days ago`;
 }
+
+// A tel: link for a stored Rwandan number (07XXXXXXXX), in international form
+// so it dials from any phone: "0788123456" -> "tel:+250788123456".
+export function telHref(phone) {
+  const digits = String(phone ?? '').replace(/\D/g, '');
+  if (/^07\d{8}$/.test(digits)) return `tel:+250${digits.slice(1)}`;
+  if (/^2507\d{8}$/.test(digits)) return `tel:+${digits}`;
+  return `tel:${digits}`;
+}
