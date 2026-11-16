@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" font-family="Helvetica, Arial, sans-serif">
+  <title>Middleman architecture</title>
+  <desc>Browsers load the React app from Vercel and call the Express API on Render over HTTPS. The API stores data in MongoDB Atlas, sends one-time codes through an SMS provider, and moves sandbox money through the MTN MoMo sandbox. The researcher uses the admin page with the admin secret.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 10 5 0 10z" fill="#4b5563"/>
+    </marker>
+  </defs>
+  <rect width="960" height="560" fill="#ffffff"/>
+
+  <!-- people -->
+  <g>
+    <rect x="30" y="60" width="200" height="96" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="130" y="94" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Clients and workers</text>
+    <text x="130" y="118" text-anchor="middle" font-size="13" fill="#4b5563">phone, tablet or desktop</text>
+    <text x="130" y="138" text-anchor="middle" font-size="13" fill="#4b5563">browser</text>
+
+    <rect x="30" y="380" width="200" height="96" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="130" y="414" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Researcher</text>
+    <text x="130" y="438" text-anchor="middle" font-size="13" fill="#4b5563">/admin page, secret kept</text>
+    <text x="130" y="458" text-anchor="middle" font-size="13" fill="#4b5563">in memory only</text>
+  </g>
+
+  <!-- app -->
+  <rect x="300" y="40" width="250" height="136" rx="14" fill="#c9f2d6" stroke="#15803d"/>
+  <text x="425" y="72" text-anchor="middle" font-size="16" font-weight="700" fill="#0b5c2e">Web app (Vercel)</text>
+  <text x="425" y="98" text-anchor="middle" font-size="13" fill="#0b5c2e">React 18, Vite 5, Tailwind 3</text>
+  <text x="425" y="120" text-anchor="middle" font-size="13" fill="#0b5c2e">Discover, offers, jobs,</text>
+  <text x="425" y="140" text-anchor="middle" font-size="13" fill="#0b5c2e">Transactions, profile, admin</text>
+  <text x="425" y="162" text-anchor="middle" font-size="12" fill="#0b5c2e">CSP: scripts, styles, fonts from self</text>
+
+  <!-- api -->
+  <rect x="300" y="230" width="380" height="290" rx="14" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+  <text x="490" y="262" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">API (Render): Node 24, Express 4, Mongoose 8</text>
+  <g font-size="13" fill="#1f2937">
+    <rect x="320" y="282" width="160" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="400" y="306" text-anchor="middle" font-weight="700">auth, users</text>
+    <text x="400" y="326" text-anchor="middle" fill="#4b5563">PIN, OTP, sessions</text>
+
+    <rect x="500" y="282" width="160" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="580" y="306" text-anchor="middle" font-weight="700">jobs</text>
+    <text x="580" y="326" text-anchor="middle" fill="#4b5563">offers, lifecycle, disputes</text>
+
+    <rect x="320" y="358" width="160" height="62" rx="10" fill="#c9f2d6" stroke="#15803d"/>
+    <text x="400" y="382" text-anchor="middle" font-weight="700" fill="#0b5c2e">trust</text>
+    <text x="400" y="402" text-anchor="middle" fill="#0b5c2e">computeTrust, reasons</text>
+
+    <rect x="500" y="358" width="160" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="580" y="382" text-anchor="middle" font-weight="700">payments</text>
+    <text x="580" y="402" text-anchor="middle" font-size="12" fill="#4b5563">escrow, ledger, auto-release</text>
+
+    <rect x="320" y="434" width="340" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="490" y="458" text-anchor="middle" font-weight="700">admin (X-Admin-Secret)</text>
+    <text x="490" y="478" text-anchor="middle" fill="#4b5563">verification, dispute settlement, account deletion</text>
+  </g>
+
+  <!-- external -->
+  <rect x="740" y="240" width="190" height="80" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+  <text x="835" y="272" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">MongoDB Atlas</text>
+  <text x="835" y="296" text-anchor="middle" font-size="13" fill="#4b5563">replica set, transactions</text>
+
+  <rect x="740" y="350" width="190" height="80" rx="14" fill="#fdecc8" stroke="#8a4b08"/>
+  <text x="835" y="382" text-anchor="middle" font-size="16" font-weight="700" fill="#8a4b08">MTN MoMo sandbox</text>
+  <text x="835" y="406" text-anchor="middle" font-size="13" fill="#8a4b08">no real money</text>
+
+  <rect x="740" y="460" width="190" height="80" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+  <text x="835" y="492" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">SMS provider</text>
+  <text x="835" y="516" text-anchor="middle" font-size="13" fill="#4b5563">one-time codes</text>
+
+  <!-- arrows -->
+  <g stroke="#4b5563" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
+    <path d="M230 108 H296"/>
+    <path d="M425 176 V226"/>
+    <path d="M230 428 C 262 428 262 160 296 150"/>
+    <path d="M680 280 H736"/>
+    <path d="M680 390 H736"/>
+    <path d="M680 470 C 710 470 710 500 736 500"/>
+  </g>
+  <g font-size="12" fill="#4b5563">
+    <text x="263" y="100" text-anchor="middle">HTTPS</text>
+    <text x="434" y="206">HTTPS, JSON, CORS allow-list</text>
+    <text x="708" y="272" text-anchor="middle">data</text>
+    <text x="708" y="382" text-anchor="middle">money</text>
+  </g>
+</svg>
