@@ -14,6 +14,14 @@ export const JOB_STATUSES = [
   'resolved'               // dispute settled: escrow released to the worker or refunded to the client
 ];
 
+// A job is active from the moment the client chooses the worker until it is
+// confirmed (completed), settled after a dispute (resolved: released or
+// refunded) or reopened (open again, with no worker). Disputed jobs are
+// active. While a job is active its two parties can call each other
+// (jobs.routes.js GET /:id), and it counts towards its worker's active-job
+// limit (workload.js).
+export const ACTIVE_STATUSES = ['quote_accepted', 'escrow_held', 'in_progress', 'awaiting_confirmation', 'disputed'];
+
 // Where the escrowed money is (modules/payments/escrow.js). funding,
 // releasing and refunding mean a provider call is in flight (escrow.pending).
 export const ESCROW_STATUSES = ['none', 'funding', 'held', 'releasing', 'released', 'refunding', 'refunded'];
@@ -72,6 +80,8 @@ const jobSchema = new mongoose.Schema({
   startedAt: { type: Date, default: null },
   workerCompletedAt: { type: Date, default: null }, // starts the confirmation window
   completedAt: { type: Date, default: null },
+  // Released by the system after the confirmation window (FR-13), not by the client.
+  autoReleased: { type: Boolean, default: false },
   disputedAt: { type: Date, default: null },
   disputedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   // What the person who reported the problem said (config/disputeReasons.js).

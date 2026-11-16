@@ -187,32 +187,60 @@ test('the unverified list (admin page): secret only, unverified workers only, na
   assert.deepEqual((await list()).data.map(w => w.name), ['Worker Ver', 'Other Ver']);
 });
 
-test('no non-admin route sends a worker\'s phone number to anyone else', { skip }, async () => {
+// The one exception to "no phone numbers between users": GET /api/jobs/:id
+// gives a job's client the worker's number and the worker the client's, and
+// only while the job is active (quote_accepted, escrow_held, in_progress,
+// awaiting_confirmation, disputed). Every other non-admin route, and every
+// other person, gets none.
+test('a phone number reaches another user only on an active job\'s page, and only between its client and worker', { skip }, async () => {
+  const PHONES = ['788700001', '788700002', '788700003'];
+  const noPhones = (data, where) => {
+    const text = JSON.stringify(data);
+    for (const phone of PHONES) assert.equal(text.includes(phone), false, `${phone} in ${where}: ${text}`);
+  };
   const job = await Job.create({
     client: users.viewer._id, worker: users.worker._id, category: 'tiler', area: 'remera',
     description: 'Tile floor', proposedPrice: 9000, agreedPrice: 9000, status: 'quote_accepted', acceptedAt: new Date()
   });
   await Job.create({ client: users.viewer._id, category: 'tiler', area: 'remera', description: 'Tile wall', proposedPrice: 7000 });
+  const page = as => call('GET', `/api/jobs/${job._id}`, { as });
   try {
-    const answers = await Promise.all([
-      call('GET', '/api/discover?category=tiler', { as: 'viewer' }),
-      call('GET', '/api/discover?category=tiler&area=remera', { as: 'viewer' }),
-      call('GET', `/api/users/${users.worker._id}/profile`, { as: 'viewer' }),
-      call('GET', `/api/users/${users.worker._id}/profile`, { as: 'other' }),
-      call('POST', '/api/users/lookup', { body: { phone: '0788700002' } }),
-      call('GET', '/api/jobs/mine', { as: 'viewer' }),
-      call('GET', `/api/jobs/${job._id}`, { as: 'viewer' }),
-      call('GET', '/api/jobs/feed?area=all&trade=any', { as: 'other' })
-    ]);
-    for (const { status, data } of answers) {
+    const routes = {
+      'discover': call('GET', '/api/discover?category=tiler', { as: 'viewer' }),
+      'discover by area': call('GET', '/api/discover?category=tiler&area=remera', { as: 'viewer' }),
+      'profile seen by the client': call('GET', `/api/users/${users.worker._id}/profile`, { as: 'viewer' }),
+      'profile seen by another worker': call('GET', `/api/users/${users.worker._id}/profile`, { as: 'other' }),
+      'client profile seen by the worker': call('GET', `/api/users/${users.viewer._id}/profile`, { as: 'worker' }),
+      'lookup': call('POST', '/api/users/lookup', { body: { phone: '0788700002' } }),
+      'client\'s jobs': call('GET', '/api/jobs/mine', { as: 'viewer' }),
+      'worker\'s jobs': call('GET', '/api/jobs/mine', { as: 'worker' }),
+      'feed': call('GET', '/api/jobs/feed?area=all&trade=any', { as: 'other' }),
+      'client\'s transactions': call('GET', '/api/transactions', { as: 'viewer' }),
+      'worker\'s transactions': call('GET', '/api/transactions', { as: 'worker' }),
+      'the job seen by another worker': page('other')
+    };
+    for (const [where, request] of Object.entries(routes)) {
+      const { status, data } = await request;
+      assert.equal(status, 200, where);
+      noPhones(data, where);
+    }
+
+    // While active: each party gets the other's number, and nothing else.
+    for (const [as, expected] of [['viewer', '0788700002'], ['worker', '0788700001']]) {
+      const { status, data } = await page(as);
       assert.equal(status, 200);
-      const text = JSON.stringify(data);
-      for (const phone of ['788700002', '788700003']) assert.equal(text.includes(phone), false, `${phone} in ${text}`);
+      const { otherPartyPhone, ...rest } = data;
+      assert.equal(otherPartyPhone, expected, as);
+      noPhones(rest, `the job seen by ${as}`);
     }
     // the routes really answered about this worker and these jobs
-    assert.ok(answers[0].data.some(w => w.name === 'Worker Ver'));
-    assert.equal(answers[6].data.worker?.name, 'Worker Ver');
-    assert.ok(answers[7].data.some(j => j.description === 'Tile wall'));
+    assert.ok((await routes.discover).data.some(w => w.name === 'Worker Ver'));
+    assert.equal((await page('viewer')).data.worker?.name, 'Worker Ver');
+    assert.ok((await routes.feed).data.some(j => j.description === 'Tile wall'));
+
+    // Once it is no longer active, nobody gets it.
+    await Job.updateOne({ _id: job._id }, { status: 'completed' });
+    for (const as of ['viewer', 'worker', 'other']) noPhones((await page(as)).data, `the completed job seen by ${as}`);
   } finally {
     await Job.deleteMany({});
   }

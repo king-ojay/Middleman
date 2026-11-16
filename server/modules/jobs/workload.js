@@ -1,15 +1,12 @@
-// The cap on how many jobs a worker holds at once (config/workload.js). A job
-// is active for its worker from the moment the client chooses them until it
-// is confirmed (completed), settled after a dispute (resolved: released or
-// refunded) or reopened (open again, with no worker). Disputed jobs count.
-// At the limit a worker can still browse open jobs, but can't send an offer
-// and can't be chosen.
-import Job from './job.model.js';
+// The cap on how many jobs a worker holds at once (config/workload.js). The
+// jobs that count are the active ones (ACTIVE_STATUSES in job.model.js, the
+// one list, also used by the call button); disputed jobs count. At the limit
+// a worker can still browse open jobs, but can't send an offer and can't be
+// chosen.
+import Job, { ACTIVE_STATUSES } from './job.model.js';
 import User from '../users/user.model.js';
 import { HttpError } from '../httpError.js';
 import { MAX_ACTIVE_JOBS } from '../../config/workload.js';
-
-export const ACTIVE_STATUSES = ['quote_accepted', 'escrow_held', 'in_progress', 'awaiting_confirmation', 'disputed'];
 
 export const AT_LIMIT_MESSAGE = `You have ${MAX_ACTIVE_JOBS} jobs in progress. Finish one before taking another.`;
 export const WORKER_BUSY_MESSAGE = `This worker is busy right now with ${MAX_ACTIVE_JOBS} jobs in progress. Choose someone else, or try again later.`;

@@ -2,11 +2,14 @@
 // jobs count, refusing offers from a worker at the limit and choosing them,
 // and both allowed again once a job is confirmed or refunded. The offers list
 // marks a busy worker without changing the trust order, and two choices at
-// the same moment can't take a worker past the limit. Needs TEST_MONGO_URI.
+// the same moment can't take a worker past the limit, and an automatic
+// release (FR-13) frees a place like a confirmation. Needs TEST_MONGO_URI.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAX_ACTIVE_JOBS } from '../config/workload.js';
-import { ACTIVE_STATUSES, AT_LIMIT_MESSAGE, WORKER_BUSY_MESSAGE } from '../modules/jobs/workload.js';
+import { AUTO_RELEASE_AFTER_MS } from '../config/autoRelease.js';
+import { setNow } from '../modules/clock.js';
+import { AT_LIMIT_MESSAGE, WORKER_BUSY_MESSAGE } from '../modules/jobs/workload.js';
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
   const url = new URL(process.env.TEST_MONGO_URI);
@@ -17,7 +20,7 @@ const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
 const ADMIN_SECRET = 'workload-test-admin-secret';
 const DETAILS = 'The tap still leaks after the repair was finished.';
 
-let server, base, mongoose, Job, Quote, users, tokens;
+let server, base, mongoose, Job, ACTIVE_STATUSES, Quote, releaseDueJobs, users, tokens;
 
 before(async () => {
   if (skip) return;
@@ -27,8 +30,9 @@ before(async () => {
 
   mongoose = (await import('mongoose')).default;
   const { default: User } = await import('../modules/users/user.model.js');
-  ({ default: Job } = await import('../modules/jobs/job.model.js'));
+  ({ default: Job, ACTIVE_STATUSES } = await import('../modules/jobs/job.model.js'));
   ({ default: Quote } = await import('../modules/jobs/quote.model.js'));
+  ({ releaseDueJobs } = await import('../modules/payments/autoRelease.js'));
   const { default: Transaction } = await import('../modules/payments/transaction.model.js');
   const { createFakeProvider } = await import('../modules/payments/providers/fake.js');
   const { setPaymentProvider } = await import('../modules/payments/providers/index.js');
@@ -166,6 +170,43 @@ test('a disputed job counts until it is refunded; then the worker can respond ag
   assert.equal((await respond(job, 'cyiza')).status, 201);
   await Job.deleteMany({ worker: users.cyiza._id });
   await Job.deleteOne({ _id: job._id });
+});
+
+test('an automatic release frees a place: the worker can then be chosen, and both parties can call', { skip }, async () => {
+  await assigned('diane', 'quote_accepted');
+  await assigned('diane', 'in_progress');
+  const finishing = await heldJob('diane');
+  assert.equal((await post(`/api/jobs/${finishing._id}/start`, 'diane')).status, 200);
+  assert.equal((await post(`/api/jobs/${finishing._id}/complete`, 'diane')).status, 200);
+  const job = await openJob();
+  assert.equal((await respond(job, 'diane')).status, 409);
+
+  // The client neither confirms nor reports a problem in time.
+  const { workerCompletedAt } = await Job.findById(finishing._id).lean();
+  setNow(() => new Date(workerCompletedAt.getTime() + AUTO_RELEASE_AFTER_MS));
+  try {
+    assert.equal((await releaseDueJobs()).released, 1);
+  } finally {
+    setNow();
+  }
+  const released = await Job.findById(finishing._id).lean();
+  assert.equal(released.status, 'completed');
+  assert.equal(released.autoReleased, true);
+  assert.equal((await call('GET', '/api/jobs/workload', { as: 'diane' })).data.active, 2);
+
+  // Choosing goes through the same check-and-set, and the chosen job's page
+  // carries the phone numbers for the call button.
+  assert.equal((await respond(job, 'diane')).status, 201);
+  const quote = await Quote.findOne({ job: job._id, worker: users.diane._id }).lean();
+  assert.equal((await post(`/api/jobs/${job._id}/select`, 'client', { quoteId: quote._id })).status, 200);
+  assert.equal((await call('GET', '/api/jobs/workload', { as: 'diane' })).data.active, 3);
+  const page = await call('GET', `/api/jobs/${job._id}`, { as: 'client' });
+  assert.equal(page.data.otherPartyPhone, users.diane.phone);
+  assert.equal(page.data.autoReleaseAt, null);
+  assert.equal((await call('GET', `/api/jobs/${job._id}`, { as: 'diane' })).data.otherPartyPhone, users.client.phone);
+
+  await Job.deleteMany({ worker: users.diane._id });
+  await Quote.deleteMany({ worker: users.diane._id });
 });
 
 test('a busy worker is marked on the offers list in the same order, and choosing them is refused', { skip }, async () => {

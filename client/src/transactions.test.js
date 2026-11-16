@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  amountLabel, counterpartLabel, dateTimeLabel, groupTransactions, JOB_STATES, jobState, otherLabel, shortDate, stateLabel, STATUS, stepsFor, TYPE_LABELS
+  amountLabel, autoReleaseNote, counterpartLabel, dateTimeLabel, groupTransactions, JOB_STATES, jobState, otherLabel, shortDate, stateLabel, STATUS, stepsFor, TYPE_LABELS
 } from './transactions.js';
 
 test('every type and status the server sends has words', () => {
@@ -53,6 +53,10 @@ test('the three steps: green when released, ink while held, grey refund steps', 
   assert.equal(stateLabel('released', 'client'), 'Released');
   assert.equal(stateLabel('released', 'worker'), 'Received');
   assert.equal(stateLabel('held', 'client'), 'In escrow');
+  // released by the system after the confirmation window, for both parties
+  assert.equal(stateLabel('released', 'client', true), 'Released automatically');
+  assert.equal(stateLabel('released', 'worker', true), 'Released automatically');
+  assert.equal(stateLabel('held', 'client', true), 'In escrow');
 });
 
 test('a dispute that ended with the money released stays visible: Paid in, Problem reported, Released, in green', () => {
@@ -86,4 +90,10 @@ test('rows group into one card per job under month headings; failed attempts sta
   assert.equal(counterpartLabel(failedOnly.other, 'client'), 'To Deleted user');
   assert.equal(counterpartLabel('Clara M.', 'worker'), 'From Clara M.');
   assert.equal(shortDate('2026-11-13T23:30:00Z'), '14 Nov');
+});
+
+test('the automatic-release note gives the deadline in Kigali time, worded for each party', () => {
+  const at = '2026-11-18T12:05:00.000Z'; // 14:05 in Kigali
+  assert.equal(autoReleaseNote(at, 'client'), 'Payment releases automatically on 18 Nov 2026, 14:05 unless you confirm or report a problem.');
+  assert.equal(autoReleaseNote(at, 'worker'), 'Payment releases automatically on 18 Nov 2026, 14:05 unless the client confirms or reports a problem.');
 });

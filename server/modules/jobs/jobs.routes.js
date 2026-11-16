@@ -4,7 +4,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import User from '../users/user.model.js';
-import Job from './job.model.js';
+import Job, { ACTIVE_STATUSES } from './job.model.js';
 import Quote from './quote.model.js';
 import { FEED_LIMIT, feedQuery } from './feed.js';
 import { requireUser, requireRole } from '../auth/currentUser.js';
@@ -15,6 +15,7 @@ import { HttpError, confirmAndRate, dispute, rateClient, respond, selectResponse
 import { fund, sync } from '../payments/escrow.js';
 import { activeJobCounts, workload } from './workload.js';
 import { MAX_ACTIVE_JOBS } from '../../config/workload.js';
+import { autoReleaseAt, releaseIfDue } from '../payments/autoRelease.js';
 import { serverError } from '../serverError.js';
 
 const router = express.Router();
@@ -30,6 +31,19 @@ const handle = fn => async (req, res) => {
     serverError(res, err, req);
   }
 };
+
+// The other party's phone number, for the call button: only for this job's
+// own client or worker, and only while the job is active (ACTIVE_STATUSES).
+// This is the one route that sends one user's phone number to another; null
+// for anyone else, at any other time, or when the other account is deleted.
+async function otherPartyPhone(job, userId) {
+  if (!ACTIVE_STATUSES.includes(job.status) || !job.client || !job.worker) return null;
+  const me = String(userId);
+  const other = me === String(job.client._id) ? job.worker._id : me === String(job.worker._id) ? job.client._id : null;
+  if (!other) return null;
+  return (await User.findById(other, 'phone').lean())?.phone ?? null;
+}
+const withPhone = phone => (phone ? { otherPartyPhone: phone } : {});
 
 const tierById = ranked => new Map(ranked.map(u => [String(u._id), u.trustSource]));
 
@@ -109,9 +123,16 @@ router.get('/mine', handle(async (req, res) => {
 // GET /api/jobs/:id — the job; for its client, every response ranked by trust
 // (FR-05b) with why each worker ranks there (reason.js) and, while the job is
 // open, whether that worker is at the active-job limit (busy; the order is
-// unchanged); for a worker, their own response.
+// unchanged); for a worker, their own response. While the job is active, its
+// client and its worker also get the other's phone number (otherPartyPhone)
+// for the call button; nobody else does, and no other route sends it. Both
+// parties also get autoReleaseAt: when the money is released automatically if
+// the client neither confirms nor reports a problem (FR-13), or null.
 router.get('/:id', handle(async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) throw new HttpError(404, 'Job not found');
+  // FR-13: a job past its confirmation window is released as its client or
+  // worker opens it (the host may have slept through the deadline).
+  await releaseIfDue(req.params.id, req.user._id);
   const job = await Job.findById(req.params.id)
     .populate('client', 'name area verifiedStatus')
     .populate('worker', 'name area')
@@ -134,7 +155,7 @@ router.get('/:id', handle(async (req, res) => {
       busy: (active.get(String(worker._id)) || 0) >= MAX_ACTIVE_JOBS
     }));
     const myRating = await Rating.findOne({ job: job._id, fromUser: req.user._id }).lean();
-    return res.json({ ...job, responses, myRating });
+    return res.json({ ...job, responses, myRating, autoReleaseAt: autoReleaseAt(job), ...withPhone(await otherPartyPhone(job, req.user._id)) });
   }
 
   const myResponse = await Quote.findOne({ job: job._id, worker: req.user._id }).lean();
@@ -142,7 +163,7 @@ router.get('/:id', handle(async (req, res) => {
   // What was reported about a job is for its two parties (and the admin) only.
   const isWorker = job.worker && String(job.worker._id) === String(req.user._id);
   const { disputeReason, disputeDetails, disputedBy, ...shown } = job;
-  res.json({ ...(isWorker ? job : shown), myResponse, myRating });
+  res.json({ ...(isWorker ? job : shown), myResponse, myRating, autoReleaseAt: isWorker ? autoReleaseAt(job) : null, ...withPhone(await otherPartyPhone(job, req.user._id)) });
 }));
 
 // POST /api/jobs/:id/responses — worker accepts the price or counters (FR-05).

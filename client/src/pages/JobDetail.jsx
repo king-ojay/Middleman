@@ -17,7 +17,9 @@ import DisputeSummary from '../components/DisputeSummary.jsx';
 import LoadError from '../components/LoadError.jsx';
 import TrustPath from '../components/TrustPath.jsx';
 import ProfileButton from '../components/ProfileButton.jsx';
+import CallButton from '../components/CallButton.jsx';
 import { reasonSentence, topLabel } from '../trustReason.js';
+import { autoReleaseNote } from '../transactions.js';
 
 const POLL_EVERY_MS = 5000;
 const POLL_FOR_MS = 2 * 60 * 1000;
@@ -93,12 +95,22 @@ export default function JobDetail() {
       {!['disputed', 'resolved'].includes(job.status) && <JobStepper status={job.status} />}
 
       {confirming ? (
-        <ConfirmAndRate job={job} onChange={load} stalled={stalled} />
+        <>
+          {job.otherPartyPhone && (
+            <div className="flex justify-end mb-3"><CallButton phone={job.otherPartyPhone} person={counterpart} /></div>
+          )}
+          {job.autoReleaseAt && <p className="text-body text-muted mb-3">{autoReleaseNote(job.autoReleaseAt, user.role)}</p>}
+          <ConfirmAndRate job={job} onChange={load} stalled={stalled} />
+        </>
       ) : (
         <>
           <Card className="p-5">
-            <p className="text-body font-medium text-ink">{statusLabel(job.status, user.role)}</p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-body font-medium text-ink">{statusLabel(job.status, user.role)}</p>
+              <CallButton phone={job.otherPartyPhone} person={counterpart} />
+            </div>
             {escrowNote && <p className="text-body text-muted mt-1">{escrowNote}</p>}
+            {job.autoReleaseAt && <p className="text-body text-muted mt-1">{autoReleaseNote(job.autoReleaseAt, user.role)}</p>}
             <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
             <p className="text-amount text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
             {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
