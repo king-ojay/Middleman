@@ -173,7 +173,7 @@ Paths are relative to `server/` or `client/src/`.
 | FR-15 | A trust edge for every completed, rated job | Delivered | `modules/trust/ratings.js` |
 | FR-16 | Admins review verification and disputes | **Partly**: the admin page verifies workers after a manual review by the researcher and settles disputes; there are no uploaded documents to review, because the ethics approval rules out collecting ID documents and photos | `pages/Admin.jsx`, `modules/users/verification.js`, `modules/payments/payments.routes.js` |
 | FR-17 | Clients can flag a completed job as "referred" (vouch) | Delivered | `pages/JobDetail.jsx` (confirm and rate), `modules/trust/ratings.js` |
-| NFR-03 | Responsive, installable PWA for low bandwidth | **Partly**: responsive on phones, tablets and desktops, light and dark, self-hosted fonts; not installable yet (no web manifest or service worker) | `client/` |
+| NFR-03 | Responsive, installable PWA for low bandwidth | **Partly**: responsive on phones, tablets and desktops, light and dark, self-hosted fonts; installable from Chrome (web manifest, Chrome reports no installability errors) and Safari (Add to Home Screen icon); no offline use, as there is no service worker. Also packaged as an Android app (debug build, see [Android app](#android-app)) | `client/public/manifest.webmanifest`, `client/android/` |
 
 Added during the build:
 
@@ -269,13 +269,60 @@ MONGO_URI='mongodb://localhost:27017/middleman_regression?directConnection=true'
 MONGO_URI='mongodb://localhost:27017/middleman_regression?directConnection=true' node scripts/rankingRegression.js
 ```
 
+## Android app
+
+The same React app, packaged for Android with Capacitor 8 (`client/android/`,
+app id `rw.middleman.app`). The built client is bundled inside the APK and
+calls the **live API** on Render; the API allows the app's origin,
+`https://localhost`, in `CORS_ORIGINS`.
+
+It is a **debug build** only: not on the Play Store, and release signing is
+not set up. **iOS is not built.**
+
+Build the debug APK (needs Java 21 and the Android SDK, platform 36):
+
+```bash
+cd client
+npm run android:build        # web build for the live API + copy into android/
+export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home   # Java 21
+npm run android:apk          # android/app/build/outputs/apk/debug/app-debug.apk
+adb install -r android/app/build/outputs/apk/debug/app-debug.apk   # phone with USB debugging on
+```
+
+`npm run android:build:local` builds for an API on your computer instead
+(`http://10.0.2.2:4000` from the emulator; set `VITE_API_URL` for a phone on the
+same Wi-Fi). Only that build may use plain `http`.
+
+In the app, the Android back button goes back a page (and leaves the app from
+the first page), the status bar icons follow the light or dark theme, and
+`tel:` links (the call button) and links to other sites are handed to Android.
+
+**Tested on a real phone** (17 November 2026): Samsung Galaxy S21+ (SM-G996U1),
+Android 15, Android System WebView 157, debug APK against the live API, over
+USB. Screenshots: [`docs/screenshots/android/`](docs/screenshots/android/).
+
+| Step | Result | Screenshots |
+|---|---|---|
+| Sign up | Not tested on the phone; same screen and API as the website, where live sign-up works | 01 |
+| Post a job | Pass | 04 |
+| Offers ranked by trust, with the reason sentence | Pass | 05 |
+| Choose the worker | Pass | 06 |
+| Pay into escrow (sandbox; Android's own confirm dialog) | Pass | 07, 08 |
+| Call button opens the phone's dialler with the worker's number | Pass (no call placed) | 09 |
+| Worker marks done; automatic-release date shown | Pass | 10 |
+| Confirm and rate | Pass | 11, 12 |
+| Transactions | Pass | 13 |
+| Android back button goes back a page and keeps the app open | Pass | 14, 15 |
+| Close and reopen: still logged in | Pass | 18 |
+| Status bar, light and dark theme | Pass after a fix: the icons always followed the theme, but the sandbox banner and scrolled pages first ran under the status bar (16, 17); the banner now starts below it, with a strip in its colour behind the bar | 23–29 |
+
 ## Testing summary
 
 | Suite | Count | What it covers |
 |---|---|---|
 | Server unit and experiment tests | 109 | The trust rules and worked example, ratings as evidence, session tokens, OTP logging with masked phones, error logs, the MoMo sandbox client (against a stub, never the real API), the experiment code |
 | Server API tests (replica set) | 132 | Every route through HTTP: signup and login lockout, Discover rankings and reasons, the job feed, offers and choosing, escrow funding, release, refunds, double-payment races, disputes, automatic release with a test clock, the call-button privacy rule, the active-job limit and two clients choosing at once, Transactions, verification, account deletion, area changes |
-| Client tests | 27 | Reason sentences, trust tiles and paths, money and date labels, dispute reasons, phone links |
+| Client tests | 32 | Reason sentences, trust tiles and paths, money and date labels, dispute reasons, phone links, the Android build settings (plain http only in the local build) and the web manifest and icons |
 | End to end | 1 flow × 5 projects, all passing | Register a client and an invited worker, post a job, offer, see the ranked offer with its reason, choose, pay into escrow, call buttons, start, finish, the automatic-release deadline, confirm and rate both ways, earnings, Transactions, and the reason sentence on Discover |
 | Ranking regression | 300 rankings | Positive-only rankings on the seed data stay identical |
 
@@ -294,6 +341,7 @@ are in [`docs/TEST_MATRIX.md`](docs/TEST_MATRIX.md).
 | API | Express 4.22.3, Mongoose 8.24.4 (MongoDB driver 6.20.0), helmet 8.3.0, cors 2.8.6, dotenv 16.6.1 |
 | Database | MongoDB Atlas in production; MongoDB 7 as a one-node replica set locally |
 | App | React 18.3.1, React Router 6.30.6, Vite 5.4.21, Tailwind CSS 3.4.19, Manrope (self-hosted) |
+| Android app | Capacitor 8.6.2 (`@capacitor/app`, `@capacitor/splash-screen`), debug build only |
 | Tests | node:test (server and client), Playwright 1.56.1 (end to end) |
 | Hosting | Render (API), Vercel (app), MongoDB Atlas M0, all free tiers |
 
@@ -310,6 +358,7 @@ server/                Express API
   scripts/             experiments (benchmark), ranking regression, verify or delete a user, MoMo sandbox setup
   test/                server tests
 client/src/            React app: pages/, components/, components/ui/ (design system), pure helpers with tests
+client/android/        the Android app (Capacitor project; icon and splash in app/src/main/res)
 e2e/                   Playwright end-to-end flow, five browser and device projects
 shared/                pilot areas and dispute reasons, copied into server/ and client/ by npm run sync:shared
 docs/                  RUNBOOK.md, TEST_MATRIX.md, architecture.svg, screenshots/, designs/

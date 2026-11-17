@@ -8,6 +8,12 @@
   <meta name="description" content="Find trusted informal workers in Kigali, ranked by the people you trust. Post a job, compare offers and pay through sandbox escrow (no real money)." />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <!-- Installable from Chrome (manifest) and Safari's Add to Home Screen. No
+       service worker: nothing is cached, so the API is never served stale. -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-title" content="Middleman" />
+  <meta name="mobile-web-app-capable" content="yes" />
 </head>
 <body>
   <div id="root"></div>

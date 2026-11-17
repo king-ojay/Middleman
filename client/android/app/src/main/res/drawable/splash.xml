@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launch screen behind the splash: the white mark on the brand green. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background"/>
+    <item android:drawable="@drawable/splash_mark" android:gravity="center" android:width="240dp" android:height="240dp"/>
+</layer-list>
