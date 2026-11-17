@@ -4,18 +4,19 @@
 // thin border).
 import { Link, NavLink } from 'react-router-dom';
 import LogoMark from './LogoMark.jsx';
+import { t } from '../../i18n/index.js';
 
 const TABS = {
   client: [
-    { to: '/discover', label: 'Find', icon: 'find' },
-    { to: '/post-job', label: 'Post', icon: 'post' },
-    { to: '/my-jobs', label: 'My jobs', icon: 'jobs' },
-    { to: '/profile', label: 'Profile', icon: 'profile' }
+    { to: '/discover', label: 'nav.find', icon: 'find' },
+    { to: '/post-job', label: 'nav.post', icon: 'post' },
+    { to: '/my-jobs', label: 'nav.myJobs', icon: 'jobs' },
+    { to: '/profile', label: 'nav.profile', icon: 'profile' }
   ],
   worker: [
-    { to: '/jobs', label: 'Jobs', icon: 'jobs' },
-    { to: '/my-jobs', label: 'My work', icon: 'work' },
-    { to: '/profile', label: 'Profile', icon: 'profile' }
+    { to: '/jobs', label: 'nav.jobs', icon: 'jobs' },
+    { to: '/my-jobs', label: 'nav.myWork', icon: 'work' },
+    { to: '/profile', label: 'nav.profile', icon: 'profile' }
   ]
 };
 
@@ -37,13 +38,13 @@ const ICONS = {
 };
 
 export default function TabBar({ role }) {
-  const tabs = TABS[role] || [];
+  const tabs = (TABS[role] || []).map(tab => ({ ...tab, label: t(tab.label) }));
   return (
     <>
       {/* No container behind the buttons: only the buttons take taps. Pages
           leave 100px free at the bottom (PageLayout) so nothing hides under them. */}
       <nav
-        aria-label="Main"
+        aria-label={t('nav.main')}
         className="lg:hidden fixed inset-x-0 bottom-[max(16px,env(safe-area-inset-bottom))] z-20 pointer-events-none"
       >
         <ul className="mx-auto max-w-md px-4 flex items-center justify-evenly">
@@ -73,11 +74,11 @@ export default function TabBar({ role }) {
         </ul>
       </nav>
 
-      <nav aria-label="Main" className="hidden lg:block sticky top-0 z-20 bg-canvas">
+      <nav aria-label={t('nav.main')} className="hidden lg:block sticky top-0 z-20 bg-canvas">
         <div className="mx-auto max-w-[800px] px-10 h-[72px] flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3 rounded-full transition-opacity hover:opacity-80" aria-label="Middleman home">
+          <Link to="/" className="flex items-center gap-3 rounded-full transition-opacity hover:opacity-80" aria-label={t('nav.home')}>
             <LogoMark size={32} />
-            <span className="text-section text-ink">Middleman</span>
+            <span className="text-section text-ink">{t('app.name')}</span>
           </Link>
           <ul className="flex items-center gap-2">
             {tabs.map(tab => {

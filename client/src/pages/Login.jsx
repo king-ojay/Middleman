@@ -5,6 +5,8 @@ import { wakeApi } from '../api.js';
 import { useAuth, homePathFor } from '../auth.jsx';
 import { Avatar, Button, FormField, LogoMark, SlowNotice, TextInput } from '../components/ui/index.js';
 import AuthLayout from '../components/AuthLayout.jsx';
+import LanguageSwitch from '../components/LanguageSwitch.jsx';
+import { t } from '../i18n/index.js';
 
 export default function Login() {
   const { user, login } = useAuth();
@@ -34,16 +36,17 @@ export default function Login() {
   return (
     <AuthLayout>
       {/* from 1024px the logo and the trust card are on the side panel */}
-      <div className="flex items-center gap-3 mb-12 lg:hidden">
+      <div className="flex items-center gap-3 mb-6 lg:hidden">
         <LogoMark size={36} />
-        <span className="text-title text-ink">Middleman</span>
+        <span className="text-title text-ink">{t('app.name')}</span>
       </div>
+      <LanguageSwitch className="mb-8" />
 
-      <h1 className="text-display tracking-tight text-ink">Welcome back</h1>
-      <p className="text-body text-muted mt-2 mb-8">Log in with your phone number and PIN.</p>
+      <h1 className="text-display tracking-tight text-ink">{t('login.title')}</h1>
+      <p className="text-body text-muted mt-2 mb-8">{t('login.sub')}</p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <FormField label="Phone number">
+        <FormField label={t('common.phoneNumber')}>
           {field => (
             <TextInput
               {...field}
@@ -52,12 +55,12 @@ export default function Login() {
               autoComplete="tel"
               value={phone}
               onChange={e => setPhone(e.target.value)}
-              placeholder="078X XXX XXX"
+              placeholder={t('common.phonePlaceholder')}
               required
             />
           )}
         </FormField>
-        <FormField label="PIN" error={error}>
+        <FormField label={t('login.pin')} error={error}>
           {field => (
             <TextInput
               {...field}
@@ -73,23 +76,23 @@ export default function Login() {
           )}
         </FormField>
         <div>
-          <Button type="submit" disabled={submitting} aria-busy={submitting}>{submitting ? 'Logging in…' : 'Log in'}</Button>
+          <Button type="submit" disabled={submitting} aria-busy={submitting}>{submitting ? t('login.submitting') : t('login.submit')}</Button>
           <SlowNotice active={submitting} className="mt-3 text-center" />
         </div>
       </form>
       <div className="flex flex-col items-center mt-4">
-        <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted hover:text-ink hover:underline">Forgot your PIN?</Link>
-        <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-ink hover:underline">New here? Create an account</Link>
+        <Link to="/reset-pin" className="inline-flex items-center h-11 text-body text-muted hover:text-ink hover:underline">{t('login.forgot')}</Link>
+        <Link to="/register" className="inline-flex items-center h-11 text-body font-semibold text-ink hover:underline">{t('login.new')}</Link>
       </div>
 
       <section className="mt-12 bg-brand rounded-hero p-6 lg:hidden">
-        <h2 className="text-title text-on-brand-soft">Find someone trusted by people you trust.</h2>
-        <p className="text-body text-on-brand mt-2">See the workers your network already trusts.</p>
+        <h2 className="text-title text-on-brand-soft">{t('landing.headline')}</h2>
+        <p className="text-body text-on-brand mt-2">{t('login.promoSub')}</p>
         <div className="mt-5 flex items-center gap-3 bg-on-brand/10 rounded-card p-3">
           <Avatar name="Eric Habimana" tier="area" size={44} />
           <div>
             <p className="text-body font-semibold text-on-brand">Eric Habimana</p>
-            <p className="text-small text-on-brand-soft">Trusted in your network</p>
+            <p className="text-small text-on-brand-soft">{t('tier.network')}</p>
           </div>
         </div>
       </section>

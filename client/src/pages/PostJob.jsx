@@ -5,6 +5,7 @@ import { useAuth } from '../auth.jsx';
 import { formatRwf } from '../format.js';
 import { CATEGORIES, AREAS, categoryLabel, areaLabel } from '../options.js';
 import { Button, Chip, ChipRow, FormField, PageLayout, PriceInput, TextArea } from '../components/ui/index.js';
+import { t, tn } from '../i18n/index.js';
 
 export default function PostJob() {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ export default function PostJob() {
   const handleSubmit = async e => {
     e.preventDefault();
     setError('');
-    if (!proposedPrice) return setError('Enter the price you want to pay.');
+    if (!proposedPrice) return setError(t('post.err.price'));
     setPosted(null);
     setSubmitting(true);
     try {
@@ -38,52 +39,52 @@ export default function PostJob() {
   };
 
   return (
-    <PageLayout title="Post a job" subtitle="Takes under a minute." tabBar role="client" width="medium">
+    <PageLayout title={t('post.title')} subtitle={t('post.sub')} tabBar role="client" width="medium">
       {posted && (
         <div role="status" className="bg-trust text-on-trust rounded-card p-5 mb-6">
-          <p className="text-card">Job posted</p>
+          <p className="text-card">{t('post.posted')}</p>
           <p className="text-body mt-1">
             “{posted.description}” · {categoryLabel(posted.category)} · {areaLabel(posted.area)} · {formatRwf(posted.proposedPrice)}
           </p>
           <p className="text-body mt-1">
             {posted.matchingWorkers.length > 0
-              ? `Visible to ${posted.matchingWorkers.length} ${categoryLabel(posted.category).toLowerCase()} worker${posted.matchingWorkers.length === 1 ? '' : 's'} in ${areaLabel(posted.area)}.`
-              : `No ${categoryLabel(posted.category).toLowerCase()} workers in ${areaLabel(posted.area)} yet.`}
+              ? tn('post.visible', posted.matchingWorkers.length, { trade: categoryLabel(posted.category).toLowerCase(), area: areaLabel(posted.area) })
+              : t('post.noWorkers', { trade: categoryLabel(posted.category).toLowerCase(), area: areaLabel(posted.area) })}
           </p>
-          <Button to={`/my-jobs/${posted._id}`} state={{ offers: true }} variant="dark" size="md" className="mt-3">See offers</Button>
+          <Button to={`/my-jobs/${posted._id}`} state={{ offers: true }} variant="dark" size="md" className="mt-3">{t('post.seeOffers')}</Button>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <p className="text-label text-ink mb-2">What do you need?</p>
-          <ChipRow label="What do you need?">
+          <p className="text-label text-ink mb-2">{t('post.whatNeed')}</p>
+          <ChipRow label={t('post.whatNeed')}>
             {CATEGORIES.map(c => (
               <Chip key={c.value} active={c.value === category} onClick={() => setCategory(c.value)}>{c.label}</Chip>
             ))}
           </ChipRow>
         </div>
 
-        <FormField label="Describe the job">
+        <FormField label={t('post.describe')}>
           {field => (
-            <TextArea {...field} required value={description} onChange={e => setDescription(e.target.value)} placeholder="e.g. Kitchen tap is leaking, needs replacing" />
+            <TextArea {...field} required value={description} onChange={e => setDescription(e.target.value)} placeholder={t('post.describePlaceholder')} />
           )}
         </FormField>
 
         <div>
-          <p className="text-label text-ink mb-2">Area</p>
-          <ChipRow label="Area">
+          <p className="text-label text-ink mb-2">{t('common.area')}</p>
+          <ChipRow label={t('common.area')}>
             {AREAS.map(a => (
               <Chip key={a.value} active={a.value === area} onClick={() => setArea(a.value)}>{a.label}</Chip>
             ))}
           </ChipRow>
         </div>
 
-        <FormField label="Your price (RWF)" helper="Workers can accept this price or send one counter-offer." error={error}>
+        <FormField label={t('post.yourPrice')} helper={t('post.priceHelper')} error={error}>
           {field => <PriceInput {...field} value={proposedPrice} onChange={setProposedPrice} placeholder="15,000" />}
         </FormField>
 
-        <Button type="submit" disabled={submitting}>{submitting ? 'Posting…' : 'Post job'}</Button>
+        <Button type="submit" disabled={submitting}>{submitting ? t('post.submitting') : t('post.submit')}</Button>
       </form>
     </PageLayout>
   );

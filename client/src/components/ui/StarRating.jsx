@@ -1,3 +1,5 @@
+import { t, tn } from '../../i18n/index.js';
+
 function Star({ filled, size }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
@@ -10,10 +12,10 @@ function Star({ filled, size }) {
 }
 
 // Input: five stars with 48px hit areas. Read-only: small inline stars.
-export default function StarRating({ value = 0, onChange, readOnly = false, label = 'Rating' }) {
+export default function StarRating({ value = 0, onChange, readOnly = false, label = t('stars.rating') }) {
   if (readOnly) {
     return (
-      <span className="inline-flex gap-0.5" role="img" aria-label={`${value} out of 5 stars`}>
+      <span className="inline-flex gap-0.5" role="img" aria-label={t('stars.outOf5', { n: value })}>
         {[1, 2, 3, 4, 5].map(n => <Star key={n} filled={n <= value} size={16} />)}
       </span>
     );
@@ -26,7 +28,7 @@ export default function StarRating({ value = 0, onChange, readOnly = false, labe
           type="button"
           role="radio"
           aria-checked={value === n}
-          aria-label={`${n} star${n > 1 ? 's' : ''}`}
+          aria-label={tn('stars', n)}
           onClick={() => onChange(n)}
           className="w-12 h-12 flex items-center justify-center transition-transform hover:scale-110"
         >

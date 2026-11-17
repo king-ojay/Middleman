@@ -6,6 +6,8 @@ import { formatRwf } from '../format.js';
 import { JOB_STATES, amountLabel, counterpartLabel, dateTimeLabel, groupTransactions, shortDate, stateLabel, stepsFor } from '../transactions.js';
 import { Avatar, Badge, Button, Card, LoadingState, PageLayout, Skeleton, SkeletonText } from '../components/ui/index.js';
 import LoadError from '../components/LoadError.jsx';
+import { TestPaymentNotice } from '../components/JobActions.jsx';
+import { t, tn } from '../i18n/index.js';
 
 // Your own money movements (GET /api/transactions), reached from the
 // earnings card on your profile: the total, three tiles (in escrow, released,
@@ -46,35 +48,34 @@ export default function Transactions() {
   const isWorker = user.role === 'worker';
   const months = data ? groupTransactions(data.transactions) : [];
   return (
-    <PageLayout back title="Transactions" tabBar role={user.role} width="medium">
+    <PageLayout back title={t('tx.title')} tabBar role={user.role} width="medium">
       <p className="-mt-4 mb-6 flex items-center gap-2 text-body text-muted">
         <LockIcon />
-        Only you can see this
+        {t('tx.private')}
       </p>
+      <TestPaymentNotice className="mb-6" />
       {!data && !error && <TransactionsSkeleton />}
-      {error && <LoadError prefix="Couldn't load transactions" error={error} retrying={retrying} onRetry={tryAgain} />}
+      {error && <LoadError prefix={t('tx.loadError')} error={error} retrying={retrying} onRetry={tryAgain} />}
 
       {data && (
         <>
           <section aria-labelledby="total-label">
-            <p id="total-label" className="text-body text-muted">{isWorker ? 'Earned on Middleman' : 'Paid through Middleman'}</p>
+            <p id="total-label" className="text-body text-muted">{isWorker ? t('tx.earned') : t('tx.paid')}</p>
             <p className="text-amount-xl text-ink mt-1">{formatRwf(data.totals.total)}</p>
-            <p className="text-small text-muted mt-1">{data.totals.jobs} completed job{data.totals.jobs === 1 ? '' : 's'}</p>
+            <p className="text-small text-muted mt-1">{tn('tx.completedJobs', data.totals.jobs)}</p>
           </section>
 
           <div className="grid grid-cols-3 gap-2 mt-5">
-            {TILES.map(t => <Tile key={t.key} {...t} label={isWorker ? t.worker : t.client} value={data.summary[t.key]} />)}
+            {TILES.map(tile => <Tile key={tile.key} {...tile} label={t(isWorker ? tile.worker : tile.client)} value={data.summary[tile.key]} />)}
           </div>
 
           {data.transactions.length === 0 ? (
             <Card className="p-6 mt-8 text-center flex flex-col items-center gap-4">
               <p className="text-body text-muted max-w-sm">
-                {isWorker
-                  ? 'No money yet. When a client confirms a job you did, the payment shows up here.'
-                  : 'No money has moved yet. When you pay for a job into escrow, it shows up here.'}
+                {isWorker ? t('tx.empty.worker') : t('tx.empty.client')}
               </p>
               <div className="w-full max-w-xs">
-                {isWorker ? <Button to="/jobs">Find jobs</Button> : <Button to="/my-jobs">See my jobs</Button>}
+                {isWorker ? <Button to="/jobs">{t('myJobs.findJobs')}</Button> : <Button to="/my-jobs">{t('tx.seeMyJobs')}</Button>}
               </div>
             </Card>
           ) : months.map(m => (
@@ -89,9 +90,9 @@ export default function Transactions() {
           {data.nextOffset != null && (
             <div className="mt-4">
               <Button variant="secondary" onClick={loadMore} disabled={loadingMore} aria-busy={loadingMore}>
-                {loadingMore ? 'Loading…' : 'Show more'}
+                {loadingMore ? t('common.loading') : t('tx.showMore')}
               </Button>
-              {moreError && <p className="text-small text-danger mt-2" role="alert">Couldn't load more: {moreError}</p>}
+              {moreError && <p className="text-small text-danger mt-2" role="alert">{t('tx.moreError', { message: moreError })}</p>}
             </div>
           )}
         </>
@@ -109,9 +110,9 @@ const LockIcon = () => (
 // The three tiles (server: transactions.routes.js summary). Released is the
 // same figure as the total above.
 const TILES = [
-  { key: 'inEscrow', client: 'In escrow', worker: 'In escrow', fill: 'bg-soft text-ink' },
-  { key: 'released', client: 'Released', worker: 'Received', fill: 'bg-trust text-on-trust' },
-  { key: 'refunded', client: 'Refunded', worker: 'Refunded to client', fill: 'bg-surface text-ink' }
+  { key: 'inEscrow', client: 'tx.tile.inEscrow', worker: 'tx.tile.inEscrow', fill: 'bg-soft text-ink' },
+  { key: 'released', client: 'tx.tile.released', worker: 'tx.tile.received', fill: 'bg-trust text-on-trust' },
+  { key: 'refunded', client: 'tx.tile.refunded', worker: 'tx.tile.refundedToClient', fill: 'bg-surface text-ink' }
 ];
 
 function Tile({ label, value, fill }) {
@@ -121,7 +122,7 @@ function Tile({ label, value, fill }) {
       <p className="mt-2 text-card font-bold break-words">
         {value.total.toLocaleString('en-US')}<span className="text-micro"> RWF</span>
       </p>
-      <p className="text-small">{value.jobs} job{value.jobs === 1 ? '' : 's'}</p>
+      <p className="text-small">{tn('tx.tile.jobs', value.jobs)}</p>
     </div>
   );
 }
@@ -146,18 +147,18 @@ function JobMoney({ card, role }) {
         </div>
         <div className="shrink-0 flex flex-col items-end gap-1">
           <p className={`text-card font-bold whitespace-nowrap ${failedOnly ? 'text-muted line-through' : 'text-ink'}`}>
-            <span className="sr-only">Amount: </span>{amountLabel(card.main)}
+            <span className="sr-only">{t('tx.amount')}</span>{amountLabel(card.main)}
           </p>
           <Badge tone={state.tone}>{stateLabel(card.state, role, card.main.automatic)}</Badge>
         </div>
       </div>
 
-      <ol className="grid grid-cols-3 gap-1.5 mt-4" aria-label="Where the money is">
+      <ol className="grid grid-cols-3 gap-1.5 mt-4" aria-label={t('tx.where')}>
         {steps.steps.map((step, i) => (
           <li key={step} className="min-w-0">
             <span aria-hidden="true" className={`block h-1.5 rounded-full ${i < steps.done ? BAR[steps.bar] : 'bg-line'}`} />
             <span className={`block mt-1.5 text-micro ${i < steps.done ? 'text-ink' : 'text-muted'}`}>
-              {step}<span className="sr-only">{i < steps.done ? ' (done)' : ' (not yet)'}</span>
+              {step}<span className="sr-only">{i < steps.done ? t('tx.step.done') : t('tx.step.notYet')}</span>
             </span>
           </li>
         ))}
@@ -165,10 +166,10 @@ function JobMoney({ card, role }) {
 
       {card.failed.map(f => (
         <p key={f.id} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mt-3 pt-3 border-t border-line text-small text-muted">
-          <span>Failed attempt · <time dateTime={f.at}>{dateTimeLabel(f.at)}</time></span>
+          <span>{t('tx.failedAttempt')} · <time dateTime={f.at}>{dateTimeLabel(f.at)}</time></span>
           <span className="flex items-center gap-2">
             <span className="line-through">{amountLabel(f)}</span>
-            <Badge tone="problem">Failed</Badge>
+            <Badge tone="problem">{t('tx.status.failed')}</Badge>
           </span>
         </p>
       ))}
@@ -179,7 +180,7 @@ function JobMoney({ card, role }) {
 // The shape of the page: total, three tiles, a month heading and job cards.
 function TransactionsSkeleton() {
   return (
-    <LoadingState label="Loading transactions">
+    <LoadingState label={t('tx.loading')}>
       <SkeletonText on="canvas" className="w-44" />
       <Skeleton on="canvas" className="h-12 w-56 mt-1 rounded-full" />
       <SkeletonText size="small" on="canvas" className="w-28 mt-1" />

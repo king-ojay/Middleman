@@ -1,12 +1,13 @@
 import { useId } from 'react';
 import { AREAS } from '../options.js';
+import { t } from '../i18n/index.js';
 
 // Pick one pilot area (the list is edited in shared/areas.js). Nothing is chosen until the person
 // taps one: there is no default, and no GPS or device location is used.
 // Chips size to their label, never split it, and wrap onto the next row; each row stretches to fill
 // the width. The selected chip's thicker edge is an inset ring, so selecting never changes a chip's
 // size or reflows the rows.
-export default function AreaPicker({ value, onChange, label = 'Your area', error }) {
+export default function AreaPicker({ value, onChange, label = t('register.yourArea'), error }) {
   const labelId = useId();
   return (
     <div>

@@ -3,12 +3,10 @@ import { useEffect } from 'react';
 import { wakeApi } from '../api.js';
 import { Button, Card, LogoMark, PageLayout } from '../components/ui/index.js';
 import { TrustExample } from '../components/TrustGraphMark.jsx';
+import LanguageSwitch from '../components/LanguageSwitch.jsx';
+import { t } from '../i18n/index.js';
 
-const steps = [
-  { title: 'Post what you need done', body: 'Describe the job and name your price. Takes under a minute.' },
-  { title: 'See who your network trusts', body: 'Workers someone you know has hired and vouched for come first.' },
-  { title: 'Pay when the job is done', body: 'Agree the price up front and confirm the work before the money moves.' }
-];
+const STEPS = [1, 2, 3];
 
 export default function Landing() {
   useEffect(wakeApi, []);
@@ -16,17 +14,20 @@ export default function Landing() {
     <PageLayout width="wide">
       <div className="lg:grid lg:grid-cols-2 lg:gap-16 lg:items-center lg:min-h-[70vh]">
         <div>
-          <div className="flex items-center gap-3 mb-10">
-            <LogoMark size={36} />
-            <span className="text-title text-ink">Middleman</span>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-10">
+            <div className="flex items-center gap-3">
+              <LogoMark size={36} />
+              <span className="text-title text-ink">{t('app.name')}</span>
+            </div>
+            <LanguageSwitch />
           </div>
 
-          <h1 className="text-display tracking-tight text-ink">Find someone trusted by people you trust.</h1>
-          <p className="text-body text-muted mt-3">Agree a fair price and pay safely when the job is done.</p>
+          <h1 className="text-display tracking-tight text-ink">{t('landing.headline')}</h1>
+          <p className="text-body text-muted mt-3">{t('landing.sub')}</p>
 
           <div className="mt-8 space-y-3 max-w-sm">
-            <Button to="/register">Create an account</Button>
-            <Button to="/login" variant="outline">Log in</Button>
+            <Button to="/register">{t('landing.createAccount')}</Button>
+            <Button to="/login" variant="outline">{t('landing.logIn')}</Button>
           </div>
         </div>
 
@@ -36,14 +37,14 @@ export default function Landing() {
       </div>
 
       <section className="mt-10">
-        <h2 className="text-section text-ink mb-4">How it works</h2>
+        <h2 className="text-section text-ink mb-4">{t('landing.howItWorks')}</h2>
         <ol className="grid gap-3 md:grid-cols-3">
-          {steps.map((s, i) => (
-            <Card as="li" key={s.title} className="flex gap-4">
-              <span className="w-11 h-11 shrink-0 rounded-full bg-trust text-on-trust text-card flex items-center justify-center">{i + 1}</span>
+          {STEPS.map(n => (
+            <Card as="li" key={n} className="flex gap-4">
+              <span className="w-11 h-11 shrink-0 rounded-full bg-trust text-on-trust text-card flex items-center justify-center">{n}</span>
               <div>
-                <h3 className="text-card text-ink">{s.title}</h3>
-                <p className="text-body text-muted mt-1">{s.body}</p>
+                <h3 className="text-card text-ink">{t(`landing.step${n}.title`)}</h3>
+                <p className="text-body text-muted mt-1">{t(`landing.step${n}.body`)}</p>
               </div>
             </Card>
           ))}

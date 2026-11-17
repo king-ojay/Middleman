@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { onSlowChange } from '../api.js';
 import { onInlineChange } from '../slowNotice.js';
+import { t } from '../i18n/index.js';
 
 // Shown while any API request has been waiting more than 3 seconds, which on
 // the free host almost always means the server is waking from sleep. Sits
@@ -19,7 +20,7 @@ export default function ServerWaking() {
       className="fixed inset-x-0 bottom-[calc(theme(height.tabbar)+12px+env(safe-area-inset-bottom))] lg:bottom-6 z-30 flex justify-center px-screen pointer-events-none"
     >
       <p className="max-w-md rounded-2xl bg-surface shadow-float px-4 py-3 text-body text-ink text-center">
-        Waking up the server, this can take up to a minute
+        {t('server.waking')}
       </p>
     </div>
   );

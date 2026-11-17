@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { formatRwf } from '../format.js';
-import { DELETED_USER } from '../greeting.js';
+import { deletedUser } from '../greeting.js';
+import { t } from '../i18n/index.js';
 import { JOB_GROUPS, categoryLabel, areaLabel, moneyLabel, statusChip } from '../options.js';
 import { Badge, Button, Card, LoadingState, PageLayout, Skeleton, SkeletonText } from '../components/ui/index.js';
 import JobActions from '../components/JobActions.jsx';
@@ -47,13 +48,13 @@ export default function MyJobs() {
 
   return (
     <PageLayout
-      title={isClient ? 'My jobs' : 'My work'}
-      subtitle={isClient ? 'Jobs you have posted.' : 'Jobs clients have chosen you for.'}
+      title={t(`myJobs.title.${role}`)}
+      subtitle={t(`myJobs.sub.${role}`)}
       tabBar
       role={role}
     >
       {loading && (
-        <LoadingState label="Loading jobs">
+        <LoadingState label={t('jobs.loading')}>
           <div className="py-1 mb-5 flex gap-2 overflow-hidden">
             {[0, 1, 2, 3].map(i => <Skeleton key={i} on="canvas" className="h-11 w-28 shrink-0 rounded-full" />)}
           </div>
@@ -62,19 +63,19 @@ export default function MyJobs() {
           </ul>
         </LoadingState>
       )}
-      {error && <LoadError prefix="Couldn't load jobs" error={error} retrying={retrying} onRetry={tryAgain} />}
+      {error && <LoadError prefix={t('myJobs.loadError')} error={error} retrying={retrying} onRetry={tryAgain} />}
 
       {!loading && !error && jobs.length === 0 && (
         isClient
-          ? <EmptyState text="You haven't posted any jobs yet. Describe what you need and workers nearby will send offers." action={<Button to="/post-job">Post a job</Button>} />
-          : <EmptyState text="No clients have chosen you yet. Send offers on jobs near you to get hired." action={<Button to="/jobs">Find jobs</Button>} />
+          ? <EmptyState text={t('myJobs.empty.client')} action={<Button to="/post-job">{t('myJobs.postJob')}</Button>} />
+          : <EmptyState text={t('myJobs.empty.worker')} action={<Button to="/jobs">{t('myJobs.findJobs')}</Button>} />
       )}
 
       {!loading && !error && jobs.length > 0 && (
         <>
           <div
             role="tablist"
-            aria-label="Job status"
+            aria-label={t('myJobs.tabs')}
             className="-mx-screen px-screen py-1 mb-5 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0 md:flex-wrap md:overflow-visible"
           >
             {groups.map(g => {
@@ -127,8 +128,8 @@ function JobCard({ job, role, onChange }) {
   const price = job.agreedPrice ?? job.proposedPrice;
   // Nobody chosen yet on an open job; a missing person otherwise deleted their account.
   const who = isClient
-    ? (job.worker ? job.worker.name : job.status === 'open' ? null : DELETED_USER)
-    : job.client?.name || DELETED_USER;
+    ? (job.worker ? job.worker.name : job.status === 'open' ? null : deletedUser())
+    : job.client?.name || deletedUser();
 
   return (
     <Card as="li" className="p-5 flex flex-col gap-4">
@@ -145,13 +146,13 @@ function JobCard({ job, role, onChange }) {
       {/* mt-auto: in a row of cards, prices and buttons line up at the bottom */}
       <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <div>
-          <p className="text-small text-muted">{job.agreedPrice != null ? 'Agreed price' : 'Your price'}</p>
+          <p className="text-small text-muted">{job.agreedPrice != null ? t('myJobs.agreedPrice') : t('myJobs.yourPrice')}</p>
           <p className="text-card font-bold text-ink whitespace-nowrap">{formatRwf(price)}</p>
         </div>
         {money && (
           <p className="text-label text-ink inline-flex items-center gap-2">
             <span aria-hidden="true" className={`w-2 h-2 rounded-full ${job.escrow?.status === 'released' ? 'bg-signal' : job.escrow?.status === 'held' ? 'bg-ink' : 'bg-faint'}`} />
-            <span className="sr-only">Money: </span>{money}
+            <span className="sr-only">{t('myJobs.money')}</span>{money}
           </p>
         )}
       </div>
@@ -184,12 +185,12 @@ function JobCardSkeleton() {
 function NextStep({ job, role, onChange }) {
   const to = `/my-jobs/${job._id}`;
   const released = job.escrow?.status === 'released';
-  if (role === 'client' && job.status === 'open' && job.responseCount > 0) return <Button to={to} state={offersState(job, role)}>See offers</Button>;
+  if (role === 'client' && job.status === 'open' && job.responseCount > 0) return <Button to={to} state={offersState(job, role)}>{t('post.seeOffers')}</Button>;
   if (job.status === 'completed' && released && !job.rated && job[role === 'client' ? 'worker' : 'client']) {
-    return <Button to={to}>{role === 'client' ? 'Send rating' : 'Rate the client'}</Button>;
+    return <Button to={to}>{role === 'client' ? t('myJobs.sendRating') : t('myJobs.rateClient')}</Button>;
   }
   if (job.escrow?.pending || hasPrimaryAction(job, role)) return <JobActions job={job} role={role} onChange={onChange} primaryOnly />;
-  return <Button to={to} variant="outline">View job</Button>;
+  return <Button to={to} variant="outline">{t('myJobs.viewJob')}</Button>;
 }
 
 // Tells the job page it is opening on offers, so its skeleton takes their shape.
@@ -212,18 +213,17 @@ function GroupEmpty({ group, role, groups, showTab }) {
   const has = key => groups.find(g => g.key === key)?.jobs.length > 0;
   const go = (key, label) => <Button variant="outline" onClick={() => showTab(key)}>{label}</Button>;
   const isClient = role === 'client';
-  const findWork = isClient ? <Button to="/post-job">Post a job</Button> : <Button to="/jobs">Find jobs</Button>;
+  const findWork = isClient ? <Button to="/post-job">{t('myJobs.postJob')}</Button> : <Button to="/jobs">{t('myJobs.findJobs')}</Button>;
+  const seeActive = t(isClient ? 'myJobs.seeActiveJobs' : 'myJobs.seeActiveWork');
 
   const content = {
-    waiting: ['No jobs waiting for offers. Post a job and workers nearby can respond.', <Button to="/post-job">Post a job</Button>],
+    waiting: [t('myJobs.groupEmpty.waiting'), <Button to="/post-job">{t('myJobs.postJob')}</Button>],
     active: isClient
-      ? ['Nothing active right now. Choose an offer on a posted job to get started.', has('waiting') ? go('waiting', 'See jobs waiting for offers') : findWork]
-      : ['No active work right now. Send offers on open jobs to get hired.', findWork],
-    confirm: isClient
-      ? ['Nothing to confirm. When a worker marks a job done, it shows up here.', has('active') ? go('active', 'See active jobs') : findWork]
-      : ['Nothing waiting for the client. Jobs you mark complete show up here.', has('active') ? go('active', 'See active work') : findWork],
-    completed: ['No completed jobs yet. Finished and paid jobs show up here.', has('active') ? go('active', isClient ? 'See active jobs' : 'See active work') : findWork],
-    disputed: ['No problems reported. If something goes wrong on a job, report it from the job page.', go(has('active') ? 'active' : groups[0].key, 'Back to my jobs')]
+      ? [t('myJobs.groupEmpty.active.client'), has('waiting') ? go('waiting', t('myJobs.seeWaiting')) : findWork]
+      : [t('myJobs.groupEmpty.active.worker'), findWork],
+    confirm: [t(`myJobs.groupEmpty.confirm.${role}`), has('active') ? go('active', seeActive) : findWork],
+    completed: [t('myJobs.groupEmpty.completed'), has('active') ? go('active', seeActive) : findWork],
+    disputed: [t('myJobs.groupEmpty.disputed'), go(has('active') ? 'active' : groups[0].key, t('myJobs.backToMyJobs'))]
   }[group];
 
   return <EmptyState text={content[0]} action={content[1]} />;

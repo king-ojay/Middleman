@@ -1,4 +1,5 @@
 import { useId, useRef } from 'react';
+import { t } from '../../i18n/index.js';
 
 const INPUT = 'w-full bg-surface border border-field rounded-field px-4 text-body text-ink placeholder:text-faint focus:border-primary focus:outline-none focus-visible:ring-0 focus-visible:ring-offset-0';
 
@@ -52,7 +53,7 @@ export function PriceInput({ value, onChange, className = '', ...props }) {
 
 // Four 72px boxes for a 4-digit PIN, filled left to right. Typing advances,
 // Backspace clears the last digit and steps back.
-export function PinBoxes({ value, onChange, id, label = 'PIN', ...props }) {
+export function PinBoxes({ value, onChange, id, label = t('login.pin'), ...props }) {
   const refs = useRef([]);
   // The latest PIN, updated before focus moves, so the focus guard below
   // never sees a stale value mid-typing.
@@ -75,7 +76,7 @@ export function PinBoxes({ value, onChange, id, label = 'PIN', ...props }) {
           inputMode="numeric"
           autoComplete="off"
           maxLength={1}
-          aria-label={`${label} digit ${i + 1}`}
+          aria-label={t('pin.digit', { label, n: i + 1 })}
           value={value[i] || ''}
           onFocus={() => { if (i > current.current.length) refs.current[current.current.length]?.focus(); }}
           onChange={e => {

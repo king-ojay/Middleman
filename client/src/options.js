@@ -1,22 +1,12 @@
 import { AREAS } from './areas.shared.js';
+import { t, tn } from './i18n/index.js';
 
 // Dropdown options and display labels. Trade values must match the server's
 // config/categories.js; areas come from shared/areas.js (copied here as
-// areas.shared.js, since the app is built from client/ alone).
-export const CATEGORIES = [
-  { value: 'electrician', label: 'Electrician' },
-  { value: 'plumber', label: 'Plumber' },
-  { value: 'mason', label: 'Mason' },
-  { value: 'carpenter', label: 'Carpenter' },
-  { value: 'painter', label: 'Painter' },
-  { value: 'tiler', label: 'Tiler' },
-  { value: 'welder', label: 'Welder' },
-  { value: 'mechanic', label: 'Mechanic' },
-  { value: 'cleaner', label: 'Cleaner' },
-  { value: 'tailor', label: 'Tailor' },
-  { value: 'hairdresser', label: 'Hairdresser' },
-  { value: 'phone_repair', label: 'Phone repair' }
-];
+// areas.shared.js, since the app is built from client/ alone). Trade names
+// are translated (i18n "trade.*"); area names are place names and stay as they are.
+const TRADES = ['electrician', 'plumber', 'mason', 'carpenter', 'painter', 'tiler', 'welder', 'mechanic', 'cleaner', 'tailor', 'hairdresser', 'phone_repair'];
+export const CATEGORIES = TRADES.map(value => ({ value, get label() { return t(`trade.${value}`); } }));
 
 // The pilot areas: edited in shared/areas.js, one list for the server and the app.
 export { AREAS };
@@ -25,78 +15,54 @@ const labelFrom = list => value => list.find(o => o.value === value)?.label ?? v
 export const categoryLabel = labelFrom(CATEGORIES);
 export const areaLabel = labelFrom(AREAS);
 
-// What each job status means to the person looking at it.
-const STATUS_LABELS = {
-  open: { client: 'Waiting for workers to respond', worker: 'Open' },
-  quote_accepted: { client: 'Worker chosen — pay into escrow so they can start', worker: 'You were chosen — waiting for the client to pay into escrow' },
-  escrow_held: { client: 'Payment held in escrow — worker can start', worker: 'Payment held in escrow — you can start' },
-  in_progress: { client: 'In progress', worker: 'In progress' },
-  awaiting_confirmation: { client: 'Worker says it is done — please confirm', worker: 'Waiting for the client to confirm' },
-  completed: { client: 'Completed', worker: 'Completed' },
-  disputed: { client: 'Problem reported — payment locked until it is reviewed', worker: 'Problem reported — payment locked until it is reviewed' },
-  resolved: { client: 'Problem resolved', worker: 'Problem resolved' }
-};
+// What each job status means to the person looking at it (i18n "status.*").
+const STATUSES = ['open', 'quote_accepted', 'escrow_held', 'in_progress', 'awaiting_confirmation', 'completed', 'disputed', 'resolved'];
+export const statusLabel = (status, role) => (STATUSES.includes(status) ? t(`status.${status}.${role}`) : status);
 
-export const statusLabel = (status, role) => STATUS_LABELS[status]?.[role] ?? status;
-
-// Where the escrowed money is, in words, when that is worth showing.
-const ESCROW_LABELS = {
-  funding: { client: 'Waiting for you to approve the payment', worker: 'Waiting for the client to approve the payment' },
-  releasing: { client: 'Paying the worker…', worker: 'Payment to you is on its way' },
-  released: { client: 'Paid to the worker', worker: 'Paid to you' },
-  refunding: { client: 'Refund on its way', worker: 'Refunding the client' },
-  refunded: { client: 'Refunded to you', worker: 'Refunded to the client' }
-};
-
-export const escrowLabel = (escrow, role) => ESCROW_LABELS[escrow?.status]?.[role] ?? null;
+// Where the escrowed money is, in words, when that is worth showing (i18n "escrow.*").
+const ESCROW_WORDS = ['funding', 'releasing', 'released', 'refunding', 'refunded'];
+export const escrowLabel = (escrow, role) => (ESCROW_WORDS.includes(escrow?.status) ? t(`escrow.${escrow.status}.${role}`) : null);
 
 // My jobs / My work: jobs grouped by where they are (layout only; the job's
 // status decides the group). Workers are only on a job once chosen, so they
 // have no "Waiting for offers" group.
 export const JOB_GROUPS = [
-  { key: 'waiting', label: 'Waiting for offers', statuses: ['open'], roles: ['client'] },
-  { key: 'active', label: 'Active', statuses: ['quote_accepted', 'escrow_held', 'in_progress'], roles: ['client', 'worker'] },
-  { key: 'confirm', label: 'Awaiting confirmation', statuses: ['awaiting_confirmation'], roles: ['client', 'worker'] },
-  { key: 'completed', label: 'Completed', statuses: ['completed'], roles: ['client', 'worker'] },
-  { key: 'disputed', label: 'Disputed', statuses: ['disputed', 'resolved'], roles: ['client', 'worker'] }
-];
+  { key: 'waiting', statuses: ['open'], roles: ['client'] },
+  { key: 'active', statuses: ['quote_accepted', 'escrow_held', 'in_progress'], roles: ['client', 'worker'] },
+  { key: 'confirm', statuses: ['awaiting_confirmation'], roles: ['client', 'worker'] },
+  { key: 'completed', statuses: ['completed'], roles: ['client', 'worker'] },
+  { key: 'disputed', statuses: ['disputed', 'resolved'], roles: ['client', 'worker'] }
+].map(g => ({ ...g, get label() { return t(`group.${g.key}`); } }));
 
 // The short status chip on a job card: its words and tone (action = this
-// person has something to do; wait, done, problem).
-const STATUS_CHIPS = {
-  open: { client: ['Waiting for offers', 'wait'] },
-  quote_accepted: { client: ['Pay to start', 'action'], worker: ['Waiting for payment', 'wait'] },
-  escrow_held: { client: ['Ready to start', 'wait'], worker: ['Ready to start', 'action'] },
-  in_progress: { client: ['In progress', 'wait'], worker: ['In progress', 'action'] },
-  awaiting_confirmation: { client: ['Check the work', 'action'], worker: ['Waiting for client', 'wait'] },
-  completed: { client: ['Completed', 'done'], worker: ['Completed', 'done'] },
-  disputed: { client: ['Problem reported', 'problem'], worker: ['Problem reported', 'problem'] },
-  resolved: { client: ['Resolved', 'wait'], worker: ['Resolved', 'wait'] }
+// person has something to do; wait, done, problem). Words: i18n "chip.*".
+const CHIP_TONES = {
+  open: { client: 'wait' },
+  quote_accepted: { client: 'action', worker: 'wait' },
+  escrow_held: { client: 'wait', worker: 'action' },
+  in_progress: { client: 'wait', worker: 'action' },
+  awaiting_confirmation: { client: 'action', worker: 'wait' },
+  completed: { client: 'done', worker: 'done' },
+  disputed: { client: 'problem', worker: 'problem' },
+  resolved: { client: 'wait', worker: 'wait' }
 };
 
 export function statusChip(job, role) {
-  if (job.escrow?.pending?.kind === 'fund') return { label: 'Payment pending', tone: 'wait' };
+  if (job.escrow?.pending?.kind === 'fund') return { label: t('chip.paymentPending'), tone: 'wait' };
   if (job.status === 'open' && role === 'client' && job.responseCount > 0) {
-    return { label: `${job.responseCount} offer${job.responseCount === 1 ? '' : 's'}`, tone: 'action' };
+    return { label: tn('chip.offers', job.responseCount), tone: 'action' };
   }
-  const [label, tone] = STATUS_CHIPS[job.status]?.[role] ?? [job.status, 'wait'];
-  return { label, tone };
+  const tone = CHIP_TONES[job.status]?.[role];
+  return tone ? { label: t(`chip.${job.status}.${role}`), tone } : { label: job.status, tone: 'wait' };
 }
 
 // Where the money is, in one or two words, once a worker is chosen. Jobs
-// finished before escrow existed (no escrow record) show nothing.
-const MONEY = {
-  funding: { client: 'Payment pending', worker: 'Payment pending' },
-  held: { client: 'Paid · in escrow', worker: 'In escrow' },
-  releasing: { client: 'Releasing to worker', worker: 'On its way to you' },
-  released: { client: 'Released to worker', worker: 'Released · paid to you' },
-  refunding: { client: 'Refund on its way', worker: 'Refunding the client' },
-  refunded: { client: 'Refunded to you', worker: 'Refunded to the client' }
-};
+// finished before escrow existed (no escrow record) show nothing. Words: i18n "money.*".
+const MONEY = ['funding', 'held', 'releasing', 'released', 'refunding', 'refunded'];
 
 export function moneyLabel(job, role) {
   const status = job.escrow?.status;
-  if (MONEY[status]) return MONEY[status][role];
-  if (job.status === 'quote_accepted') return 'Not paid yet';
+  if (MONEY.includes(status)) return t(`money.${status}.${role}`);
+  if (job.status === 'quote_accepted') return t('money.notPaid');
   return null;
 }

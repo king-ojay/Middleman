@@ -1,16 +1,13 @@
 import Badge from './Badge.jsx';
+import { t } from '../../i18n/index.js';
 
 // Labelled trust tier, never a raw score (Section 3.3.3). Accepts the API's
 // trustSource values too ('fallback' is the "new" tier).
-const TIERS = {
-  network: { tone: 'trust', label: 'Trusted in your network' },
-  area: { tone: 'trust', label: 'Trusted in this area' },
-  new: { tone: 'soft', label: 'New · not yet rated' }
-};
+const TONES = { network: 'trust', area: 'trust', new: 'soft' };
 
 export const tierKey = tier => (tier === 'network' || tier === 'area' ? tier : 'new');
 
 export default function TierBadge({ tier }) {
-  const { tone, label } = TIERS[tierKey(tier)];
-  return <Badge tone={tone}>{label}</Badge>;
+  const key = tierKey(tier);
+  return <Badge tone={TONES[key]}>{t(`tier.${key}`)}</Badge>;
 }

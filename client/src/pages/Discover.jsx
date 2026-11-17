@@ -9,6 +9,7 @@ import TrustPath from '../components/TrustPath.jsx';
 import ProfileButton from '../components/ProfileButton.jsx';
 import { Avatar, Badge, Card, Chip, ChipRow, LoadingState, PageLayout, Sheet, Skeleton, SkeletonText, VerifiedBadge } from '../components/ui/index.js';
 import { reasonSentence, topLabel } from '../trustReason.js';
+import { t } from '../i18n/index.js';
 
 export default function Discover() {
   const { user } = useAuth();
@@ -51,7 +52,7 @@ export default function Discover() {
       setCategory(match.value);
       setSearchHint('');
     } else {
-      setSearchHint('Pick a trade below.');
+      setSearchHint(t('discover.pickTrade'));
     }
   };
 
@@ -70,14 +71,14 @@ export default function Discover() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 21s-7-6.1-7-11.5a7 7 0 0 1 14 0C19 14.9 12 21 12 21Z" /><circle cx="12" cy="9.5" r="2.5" />
           </svg>
-          <span><span className="sr-only">Area: </span>{area ? areaLabel(area) : 'All areas'}</span>
+          <span><span className="sr-only">{t('discover.areaLabel')}</span>{area ? areaLabel(area) : t('common.allAreas')}</span>
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" className={changingArea ? 'rotate-180' : ''}>
             <path d="m2.5 4.5 3.5 3.5 3.5-3.5" className="stroke-current" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
         <button
           type="button"
-          aria-label="How ranking works"
+          aria-label={t('discover.howRanking')}
           onClick={() => setExplaining(true)}
           className="w-11 h-11 shrink-0 inline-flex items-center justify-center rounded-full bg-surface text-ink transition-colors hover:bg-soft"
         >
@@ -87,8 +88,8 @@ export default function Discover() {
         </button>
       </div>
       {changingArea && (
-        <ChipRow label="Area" className="mt-3">
-          <Chip active={!area} onClick={() => setArea('')}>All areas</Chip>
+        <ChipRow label={t('common.area')} className="mt-3">
+          <Chip active={!area} onClick={() => setArea('')}>{t('common.allAreas')}</Chip>
           {AREAS.map(a => (
             <Chip key={a.value} active={a.value === area} onClick={() => setArea(a.value)}>{a.label}</Chip>
           ))}
@@ -97,19 +98,19 @@ export default function Discover() {
 
       <header className="mt-6 mb-5">
         <p className="text-body text-muted mb-1">{greeting(user)}</p>
-        <h1 className="text-display text-ink">Who do you need today?</h1>
+        <h1 className="text-display text-ink">{t('discover.title')}</h1>
       </header>
 
       <form onSubmit={search} role="search" className="relative mb-2">
-        <label htmlFor="trade-search" className="sr-only">Search for a trade</label>
+        <label htmlFor="trade-search" className="sr-only">{t('discover.searchLabel')}</label>
         <input
           id="trade-search"
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="e.g. electrician, plumber"
+          placeholder={t('discover.searchPlaceholder')}
           className="w-full h-14 bg-surface border border-field rounded-full pl-5 pr-16 text-body text-ink placeholder:text-faint focus:border-primary focus:outline-none"
         />
-        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center transition-colors hover:bg-primary-hover active:bg-primary-hover">
+        <button type="submit" aria-label={t('common.search')} className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center transition-colors hover:bg-primary-hover active:bg-primary-hover">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
             <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -117,16 +118,16 @@ export default function Discover() {
       </form>
       {searchHint && <p className="text-small text-muted mb-2" role="status">{searchHint}</p>}
 
-      <ChipRow label="Trade" className="mt-4">
+      <ChipRow label={t('common.trade')} className="mt-4">
         {CATEGORIES.map(c => (
           <Chip key={c.value} active={c.value === category} onClick={() => setCategory(c.value)}>{c.label}</Chip>
         ))}
       </ChipRow>
 
       <div className="mt-6">
-        {error && <LoadError prefix="Couldn't load workers" error={error} retrying={retrying} onRetry={tryAgain} />}
+        {error && <LoadError prefix={t('discover.loadError')} error={error} retrying={retrying} onRetry={tryAgain} />}
         {loading && !retrying && (
-          <LoadingState label="Loading workers">
+          <LoadingState label={t('discover.loading')}>
             <TopWorkerSkeleton />
             <SkeletonText size="section" on="canvas" className="w-56 mt-8 mb-3" />
             <ul className="grid gap-3">
@@ -135,7 +136,7 @@ export default function Discover() {
           </LoadingState>
         )}
         {!loading && !error && workers.length === 0 && (
-          <p className="text-body text-muted">No {categoryLabel(category).toLowerCase()} workers{area ? ` in ${areaLabel(area)}` : ''} yet.</p>
+          <p className="text-body text-muted">{t(area ? 'discover.noneIn' : 'discover.none', { trade: categoryLabel(category).toLowerCase(), area: areaLabel(area) })}</p>
         )}
 
         {/* One ranked column in the server's order: the first-ranked worker
@@ -164,11 +165,11 @@ export default function Discover() {
         )}
       </div>
 
-      <Sheet open={explaining} title="How ranking works" onClose={() => setExplaining(false)}>
+      <Sheet open={explaining} title={t('discover.howRanking')} onClose={() => setExplaining(false)}>
         <ul className="space-y-3 text-body text-ink">
-          <li>People your network trusts come first: workers you rated well or invited, and workers rated well by people you know.</li>
-          <li>Next come workers rated well by people who live in the same area as them.</li>
-          <li>Everyone else is new on Middleman, with workers verified by Middleman first.</li>
+          <li>{t('discover.explain.1')}</li>
+          <li>{t('discover.explain.2')}</li>
+          <li>{t('discover.explain.3')}</li>
         </ul>
       </Sheet>
     </PageLayout>
@@ -179,9 +180,9 @@ export default function Discover() {
 // comes from raters in the worker's own area: with an area chosen, every
 // worker is in it, so the heading can name it.
 const TIERS = [
-  { key: 'network', heading: () => 'People your network trusts' },
-  { key: 'area', heading: area => (area ? `Trusted in ${areaLabel(area)}` : 'Trusted in their area') },
-  { key: 'new', heading: () => 'New on Middleman' }
+  { key: 'network', heading: () => t('discover.tier.network') },
+  { key: 'area', heading: area => (area ? t('discover.tier.areaNamed', { area: areaLabel(area) }) : t('discover.tier.area')) },
+  { key: 'new', heading: () => t('discover.tier.new') }
 ];
 
 const trades = w => (w.skills || []).map(categoryLabel).join(', ');
@@ -231,7 +232,7 @@ function WorkerCard({ worker: w }) {
         </p>
         <p className="text-body text-ink mt-1">{reasonSentence(w.reason)}</p>
       </div>
-      <ProfileButton worker={w} label="View" className="shrink-0" />
+      <ProfileButton worker={w} label={t('profileButton.short')} short className="shrink-0" />
     </Card>
   );
 }

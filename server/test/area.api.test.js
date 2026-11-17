@@ -56,7 +56,7 @@ test('signup has no preselected area and uses the shared picker', () => {
   assert.match(register, /area: ''/);
   assert.doesNotMatch(register, /area: '(kimironko|kwa_nayinzira|remera|gikondo)'/);
   assert.match(register, /<AreaPicker/);
-  assert.match(register, /if \(!details\.area\) return setError\('Choose your area\.'\)/);
+  assert.match(register, /if \(!details\.area\) return setError\(t\('register\.err\.area'\)\)/);
 });
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
@@ -277,11 +277,11 @@ test('the inviter lookup matches a full number exactly and returns only name, ar
   for (const phone of ['0788600', '078860010', '600102', 'Amina', '', null, { $ne: '' }]) {
     const partial = await call('POST', '/api/users/lookup', { body: { phone }, ip: '10.70.3.2' });
     assert.equal(partial.status, 400, JSON.stringify(phone));
-    assert.deepEqual(Object.keys(partial.data), ['error']);
+    assert.deepEqual(Object.keys(partial.data), ['error', 'code']); // the message and its code for the app's translations
   }
   const unknown = await call('POST', '/api/users/lookup', { body: { phone: '0788600999' }, ip });
   assert.equal(unknown.status, 404);
-  assert.deepEqual(unknown.data, { error: NOT_FOUND });
+  assert.deepEqual(unknown.data, { error: NOT_FOUND, code: 'lookup_not_found' });
   // the old name search is gone
   assert.equal((await call('GET', '/api/users/search?q=Amina', { ip })).status, 404);
 });
@@ -294,7 +294,7 @@ test('inviter lookups are limited to 30 per IP per 15 minutes, and signup shares
   }
   const limited = await call('POST', '/api/users/lookup', { body: { phone: '0788600101' }, ip });
   assert.equal(limited.status, 429);
-  assert.deepEqual(limited.data, { error: 'Too many lookups. Please wait 15 minutes and try again.' });
+  assert.deepEqual(limited.data, { error: 'Too many lookups. Please wait 15 minutes and try again.', code: 'lookup_limited' });
   const viaSignup = await call('POST', '/api/auth/register', {
     body: { role: 'client', name: 'New Person', phone: '0788600131', area: 'remera', pin: '2468', otpCode: '000000', referrerPhone: '0788600101' },
     ip

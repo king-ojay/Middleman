@@ -64,5 +64,5 @@ test('form errors (the Login PIN error) are announced: FormField renders them wi
   const src = readFileSync(new URL('../../client/src/components/ui/FormField.jsx', import.meta.url), 'utf8');
   assert.match(src, /<p key="error" id=\{`\$\{id\}-hint`\} role="alert"/);
   const login = readFileSync(new URL('../../client/src/pages/Login.jsx', import.meta.url), 'utf8');
-  assert.match(login, /<FormField label="PIN" error=\{error\}>/);
+  assert.match(login, /<FormField label=\{t\('login\.pin'\)\} error=\{error\}>/);
 });

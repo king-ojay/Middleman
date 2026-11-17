@@ -9,12 +9,9 @@ import { AREAS, categoryLabel, areaLabel } from '../options.js';
 import {
   Avatar, Badge, Button, Card, Chip, ChipRow, FormField, LoadingState, PageLayout, PriceInput, Sheet, Skeleton, SkeletonText, Switch, TierBadge
 } from '../components/ui/index.js';
+import { t } from '../i18n/index.js';
 
-const SORTS = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'price_high', label: 'Highest price' },
-  { value: 'price_low', label: 'Lowest price' }
-];
+const SORTS = ['newest', 'price_high', 'price_low'].map(value => ({ value, get label() { return t(`jobs.sort.${value}`); } }));
 const DEFAULTS = { area: 'mine', trade: 'mine', sort: 'newest' };
 
 // Worker home: open jobs to browse. By default the worker's own area and
@@ -33,7 +30,7 @@ export default function OpenJobs() {
   const [q, setQ] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [reload, setReload] = useState(0);
-  // The server's message when this worker holds the most active jobs allowed
+  // What to say when this worker holds the most active jobs allowed
   // (server/config/workload.js); null below the limit.
   const [atLimit, setAtLimit] = useState(null);
 
@@ -55,7 +52,7 @@ export default function OpenJobs() {
   useEffect(() => {
     let current = true;
     api('/api/jobs/workload')
-      .then(w => current && setAtLimit(w.message))
+      .then(w => current && setAtLimit(w.atLimit ? t('error.at_limit', { limit: w.limit }) : null))
       .catch(() => current && setAtLimit(null));
     return () => { current = false; };
   }, [user, reload]);
@@ -70,27 +67,27 @@ export default function OpenJobs() {
     setQ('');
   };
 
-  const myTrades = (user.skills || []).map(categoryLabel).join(' or ').toLowerCase();
-  const areaText = filters.area === 'mine' ? areaLabel(user.area) : filters.area === 'all' ? 'All areas' : areaLabel(filters.area);
-  const tradeText = filters.trade === 'mine' ? 'My trades' : 'Any trade';
+  const myTrades = (user.skills || []).map(categoryLabel).join(t('jobs.tradesJoin')).toLowerCase();
+  const areaText = filters.area === 'mine' ? areaLabel(user.area) : filters.area === 'all' ? t('common.allAreas') : areaLabel(filters.area);
+  const tradeText = filters.trade === 'mine' ? t('jobs.myTrades') : t('jobs.anyTrade');
   const sortText = SORTS.find(s => s.value === filters.sort).label;
   const isDefault = !q && Object.entries(DEFAULTS).every(([k, v]) => filters[k] === v);
 
   return (
-    <PageLayout eyebrow={`Hello, ${firstName(user)}`} title={isDefault ? 'Jobs near you' : 'Find jobs'} tabBar role="worker">
+    <PageLayout eyebrow={t('greeting.hello', { name: firstName(user) })} title={isDefault ? t('jobs.titleNear') : t('jobs.titleFind')} tabBar role="worker">
       {atLimit && <p role="status" className="text-body text-on-warn bg-warn rounded-field px-4 py-3 mb-4">{atLimit}</p>}
       <form onSubmit={search} role="search" className="relative mb-2">
-        <label htmlFor="job-search" className="sr-only">Search jobs</label>
+        <label htmlFor="job-search" className="sr-only">{t('jobs.searchLabel')}</label>
         <input
           id="job-search"
           type="search"
           value={query}
           onChange={e => setQuery(e.target.value)}
           maxLength={100}
-          placeholder="Search jobs, e.g. tap"
+          placeholder={t('jobs.searchPlaceholder')}
           className="w-full h-14 bg-surface border border-field rounded-full pl-5 pr-16 text-body text-ink placeholder:text-faint focus:outline-none"
         />
-        <button type="submit" aria-label="Search" className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center transition-colors hover:bg-primary-hover active:bg-primary-hover">
+        <button type="submit" aria-label={t('common.search')} className="absolute right-1.5 top-1.5 w-11 h-11 rounded-full bg-primary text-on-primary flex items-center justify-center transition-colors hover:bg-primary-hover active:bg-primary-hover">
           <svg width="10" height="16" viewBox="0 0 10 16" fill="none" aria-hidden="true">
             <path d="m2 2 6 6-6 6" className="stroke-current" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -98,38 +95,38 @@ export default function OpenJobs() {
       </form>
       {q && (
         <p className="text-small text-muted mb-2" role="status">
-          Showing jobs matching “{q}”.{' '}
-          <button type="button" onClick={clearSearch} className="font-semibold text-ink underline">Clear</button>
+          {t('jobs.matching', { q })}{' '}
+          <button type="button" onClick={clearSearch} className="font-semibold text-ink underline">{t('jobs.clear')}</button>
         </p>
       )}
 
       <div className="flex items-center justify-between gap-3 mt-2">
         <p className="text-body text-muted min-w-0">{areaText} · {tradeText} · {sortText}</p>
         <button type="button" aria-expanded={showFilters} onClick={() => setShowFilters(v => !v)} className="h-11 px-1 shrink-0 text-body font-semibold text-ink hover:underline">
-          {showFilters ? 'Done' : 'Filters'}
+          {showFilters ? t('common.done') : t('jobs.filters')}
         </button>
       </div>
       {showFilters && (
         <div className="space-y-3 mb-2">
-          <ChipRow label="Area">
-            <Chip active={filters.area === 'mine'} onClick={() => set({ area: 'mine' })}>My area · {areaLabel(user.area)}</Chip>
-            <Chip active={filters.area === 'all'} onClick={() => set({ area: 'all' })}>All areas</Chip>
+          <ChipRow label={t('common.area')}>
+            <Chip active={filters.area === 'mine'} onClick={() => set({ area: 'mine' })}>{t('jobs.myArea', { area: areaLabel(user.area) })}</Chip>
+            <Chip active={filters.area === 'all'} onClick={() => set({ area: 'all' })}>{t('common.allAreas')}</Chip>
             {AREAS.filter(a => a.value !== user.area).map(a => (
               <Chip key={a.value} active={filters.area === a.value} onClick={() => set({ area: a.value })}>{a.label}</Chip>
             ))}
           </ChipRow>
-          <ChipRow label="Trade">
-            <Chip active={filters.trade === 'mine'} onClick={() => set({ trade: 'mine' })}>My trades</Chip>
-            <Chip active={filters.trade === 'any'} onClick={() => set({ trade: 'any' })}>Any trade</Chip>
+          <ChipRow label={t('common.trade')}>
+            <Chip active={filters.trade === 'mine'} onClick={() => set({ trade: 'mine' })}>{t('jobs.myTrades')}</Chip>
+            <Chip active={filters.trade === 'any'} onClick={() => set({ trade: 'any' })}>{t('jobs.anyTrade')}</Chip>
           </ChipRow>
-          <ChipRow label="Sort">
+          <ChipRow label={t('jobs.sort')}>
             {SORTS.map(s => (
               <Chip key={s.value} active={filters.sort === s.value} onClick={() => set({ sort: s.value })}>{s.label}</Chip>
             ))}
           </ChipRow>
           {!isDefault && (
             <button type="button" onClick={() => { setFilters(DEFAULTS); clearSearch(); }} className="h-11 px-1 text-body font-semibold text-ink hover:underline">
-              Back to jobs near you
+              {t('jobs.backNear')}
             </button>
           )}
         </div>
@@ -137,18 +134,18 @@ export default function OpenJobs() {
 
       <div className="mt-4">
         {loading && (
-          <LoadingState label="Loading jobs">
+          <LoadingState label={t('jobs.loading')}>
             <ul className="grid gap-3 md:grid-cols-2">
               {[0, 1, 2].map(i => <JobCardSkeleton key={i} />)}
             </ul>
           </LoadingState>
         )}
-        {error && <p className="text-body text-danger" role="alert">Couldn't load jobs: {error}</p>}
+        {error && <p className="text-body text-danger" role="alert">{t('common.loadError', { what: t('jobs.loadError'), message: error })}</p>}
         {!loading && !error && jobs.length === 0 && (
           <p className="text-body text-muted">
             {isDefault
-              ? `No open ${myTrades} jobs in ${areaLabel(user.area)} right now. Try Filters to look in other areas.`
-              : 'No open jobs match. Try another area, trade or search.'}
+              ? t('jobs.noneNear', { trades: myTrades, area: areaLabel(user.area) })
+              : t('jobs.noneMatch')}
           </p>
         )}
       </div>
@@ -156,10 +153,10 @@ export default function OpenJobs() {
       <ul className="grid gap-3 md:grid-cols-2">
         {!loading && jobs.map(job => (
           <Card as="li" key={job._id} className="p-5 flex flex-col">
-            {job.myResponse && <div className="mb-2"><Badge tone="trust">You responded</Badge></div>}
+            {job.myResponse && <div className="mb-2"><Badge tone="trust">{t('jobs.responded')}</Badge></div>}
             <h2 className="text-card text-ink break-words">{job.description}</h2>
             <p className="text-body text-muted mt-1">
-              {categoryLabel(job.category)} · {areaLabel(job.area)} · posted {timeAgo(job.createdAt)}
+              {categoryLabel(job.category)} · {areaLabel(job.area)} · {t('jobs.posted', { when: timeAgo(job.createdAt) })}
             </p>
             <div className="flex items-center gap-3 mt-4">
               <Avatar name={job.client?.name} tier={job.clientTrust} size={44} />
@@ -170,11 +167,11 @@ export default function OpenJobs() {
             </div>
             {/* mt-auto: in a row of cards, prices and actions line up at the bottom */}
             <div className="mt-auto">
-              <p className="text-small text-muted mt-4">Client's price</p>
+              <p className="text-small text-muted mt-4">{t('jobs.clientPrice')}</p>
               <p className="text-amount text-ink">{formatRwf(job.proposedPrice)}</p>
               {job.canRespond || job.myResponse
                 ? <ResponseControls job={job} atLimit={Boolean(atLimit)} onSent={() => setReload(n => n + 1)} />
-                : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">Not one of your trades – view only.</p>}
+                : <p className="text-body text-muted bg-soft rounded-field px-4 py-3 mt-4">{t('jobs.notYourTrade')}</p>}
             </div>
           </Card>
         ))}
@@ -219,8 +216,8 @@ function ResponseControls({ job, atLimit, onSent }) {
     const r = job.myResponse;
     return (
       <p className="text-body text-on-trust bg-trust rounded-field px-4 py-3 mt-4">
-        {r.isCounter ? `You countered at ${formatRwf(r.amount)}` : `You accepted ${formatRwf(r.amount)}`}
-        {r.depositAmount > 0 && `, needing ${formatRwf(r.depositAmount)} upfront for materials`}. Waiting for the client to choose.
+        {t(r.isCounter ? 'jobs.youCountered' : 'jobs.youAccepted', { amount: formatRwf(r.amount) })}
+        {r.depositAmount > 0 && t('jobs.needingMaterials', { amount: formatRwf(r.depositAmount) })}{t('jobs.waitingChoose')}
       </p>
     );
   }
@@ -239,9 +236,9 @@ function ResponseControls({ job, atLimit, onSent }) {
     e.preventDefault();
     const amount = mode === 'accept' ? job.proposedPrice : Number(price);
     const depositAmount = needsMaterials ? Number(deposit) : 0;
-    if (!amount) return setError('Enter your price.');
-    if (needsMaterials && !depositAmount) return setError('Enter how much you need upfront for materials.');
-    if (needsMaterials && depositAmount >= amount) return setError('The materials amount must be less than the price.');
+    if (!amount) return setError(t('jobs.err.price'));
+    if (needsMaterials && !depositAmount) return setError(t('jobs.err.materials'));
+    if (needsMaterials && depositAmount >= amount) return setError(t('jobs.err.materialsHigh'));
     setError('');
     setSending(true);
     try {
@@ -257,36 +254,36 @@ function ResponseControls({ job, atLimit, onSent }) {
   return (
     <div className="mt-4">
       <div className="flex gap-3">
-        <Button size="md" className="flex-1" disabled={atLimit} onClick={() => open('accept')}>Accept</Button>
-        <Button variant="outline" size="md" className="flex-1" disabled={atLimit} onClick={() => open('counter')}>Counter</Button>
+        <Button size="md" className="flex-1" disabled={atLimit} onClick={() => open('accept')}>{t('jobs.accept')}</Button>
+        <Button variant="outline" size="md" className="flex-1" disabled={atLimit} onClick={() => open('counter')}>{t('jobs.counter')}</Button>
       </div>
 
-      <Sheet open={mode !== null} title={mode === 'accept' ? 'Accept this price' : 'Your price'} onClose={() => setMode(null)}>
+      <Sheet open={mode !== null} title={mode === 'accept' ? t('jobs.acceptTitle') : t('jobs.counterTitle')} onClose={() => setMode(null)}>
         <form onSubmit={submit} className="space-y-4">
           {mode === 'accept' ? (
             <div>
-              <p className="text-small text-muted">Client's price</p>
+              <p className="text-small text-muted">{t('jobs.clientPrice')}</p>
               <p className="text-title text-ink">{formatRwf(job.proposedPrice)}</p>
             </div>
           ) : (
-            <FormField helper={`The client offered ${formatRwf(job.proposedPrice)}. You can send one counter-offer.`}>
-              {field => <PriceInput {...field} aria-label="Your price in RWF" value={price} onChange={setPrice} />}
+            <FormField helper={t('jobs.counterHelper', { amount: formatRwf(job.proposedPrice) })}>
+              {field => <PriceInput {...field} aria-label={t('jobs.counterLabel')} value={price} onChange={setPrice} />}
             </FormField>
           )}
 
           <Card className="flex items-center justify-between gap-4">
-            <span id={`materials-${job._id}`} className="text-body text-ink">Needs materials upfront?</span>
+            <span id={`materials-${job._id}`} className="text-body text-ink">{t('jobs.needsMaterials')}</span>
             <Switch checked={needsMaterials} onChange={setNeedsMaterials} aria-labelledby={`materials-${job._id}`} />
           </Card>
           {needsMaterials && (
-            <FormField label="Amount for materials" helper="Must be less than the price.">
+            <FormField label={t('jobs.materialsAmount')} helper={t('jobs.materialsHelper')}>
               {field => <PriceInput {...field} value={deposit} onChange={setDeposit} placeholder="5,000" />}
             </FormField>
           )}
 
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <Button type="submit" disabled={sending}>
-            {sending ? 'Sending…' : mode === 'accept' ? `Accept ${formatRwf(job.proposedPrice)}` : 'Send counter-offer'}
+            {sending ? t('common.sending') : mode === 'accept' ? t('jobs.acceptAmount', { amount: formatRwf(job.proposedPrice) }) : t('jobs.sendCounter')}
           </Button>
         </form>
       </Sheet>
