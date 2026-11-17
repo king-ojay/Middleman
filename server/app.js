@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { allowedOrigins, rejectOtherOrigins } from './config/cors.js';
 import { addErrorCodes } from './modules/errorCodes.js';
+import { codeRelayRouter } from './modules/auth/codeRelay.routes.js';
 
 import authRouter from './modules/auth/auth.routes.js';
 import jobsRouter from './modules/jobs/jobs.routes.js';
@@ -41,6 +42,7 @@ app.use('/api/transactions', transactionsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', verificationRouter);
 app.use('/api/admin', deletionRouter);
+app.use('/api/admin', codeRelayRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 

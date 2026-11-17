@@ -25,8 +25,9 @@ export default function OtpField({ phone, purpose, value, onChange, autoFocus })
     setError('');
     setSending(true);
     try {
-      await api('/api/auth/otp', { method: 'POST', body: JSON.stringify({ phone, purpose }) });
-      setNote(t('otp.sentNew'));
+      const sent = await api('/api/auth/otp', { method: 'POST', body: JSON.stringify({ phone, purpose }) });
+      // A sign-up SMS that couldn't be sent waits with the researcher (code relay).
+      setNote(sent?.relay ? t('register.relayNote') : t('otp.sentNew'));
     } catch (err) {
       setError(err.message);
     } finally {

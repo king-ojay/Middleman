@@ -1,5 +1,6 @@
-// The researcher's page, separate from the user app: verify workers after a
-// manual review (FR-04), settle disputes (FR-14) and delete accounts. It asks for ADMIN_SECRET and
+// The researcher's page, separate from the user app: read sign-up codes the
+// SMS couldn't deliver (the pilot code relay), verify workers after a manual
+// review (FR-16), settle disputes (FR-14) and delete accounts. It asks for ADMIN_SECRET and
 // keeps it in memory only, so it is gone on reload or "Lock". Uses the
 // existing admin routes (adminAuth.js); not linked from any tab bar.
 import { useEffect, useState } from 'react';
@@ -49,6 +50,7 @@ export default function Admin() {
 
   return (
     <PageLayout title="Admin" width="medium" right={<Button variant="plain" size="md" onClick={() => setSecret('')}>Lock</Button>}>
+      <SignupCodes secret={secret} />
       <Verification secret={secret} />
       <Disputes secret={secret} />
       <DeleteAccount secret={secret} />
@@ -68,6 +70,46 @@ function useAdminList(path, secret) {
     load().finally(() => setRetrying(false));
   };
   return { items, setItems, error, retrying, tryAgain, reload: load };
+}
+
+// Section 0: the pilot code relay (server auth/otp/codeRelay.js). MTN Rwanda
+// rejects the shared SMS sender ID, so a sign-up code may never arrive; the
+// person calls the researcher, who reads the code here. Read-only: sign-up
+// codes from the last 15 minutes, newest first, the number masked
+// (079*****563). Each load is logged on the server; a code still expires 5
+// minutes after it was sent.
+const kigaliTime = at => new Date(at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Kigali' });
+
+function SignupCodes({ secret }) {
+  const { items, error, retrying, tryAgain, reload } = useAdminList('/api/admin/signup-codes', secret);
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = () => { setRefreshing(true); reload().finally(() => setRefreshing(false)); };
+  const codes = items?.codes;
+  return (
+    <section className="mb-10">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-1">
+        <h2 className="text-section text-ink">Sign-up codes</h2>
+        <Button variant="outline" size="md" onClick={refresh} disabled={refreshing} aria-busy={refreshing}>{refreshing ? 'Loading…' : 'Refresh'}</Button>
+      </div>
+      <p className="text-body text-muted mb-4">
+        For people whose SMS didn&apos;t arrive. Read the code only to the person whose number it is, after they call. Codes from the last 15 minutes; each expires 5 minutes after it was sent.
+      </p>
+      {error && <LoadError prefix="Couldn't load codes" error={error} retrying={retrying} onRetry={tryAgain} />}
+      {!error && !codes && <p className="text-body text-muted">Loading…</p>}
+      {codes?.length === 0 && <p className="text-body text-muted">No sign-up codes in the last 15 minutes.</p>}
+      {codes?.length > 0 && (
+        <ul className="grid gap-2">
+          {codes.map(c => (
+            <Card as="li" key={`${c.phone}-${c.issuedAt}`} className={`p-4 flex flex-wrap items-center justify-between gap-3 ${c.expired ? 'opacity-60' : ''}`}>
+              <span className="text-body text-ink font-semibold tabular-nums">{c.phone}</span>
+              <span className={`text-title tabular-nums tracking-widest ${c.expired ? 'line-through text-muted' : 'text-ink'}`}>{c.code}</span>
+              <span className="text-small text-muted">{c.expired ? `Expired at ${kigaliTime(c.expiresAt)}` : `Expires at ${kigaliTime(c.expiresAt)}`}</span>
+            </Card>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }
 
 // Section 1: workers not yet verified. Marking one records researcher,

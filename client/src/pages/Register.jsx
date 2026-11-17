@@ -5,16 +5,21 @@ import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
 import AuthLayout from '../components/AuthLayout.jsx';
 import AreaPicker from '../components/AreaPicker.jsx';
+import PrivacyPolicy from '../components/PrivacyPolicy.jsx';
+import { POLICY_VERSION } from '../policy.shared.js';
 import { CATEGORIES, areaLabel } from '../options.js';
 import {
-  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, SlowNotice, StepBar, TextInput
+  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, Sheet, SlowNotice, StepBar, TextInput
 } from '../components/ui/index.js';
 import { t } from '../i18n/index.js';
 
 // Rwandan mobile number, as typed: 078X XXX XXX, with or without +250.
 const isPhone = value => /^(\+?250|0)?7\d{8}$/.test(value.replace(/[\s-]/g, ''));
 
-// Two steps (FR-01, FR-02, FR-03): who you are, then a PIN and who invited you.
+// Two steps (FR-01, FR-02, FR-03): who you are, then a PIN, who invited you,
+// and consent: 18 or older, and agreement to the Privacy Policy & Terms
+// (shown in a sheet, so the form stays as it is). Create account stays off
+// until both are ticked; the server refuses sign-up without them too.
 export default function Register() {
   const { user, register } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +31,12 @@ export default function Register() {
   const [inviter, setInviter] = useState(null); // { phone, person } once confirmed
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [readingPolicy, setReadingPolicy] = useState(false);
+  // The SMS couldn't be sent (MTN rejects the shared sender ID): the code is
+  // with the researcher (the admin code relay).
+  const [relay, setRelay] = useState(false);
 
   if (user) return <Navigate to={homePathFor(user)} replace />;
 
@@ -44,7 +55,8 @@ export default function Register() {
     setSending(true);
     try {
       // Confirms the phone number belongs to them before the account exists.
-      await api('/api/auth/otp', { method: 'POST', body: JSON.stringify({ phone: details.phone, purpose: 'register' }) });
+      const sent = await api('/api/auth/otp', { method: 'POST', body: JSON.stringify({ phone: details.phone, purpose: 'register' }) });
+      setRelay(sent?.relay === true);
       setStep(2);
     } catch (err) {
       setError(err.message);
@@ -60,7 +72,7 @@ export default function Register() {
     setError('');
     setSubmitting(true);
     try {
-      const u = await register({ ...details, pin, otpCode, referrerPhone: inviter?.phone });
+      const u = await register({ ...details, pin, otpCode, referrerPhone: inviter?.phone, ageConfirmed, policyAccepted, policyVersion: POLICY_VERSION });
       navigate(homePathFor(u), { replace: true });
     } catch (err) {
       setError(err.message);
@@ -75,18 +87,30 @@ export default function Register() {
         <h1 className="text-display tracking-tight text-ink">{t('register.pinTitle')}</h1>
         <p className="text-body text-muted mt-2 mb-6">{t('register.pinSub')}</p>
         <form onSubmit={create} className="space-y-6">
+          {relay && <p role="status" className="text-body text-on-warn bg-warn rounded-field px-4 py-3">{t('register.relayNote')}</p>}
           <OtpField phone={details.phone} purpose="register" value={otpCode} onChange={setOtpCode} autoFocus />
           <div>
             <p className="text-label text-ink mb-2">{t('register.choosePin')}</p>
             <PinBoxes value={pin} onChange={setPin} />
           </div>
           <InviterPhone confirmed={inviter} onConfirm={setInviter} />
+          <fieldset className="space-y-2">
+            <legend className="sr-only">{t('register.consentHelper')}</legend>
+            <Consent checked={ageConfirmed} onChange={setAgeConfirmed}>{t('register.age')}</Consent>
+            <Consent checked={policyAccepted} onChange={setPolicyAccepted}>
+              <AgreeText onOpen={() => setReadingPolicy(true)} />
+            </Consent>
+            {!(ageConfirmed && policyAccepted) && <p className="text-small text-muted">{t('register.consentHelper')}</p>}
+          </fieldset>
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <div>
-            <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6} aria-busy={submitting}>{submitting ? t('register.creating') : t('register.create')}</Button>
+            <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6 || !ageConfirmed || !policyAccepted} aria-busy={submitting}>{submitting ? t('register.creating') : t('register.create')}</Button>
             <SlowNotice active={submitting} className="mt-3 text-center" />
           </div>
         </form>
+        <Sheet open={readingPolicy} title={t('privacy.title')} onClose={() => setReadingPolicy(false)}>
+          <PrivacyPolicy />
+        </Sheet>
       </AuthLayout>
     );
   }
@@ -139,6 +163,32 @@ export default function Register() {
         </div>
       </form>
     </AuthLayout>
+  );
+}
+
+// One consent checkbox: a native checkbox (keyboard and screen readers as
+// usual) in a 52px row that is tappable as a whole.
+function Consent({ checked, onChange, children }) {
+  return (
+    <label className="flex items-start gap-3 min-h-[52px] py-3 px-4 rounded-field bg-surface border border-line cursor-pointer">
+      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 w-5 h-5 shrink-0 accent-[rgb(var(--primary))]" />
+      <span className="text-body text-ink">{children}</span>
+    </label>
+  );
+}
+
+// "I have read and agree to the Privacy Policy & Terms", the policy's name a
+// button that opens it in a sheet. The sentence comes from i18n with {link}
+// where the name goes, so the word order can differ by language.
+function AgreeText({ onOpen }) {
+  const [before, after = ''] = t('register.agree').split('{link}');
+  const open = e => { e.preventDefault(); onOpen(); };
+  return (
+    <>
+      {before}
+      <button type="button" onClick={open} className="font-semibold underline text-ink">{t('register.agreeLink')}</button>
+      {after}
+    </>
   );
 }
 

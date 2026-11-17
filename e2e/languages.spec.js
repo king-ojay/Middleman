@@ -49,6 +49,8 @@ test('Kinyarwanda: chosen on the landing page, kept after a reload, back to Engl
     await expect(page.getByRole('heading', { name: 'Shyiraho PIN yawe' })).toBeVisible();
     await page.getByLabel(/Kode twohereje kuri/).fill(await codeFor(person.phone));
     await page.getByLabel('PIN: umubare wa 1').pressSequentially('1357');
+    await page.getByRole('checkbox', { name: 'Mfite imyaka 18 cyangwa irenga' }).check();
+    await page.getByRole('checkbox', { name: /Nasomye kandi nemera/ }).check();
     await page.getByRole('button', { name: 'Fungura konti' }).click();
     await expect(page).toHaveURL(/discover/);
   });

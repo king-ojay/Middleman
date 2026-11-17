@@ -188,6 +188,9 @@ Added during the build:
 | Light and dark mode | Delivered | `styles/index.css`, `theme.js` |
 | English and Kinyarwanda (beta), chosen on the landing page, log in or profile; server errors translated by code | Delivered; the Kinyarwanda is a first draft awaiting a native speaker's review ([`docs/translation-review.csv`](docs/translation-review.csv)); the researcher's /admin page and SMS texts stay in English | `client/src/i18n/`, `server/modules/errorCodes.js` |
 | Pay sheet: amount, worker and the MoMo PIN-approval note, then waiting for approval, held, or a failure with Try again; the test-payment notice is here and on Transactions | Delivered | `components/JobActions.jsx` |
+| Privacy Policy & Terms at /privacy (public, both languages), linked from the landing page, sign-up and the profile; sign-up needs "I am 18 or older" and agreement to the policy (version and time stored) | Delivered; data region still to be confirmed (REGION_TBC) | `components/PrivacyPolicy.jsx`, `shared/policy.js`, `modules/auth/auth.routes.js` |
+| Reminder SMS to the client 24 hours before an automatic release, once per job | Delivered (same SMS sender limitation as the codes, below) | `modules/payments/releaseReminder.js` |
+| Sign-up code relay on /admin: MTN Rwanda rejects the shared SMS sender ID, so the researcher can read a sign-up code (kept in memory for 15 minutes, never stored) to the person | Delivered, pilot fallback | `modules/auth/otp/codeRelay.js`, `pages/Admin.jsx` |
 
 ## Install and run locally
 
@@ -323,9 +326,9 @@ USB. Screenshots: [`docs/screenshots/android/`](docs/screenshots/android/).
 | Suite | Count | What it covers |
 |---|---|---|
 | Server unit and experiment tests | 113 | The trust rules and worked example, the error codes the app translates, ratings as evidence, session tokens, OTP logging with masked phones, error logs, the MoMo sandbox client (against a stub, never the real API), the experiment code |
-| Server API tests (replica set) | 132 | Every route through HTTP: signup and login lockout, Discover rankings and reasons, the job feed, offers and choosing, escrow funding, release, refunds, double-payment races, disputes, automatic release with a test clock, the call-button privacy rule, the active-job limit and two clients choosing at once, Transactions, verification, account deletion, area changes |
+| Server API tests (replica set) | 140 | Every route through HTTP: signup and login lockout, Discover rankings and reasons, the job feed, offers and choosing, escrow funding, release, refunds, double-payment races, disputes, automatic release with a test clock, the call-button privacy rule, the active-job limit and two clients choosing at once, Transactions, verification, account deletion, area changes, consent at sign-up, the release reminder and the code relay |
 | Client tests | 41 | Reason sentences, trust tiles and paths, money and date labels, dispute reasons, phone links, the Android build settings (plain http only in the local build) and the web manifest and icons, both languages (every key in both, placeholders, the saved choice, translated server errors, Kinyarwanda reason sentences and dates) |
-| End to end | 7 tests × 5 projects, all passing | The whole flow: register a client and an invited worker, post a job, offer, see the ranked offer with its reason, choose, pay into escrow in the pay sheet, call buttons, start, finish, the automatic-release deadline, confirm and rate both ways, earnings, Transactions, and the reason sentence on Discover; Kinyarwanda chosen on the landing page, kept after a reload, sign up and a translated server error, back to English; no sandbox banner and content kept below a simulated phone status bar; the pay sheet waiting for approval, refused, declined, and its keyboard focus |
+| End to end | 9 tests × 5 projects, all passing | The whole flow: register a client and an invited worker, post a job, offer, see the ranked offer with its reason, choose, pay into escrow in the pay sheet, call buttons, start, finish, the automatic-release deadline, confirm and rate both ways, earnings, Transactions, and the reason sentence on Discover; Kinyarwanda chosen on the landing page, kept after a reload, sign up and a translated server error, back to English; no sandbox banner and content kept below a simulated phone status bar; the pay sheet waiting for approval, refused, declined, and its keyboard focus; /privacy in both languages, and sign-up refused until both consent boxes are ticked, the policy opening in a sheet without losing the form |
 | Ranking regression | 300 rankings | Positive-only rankings on the seed data stay identical |
 
 The cross-browser and device results, and the manual checks on real phones,
@@ -399,6 +402,5 @@ results/               committed benchmark results (aggregate metrics only)
 
 ## Licence
 
-No open-source licence has been granted: © 2026 Ojotule King Attah, all rights
-reserved. The Manrope font is under the SIL Open Font License 1.1
-(`client/src/assets/fonts/OFL.txt`).
+MIT, © 2026 Ojotule King Attah: see [`LICENSE`](LICENSE). The Manrope font is
+under the SIL Open Font License 1.1 (`client/src/assets/fonts/OFL.txt`).

@@ -36,6 +36,8 @@ export async function register(page, person, inviter) {
     await page.getByRole('button', { name: 'Confirm' }).click();
     await expect(page.getByText(/Invited by/)).toBeVisible();
   }
+  await page.getByRole('checkbox', { name: 'I am 18 or older' }).check();
+  await page.getByRole('checkbox', { name: /I have read and agree to the/ }).check();
   await page.getByRole('button', { name: 'Create account' }).click();
   await expect(page).not.toHaveURL(/register/);
 }

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "description": "End-to-end test of the whole flow against a LOCAL API and a throwaway local database",
+  "license": "MIT",
   "scripts": {
     "test": "sh runAll.sh",
     "test:one": "playwright test"

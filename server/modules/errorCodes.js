@@ -19,6 +19,8 @@ const CODES = [
   [/^Too many wrong codes\. Ask for a new one\.$/, 'code_too_many_wrong'],
   [/^That code is wrong\. (?<left>\d+) (try|tries) left\.$/, 'code_wrong'],
   [/^Choose client or worker$/, 'choose_role'],
+  [/^Confirm that you are 18 or older to use Middleman$/, 'age_required'],
+  [/^Read and agree to the Privacy Policy & Terms to create an account$/, 'policy_required'],
   [/^Enter your full name$/, 'name_required'],
   [/^Choose your area$/, 'area_required'],
   [/^Choose at least one trade$/, 'trade_required'],

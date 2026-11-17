@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { categoryLabel, areaLabel } from '../options.js';
@@ -95,7 +95,10 @@ export default function Profile() {
       {isOwn && <Preferences />}
 
       {isOwn && (
-        <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>{t('profile.logOut')}</Button>
+        <>
+          <Link to="/privacy" className="inline-flex items-center h-11 mt-6 text-body text-muted underline hover:text-ink">{t('privacy.link')}</Link>
+          <Button variant="outline" className="mt-4" onClick={() => { logout(); navigate('/'); }}>{t('profile.logOut')}</Button>
+        </>
       )}
     </PageLayout>
   );

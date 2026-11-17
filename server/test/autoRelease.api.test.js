@@ -105,7 +105,8 @@ test('not released a minute before the deadline; released, recorded as automatic
   const deadline = new Date(job.workerCompletedAt.getTime() + AUTO_RELEASE_AFTER_MS).toISOString();
 
   at(job, AUTO_RELEASE_AFTER_MS - MINUTE);
-  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 0, released: 0, failed: 0 });
+  // Inside the last 24 hours: not released yet, but the client is reminded (releaseReminder.js).
+  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 0, released: 0, failed: 0, reminded: 1 });
   const waiting = await page(job);
   assert.equal(waiting.data.status, 'awaiting_confirmation');
   assert.equal(waiting.data.autoReleaseAt, deadline);
@@ -114,7 +115,7 @@ test('not released a minute before the deadline; released, recorded as automatic
   assert.equal(transfers().length, 0);
 
   at(job, AUTO_RELEASE_AFTER_MS + MINUTE);
-  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 1, released: 1, failed: 0 });
+  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 1, released: 1, failed: 0, reminded: 0 });
   const done = await reload(job);
   assert.equal(done.status, 'completed');
   assert.equal(done.escrow.status, 'released');
@@ -198,14 +199,14 @@ test('a refused payout puts the job back and the next check retries it, paying o
   const job = await awaitingJob();
   at(job, AUTO_RELEASE_AFTER_MS + MINUTE);
   fake.failNext('transfer', 'refuse');
-  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 1, released: 0, failed: 1 });
+  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 1, released: 0, failed: 1, reminded: 0 });
   const back = await reload(job);
   assert.equal(back.status, 'awaiting_confirmation');
   assert.equal(back.escrow.status, 'held');
   assert.equal(back.autoReleased, false);
   assert.equal(back.escrow.lastFailure.kind, 'release');
 
-  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 1, released: 1, failed: 0 });
+  assert.deepEqual(await releaseDueJobs(), { inFlight: 0, due: 1, released: 1, failed: 0, reminded: 0 });
   assert.equal((await reload(job)).escrow.status, 'released');
   const refs = transfers().map(t => t.referenceId);
   assert.equal(refs.length, 2);
@@ -223,11 +224,11 @@ test('a payout whose outcome is unknown is checked first, never started again wh
   assert.equal((await reload(job)).escrow.status, 'releasing');
 
   // Still in flight: the next check asks the provider and starts nothing new.
-  assert.deepEqual(await releaseDueJobs(), { inFlight: 1, due: 0, released: 0, failed: 0 });
+  assert.deepEqual(await releaseDueJobs(), { inFlight: 1, due: 0, released: 0, failed: 0, reminded: 0 });
   assert.equal(transfers().length, 1);
 
   fake.settle('disbursement', transfers()[0].referenceId, 'SUCCESSFUL');
-  assert.deepEqual(await releaseDueJobs(), { inFlight: 1, due: 0, released: 0, failed: 0 });
+  assert.deepEqual(await releaseDueJobs(), { inFlight: 1, due: 0, released: 0, failed: 0, reminded: 0 });
   const done = await reload(job);
   assert.equal(done.status, 'completed');
   assert.equal(done.escrow.status, 'released');

@@ -129,7 +129,7 @@ const call = async (method, path, { as, body, ip } = {}) => {
 const signup = async (phone, extra, ip) => {
   assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' }, ip })).status, 200);
   return call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone, pin: '2468', otpCode: codes.get(phone.slice(-3)), ...extra },
+    body: { role: 'client', name: 'New Person', phone, pin: '2468', otpCode: codes.get(phone.slice(-3)), ageConfirmed: true, policyAccepted: true, policyVersion: '1.0', ...extra },
     ip
   });
 };
@@ -241,7 +241,7 @@ test('a referral attaches to the person whose phone was given, even when two peo
 test('signup refuses an unknown, partial or own inviter phone and creates nobody', { skip }, async () => {
   await sameName();
   const register = (phone, referrerPhone) => call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone, area: 'remera', pin: '2468', otpCode: '000000', referrerPhone },
+    body: { role: 'client', name: 'New Person', phone, area: 'remera', pin: '2468', otpCode: '000000', referrerPhone, ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' },
     ip: '10.70.2.1'
   });
   for (const referrerPhone of ['0788600999', '0788600', '600102', 'Amina Uwase']) {
@@ -296,7 +296,7 @@ test('inviter lookups are limited to 30 per IP per 15 minutes, and signup shares
   assert.equal(limited.status, 429);
   assert.deepEqual(limited.data, { error: 'Too many lookups. Please wait 15 minutes and try again.', code: 'lookup_limited' });
   const viaSignup = await call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone: '0788600131', area: 'remera', pin: '2468', otpCode: '000000', referrerPhone: '0788600101' },
+    body: { role: 'client', name: 'New Person', phone: '0788600131', area: 'remera', pin: '2468', otpCode: '000000', referrerPhone: '0788600101', ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' },
     ip
   });
   assert.equal(viaSignup.status, 429);
