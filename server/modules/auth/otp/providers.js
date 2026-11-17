@@ -5,7 +5,9 @@
 //   africastalking — AT_USERNAME, AT_API_KEY, AT_SENDER_ID (optional: unset
 //                    or blank sends no `from`, so Africa's Talking uses its
 //                    default route); AT_USERNAME=sandbox uses the sandbox endpoint
-// Every provider implements sendOtp(phone, code) with an E.164 number (+2507…).
+// Every provider implements sendSms(phone, text) with an E.164 number
+// (+2507…), and sendOtp(phone, code) on top of it (auto-release reminders use
+// sendSms: payments/releaseReminder.js).
 // Credentials live in the host's environment settings, never in the repo.
 
 // Logs never carry a full phone number (ethics form): keep the country code
@@ -67,6 +69,11 @@ const requireEnv = names => {
 
 const PROVIDERS = {
   console: {
+    // Outside production: the masked number and the length only, never the
+    // text (a reminder names people and the job). In production: nothing.
+    async sendSms(phone, text) {
+      if (process.env.NODE_ENV !== 'production') console.log(`[sms] to ${maskPhone(phone)} (${text.length} characters)`);
+    },
     async sendOtp(phone, code) {
       if (process.env.NODE_ENV === 'production') {
         console.log(`[otp] code for ${maskPhone(phone)} not logged in production; set an SMS provider`);
@@ -78,18 +85,24 @@ const PROVIDERS = {
 
   twilio: {
     async sendOtp(phone, code) {
+      return this.sendSms(phone, message(code));
+    },
+    async sendSms(phone, text) {
       requireEnv(['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM']);
       const { TWILIO_ACCOUNT_SID: sid, TWILIO_AUTH_TOKEN: token, TWILIO_FROM: from } = process.env;
       await postForm(
         `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
         { Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}` },
-        { To: phone, From: from, Body: message(code) }
+        { To: phone, From: from, Body: text }
       );
     }
   },
 
   africastalking: {
     async sendOtp(phone, code) {
+      return this.sendSms(phone, message(code));
+    },
+    async sendSms(phone, text) {
       requireEnv(['AT_USERNAME', 'AT_API_KEY']);
       const { AT_USERNAME: username, AT_API_KEY: apiKey } = process.env;
       const from = process.env.AT_SENDER_ID?.trim();
@@ -99,7 +112,7 @@ const PROVIDERS = {
         data = await postForm(
           `https://${host}/version1/messaging`,
           { apiKey },
-          { username, to: phone, message: message(code), ...(from ? { from } : {}) }
+          { username, to: phone, message: text, ...(from ? { from } : {}) }
         );
       } catch (err) {
         logAtSend(phone, `error="${err.message}"`);
@@ -119,7 +132,12 @@ const PROVIDERS = {
   }
 };
 
+// Tests replace the provider (setSmsProvider) to see what would be sent.
+let override = null;
+export const setSmsProvider = provider => { override = provider; };
+
 export function getOtpProvider() {
+  if (override) return override;
   const name = process.env.OTP_PROVIDER || 'console';
   const provider = PROVIDERS[name];
   if (!provider) throw new Error(`Unknown OTP_PROVIDER "${name}" (use console, twilio or africastalking)`);

@@ -9,6 +9,7 @@
 // counts only.
 import Job from '../jobs/job.model.js';
 import { autoRelease, sync } from './escrow.js';
+import { sendDueReminders } from './releaseReminder.js';
 import { now } from '../clock.js';
 import { AUTO_RELEASE_AFTER_MS, AUTO_RELEASE_CHECK_EVERY_MS } from '../../config/autoRelease.js';
 
@@ -40,7 +41,8 @@ export async function releaseIfDue(jobId, userId) {
 
 /**
  * One sweep: checks automatic payouts still in flight with the provider,
- * then releases every due job. Returns { inFlight, due, released, failed }.
+ * releases every due job, then sends the 24-hour reminders
+ * (releaseReminder.js). Returns { inFlight, due, released, failed, reminded }.
  */
 export async function releaseDueJobs() {
   const inFlight = await Job.find({ autoReleased: true, 'escrow.status': 'releasing' }, '_id').lean();
@@ -57,13 +59,17 @@ export async function releaseDueJobs() {
       logFailure(_id, err);
     }
   }
-  return { inFlight: inFlight.length, due: due.length, released, failed };
+  const reminders = await sendDueReminders().catch(err => {
+    console.error(`[auto-release] reminders failed: ${err.name}`);
+    return { sent: 0 };
+  });
+  return { inFlight: inFlight.length, due: due.length, released, failed, reminded: reminders.sent };
 }
 
 /** Runs a sweep now and then every AUTO_RELEASE_CHECK_EVERY_MS. Returns the timer. */
 export function startAutoRelease() {
   const run = () => releaseDueJobs()
-    .then(r => { if (r.due || r.inFlight) console.log(`[auto-release] due ${r.due}, released ${r.released}, failed ${r.failed}, in flight ${r.inFlight}`); })
+    .then(r => { if (r.due || r.inFlight || r.reminded) console.log(`[auto-release] due ${r.due}, released ${r.released}, failed ${r.failed}, in flight ${r.inFlight}, reminded ${r.reminded}`); })
     .catch(err => console.error(`[auto-release] check failed: ${err.name}`));
   run();
   const timer = setInterval(run, AUTO_RELEASE_CHECK_EVERY_MS);

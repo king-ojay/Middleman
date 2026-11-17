@@ -15,6 +15,7 @@ import JobDetail from './pages/JobDetail.jsx';
 import Profile from './pages/Profile.jsx';
 import Transactions from './pages/Transactions.jsx';
 import Admin from './pages/Admin.jsx';
+import Privacy from './pages/Privacy.jsx';
 import ServerWaking from './components/ServerWaking.jsx';
 import StatusBarBackdrop from './components/StatusBarBackdrop.jsx';
 import { useLang } from './i18n/useLang.js';
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-pin" element={<ResetPin />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/discover" element={<RequireRole role="client"><Discover /></RequireRole>} />
         <Route path="/post-job" element={<RequireRole role="client"><PostJob /></RequireRole>} />
         <Route path="/jobs" element={<RequireRole role="worker"><OpenJobs /></RequireRole>} />

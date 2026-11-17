@@ -1,6 +1,7 @@
 // Public landing page: what Middleman does, and the way into signup and login.
 import { useEffect } from 'react';
 import { wakeApi } from '../api.js';
+import { Link } from 'react-router-dom';
 import { Button, Card, LogoMark, PageLayout } from '../components/ui/index.js';
 import { TrustExample } from '../components/TrustGraphMark.jsx';
 import LanguageSwitch from '../components/LanguageSwitch.jsx';
@@ -50,6 +51,10 @@ export default function Landing() {
           ))}
         </ol>
       </section>
+
+      <footer className="mt-10">
+        <Link to="/privacy" className="inline-flex items-center h-11 text-body text-muted underline hover:text-ink">{t('privacy.link')}</Link>
+      </footer>
     </PageLayout>
   );
 }

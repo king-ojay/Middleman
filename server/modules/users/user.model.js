@@ -31,7 +31,13 @@ const userSchema = new mongoose.Schema({
   sessionVersion: { type: Number, default: 0, select: false }, // bump to end every session (e.g. PIN reset)
   // Bumped inside the transaction that gives this worker a job, so two
   // simultaneous choices collide and the active-job limit holds (jobs/workload.js).
-  workloadLock: { type: Number, default: 0, select: false }
+  workloadLock: { type: Number, default: 0, select: false },
+  // Consent at sign-up (auth.routes.js /register): the Privacy Policy & Terms
+  // version agreed to, when, and that the person confirmed they are 18 or
+  // older. Accounts from before consent was asked for have none of these.
+  policyVersion: { type: String, default: null },
+  consentedAt: { type: Date, default: null },
+  ageConfirmed: { type: Boolean, default: null }
 }, { timestamps: true });
 
 userSchema.index({ role: 1, area: 1, skills: 1 });

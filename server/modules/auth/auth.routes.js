@@ -12,6 +12,7 @@ import { maskPhonesIn, SmsRejectedError } from './otp/providers.js';
 import { clearFailures, hit, lockedFor, recordFailure } from './rateLimit.js';
 import { createSessionToken } from './session.js';
 import { serverError } from '../serverError.js';
+import { POLICY_VERSION } from '../../config/policy.shared.js';
 
 const router = express.Router();
 
@@ -32,6 +33,8 @@ const MINUTE = 60 * 1000;
 // ones, so neither the messages nor the lockout reveal who has an account.
 export const LOGIN_LIMITS = Object.freeze({ perPhone: 5, perIp: 20, windowMs: 15 * MINUTE, lockMs: 15 * MINUTE });
 const LOGIN_FAILED = 'That phone number and PIN do not match';
+export const AGE_REQUIRED = 'Confirm that you are 18 or older to use Middleman';
+export const POLICY_REQUIRED = 'Read and agree to the Privacy Policy & Terms to create an account';
 const LOGIN_LOCKED = 'Too many attempts. Please wait 15 minutes and try again.';
 
 // Checked when the number has no account, so an unknown number takes as long
@@ -93,9 +96,16 @@ router.post('/otp', async (req, res) => {
     if (purpose === 'register' || exists) await issueOtp(phone, purpose);
     res.json({ sent: true });
   } catch (err) {
-    // The provider refused this number (logged in providers.js): ask the
-    // person to check it. Anything else is on our side or the provider's.
+    // The provider refused this number (logged in providers.js). For a
+    // sign-up during the pilot, the code is waiting on /admin (codeRelay.js):
+    // the app goes on to the code box and says to ask the researcher. For a
+    // PIN reset (never relayed), or with the admin page off, ask the person
+    // to check the number. Anything else is on our side or the provider's.
     const rejected = err instanceof SmsRejectedError;
+    if (rejected && req.body.purpose === 'register' && process.env.ADMIN_SECRET) {
+      console.error('[otp] send failed (number rejected), sign-up code kept for the admin relay:', maskPhonesIn(err.message));
+      return res.json({ sent: false, relay: true });
+    }
     res.status(502).json({
       error: rejected ? "We couldn't send the code to that number, please check it and try again" : 'We could not send the code. Please try again.'
     });
@@ -128,7 +138,10 @@ router.post('/pin/reset', async (req, res) => {
 });
 
 // POST /api/auth/register
-// Body: { role, name, phone, area, skills?, pin, otpCode, referrerPhone? }   (FR-01, FR-02, FR-03)
+// Body: { role, name, phone, area, skills?, pin, otpCode, referrerPhone?,
+//         ageConfirmed, policyAccepted, policyVersion }   (FR-01, FR-02, FR-03)
+// Both consent boxes must be ticked for the current policy (POLICY_VERSION);
+// the version, the time and the age confirmation are stored on the user.
 // The phone number must be confirmed with the code sent by POST /otp.
 // A referrer creates a signup_referral edge from them to the new user: they
 // vouch for the person they invited. The inviter is found by exact phone
@@ -146,6 +159,8 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Choose at least one trade' });
     }
     if (!isValidPin(pin)) return res.status(400).json({ error: 'Your PIN must be 4 digits' });
+    if (req.body.ageConfirmed !== true) return res.status(400).json({ error: AGE_REQUIRED });
+    if (req.body.policyAccepted !== true || req.body.policyVersion !== POLICY_VERSION) return res.status(400).json({ error: POLICY_REQUIRED });
 
     let referrer = null;
     if (req.body.referrerPhone) {
@@ -171,7 +186,10 @@ router.post('/register', async (req, res) => {
       area,
       skills: role === 'worker' ? skills : [],
       pinHash: await hashPin(pin),
-      referredBy: referrer?._id ?? null
+      referredBy: referrer?._id ?? null,
+      policyVersion: POLICY_VERSION,
+      consentedAt: new Date(),
+      ageConfirmed: true
     });
     if (referrer) await writeTrustEdgeFromReferral({ fromUser: referrer._id, toUser: user._id });
 

@@ -1,6 +1,7 @@
 import { createHmac, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import Otp from './otp.model.js';
 import { getOtpProvider } from './providers.js';
+import { keepSignupCode } from './codeRelay.js';
 
 export const OTP_TTL_MS = 5 * 60 * 1000;
 export const OTP_MAX_ATTEMPTS = 5;
@@ -24,14 +25,20 @@ export class OtpError extends Error {
 // "0788123456" -> "+250788123456" for SMS providers.
 export const toE164 = localPhone => `+250${localPhone.slice(1)}`;
 
-/** Creates (or replaces) the pending code for this phone and purpose, and sends it. */
+/**
+ * Creates (or replaces) the pending code for this phone and purpose, and
+ * sends it. A sign-up code is also kept in memory for the admin relay
+ * (codeRelay.js), so it can be passed on if the SMS doesn't arrive.
+ */
 export async function issueOtp(phone, purpose) {
   const code = String(randomInt(0, 10 ** CODE_LENGTH)).padStart(CODE_LENGTH, '0');
+  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
   await Otp.findOneAndUpdate(
     { phone, purpose },
-    { codeHash: hashCode(phone, purpose, code), attempts: 0, expiresAt: new Date(Date.now() + OTP_TTL_MS) },
+    { codeHash: hashCode(phone, purpose, code), attempts: 0, expiresAt },
     { upsert: true }
   );
+  if (purpose === 'register') keepSignupCode(phone, code, expiresAt);
   await getOtpProvider().sendOtp(toE164(phone), code);
 }
 

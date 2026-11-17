@@ -111,7 +111,7 @@ test('registration returns a working session', { skip }, async () => {
   const phone = '0788100009';
   assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' } })).status, 200);
   const reg = await call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Client', phone, area: 'remera', pin: '2468', otpCode: codes.get(phone.slice(-3)) }
+    body: { role: 'client', name: 'New Client', phone, area: 'remera', pin: '2468', otpCode: codes.get(phone.slice(-3)), ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' }
   });
   assert.equal(reg.status, 201);
   assert.equal((await call('GET', `/api/users/${reg.data.user._id}/profile`, { token: reg.data.token })).status, 200);
@@ -133,6 +133,9 @@ test('a PIN reset ends every older session and returns a new one', { skip }, asy
 test('a number Africa\'s Talking rejects gets the friendly message, and the reason is logged (masked)', { skip }, async () => {
   const saved = { ...process.env };
   Object.assign(process.env, { OTP_PROVIDER: 'africastalking', AT_USERNAME: 'middleman-user', AT_API_KEY: 'atsk_test_key_123456' });
+  // With the admin page off there is no code relay, so a rejected number is
+  // an error (pilotFixes.api.test.js covers the relay).
+  delete process.env.ADMIN_SECRET;
   const errors = [];
   const error = console.error;
   console.error = (...args) => errors.push(args.join(' '));

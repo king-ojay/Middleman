@@ -6,15 +6,16 @@
 //
 //   npm run sync:shared
 //
-// server/test/area.api.test.js and dispute.api.test.js fail if a copy no
-// longer matches.
+// server/test/area.api.test.js, dispute.api.test.js and consent.api.test.js
+// fail if a copy no longer matches.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
 export const SHARED = [
   { source: 'shared/areas.js', copies: ['server/config/areas.shared.js', 'client/src/areas.shared.js'] },
-  { source: 'shared/disputeReasons.js', copies: ['server/config/disputeReasons.shared.js', 'client/src/disputeReasons.shared.js'] }
+  { source: 'shared/disputeReasons.js', copies: ['server/config/disputeReasons.shared.js', 'client/src/disputeReasons.shared.js'] },
+  { source: 'shared/policy.js', copies: ['server/config/policy.shared.js', 'client/src/policy.shared.js'] }
 ];
 // The areas file, as the area tests name it.
 export const { source: SOURCE, copies: COPIES } = SHARED[0];

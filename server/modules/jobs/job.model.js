@@ -82,6 +82,10 @@ const jobSchema = new mongoose.Schema({
   completedAt: { type: Date, default: null },
   // Released by the system after the confirmation window (FR-13), not by the client.
   autoReleased: { type: Boolean, default: false },
+  // When the client was sent the one SMS reminder before the automatic
+  // release (payments/releaseReminder.js); set by a single conditional update,
+  // so it is sent once.
+  releaseReminderAt: { type: Date, default: null },
   disputedAt: { type: Date, default: null },
   disputedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   // What the person who reported the problem said (config/disputeReasons.js).

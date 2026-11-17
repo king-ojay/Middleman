@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "Graph-based trust propagation platform for informal/blue-collar service discovery in Kigali, Rwanda",
+  "license": "MIT",
   "workspaces": [
     "server",
     "client"
