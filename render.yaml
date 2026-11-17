@@ -26,8 +26,9 @@ services:
       - key: NODE_VERSION
         value: 24.22.1
       # Browser origins allowed to call the API (comma-separated). Anything else gets 403.
+      # https://localhost is the Android app (Capacitor serves its pages from there).
       - key: CORS_ORIGINS
-        value: https://middleman-client.vercel.app
+        value: https://middleman-client.vercel.app,https://localhost
       # Signs session tokens; the API refuses to start in production without it.
       - key: SESSION_SECRET
         generateValue: true

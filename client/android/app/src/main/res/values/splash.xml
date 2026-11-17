@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The design's dark green (#166534); the mark on it is white. -->
+    <color name="splash_background">#166534</color>
+</resources>

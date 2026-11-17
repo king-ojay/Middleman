@@ -6,6 +6,11 @@ export const THEMES = ['system', 'light', 'dark'];
 
 const systemDark = () => window.matchMedia?.('(prefers-color-scheme: dark)').matches;
 
+// Called with true/false whenever the page turns dark or light (the Android
+// app sets its status bar icons from it: native.js).
+const darkListeners = new Set();
+export const onDarkChange = fn => darkListeners.add(fn);
+
 export function loadTheme() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -22,6 +27,7 @@ export function applyTheme(theme) {
   // Match the browser chrome to the page background.
   const dark = theme === 'dark' || (theme === 'system' && systemDark());
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0B0F17' : '#F2F4F7');
+  darkListeners.forEach(fn => fn(dark));
 }
 
 export function saveTheme(theme) {
