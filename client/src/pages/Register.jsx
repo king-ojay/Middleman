@@ -9,6 +9,7 @@ import { CATEGORIES, areaLabel } from '../options.js';
 import {
   Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, SlowNotice, StepBar, TextInput
 } from '../components/ui/index.js';
+import { t } from '../i18n/index.js';
 
 // Rwandan mobile number, as typed: 078X XXX XXX, with or without +250.
 const isPhone = value => /^(\+?250|0)?7\d{8}$/.test(value.replace(/[\s-]/g, ''));
@@ -34,11 +35,11 @@ export default function Register() {
 
   const continueToPin = async e => {
     e.preventDefault();
-    if (!details.name.trim()) return setError('Enter your full name.');
-    if (!isPhone(details.phone)) return setError('Enter a mobile number like 078X XXX XXX.');
-    if (details.role === 'worker' && details.skills.length === 0) return setError('Choose at least one kind of work you do.');
+    if (!details.name.trim()) return setError(t('register.err.name'));
+    if (!isPhone(details.phone)) return setError(t('register.err.phone'));
+    if (details.role === 'worker' && details.skills.length === 0) return setError(t('register.err.skills'));
     // No default area: the person picks one (it decides their area trust and default lists).
-    if (!details.area) return setError('Choose your area.');
+    if (!details.area) return setError(t('register.err.area'));
     setError('');
     setSending(true);
     try {
@@ -54,8 +55,8 @@ export default function Register() {
 
   const create = async e => {
     e.preventDefault();
-    if (otpCode.length !== 6) return setError('Enter the 6-digit code we sent you.');
-    if (pin.length !== 4) return setError('Choose a 4-digit PIN.');
+    if (otpCode.length !== 6) return setError(t('register.err.code'));
+    if (pin.length !== 4) return setError(t('register.err.pin'));
     setError('');
     setSubmitting(true);
     try {
@@ -69,20 +70,20 @@ export default function Register() {
 
   if (step === 2) {
     return (
-      <AuthLayout back={() => { setError(''); setStep(1); }} right="Step 2 of 2">
+      <AuthLayout back={() => { setError(''); setStep(1); }} right={t('common.stepOf', { step: 2, total: 2 })}>
         <StepBar step={2} />
-        <h1 className="text-display tracking-tight text-ink">Set your PIN</h1>
-        <p className="text-body text-muted mt-2 mb-6">First enter the code we sent by SMS, then choose the PIN you will log in with.</p>
+        <h1 className="text-display tracking-tight text-ink">{t('register.pinTitle')}</h1>
+        <p className="text-body text-muted mt-2 mb-6">{t('register.pinSub')}</p>
         <form onSubmit={create} className="space-y-6">
           <OtpField phone={details.phone} purpose="register" value={otpCode} onChange={setOtpCode} autoFocus />
           <div>
-            <p className="text-label text-ink mb-2">Choose a 4-digit PIN</p>
+            <p className="text-label text-ink mb-2">{t('register.choosePin')}</p>
             <PinBoxes value={pin} onChange={setPin} />
           </div>
           <InviterPhone confirmed={inviter} onConfirm={setInviter} />
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <div>
-            <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6} aria-busy={submitting}>{submitting ? 'Creating account…' : 'Create account'}</Button>
+            <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6} aria-busy={submitting}>{submitting ? t('register.creating') : t('register.create')}</Button>
             <SlowNotice active={submitting} className="mt-3 text-center" />
           </div>
         </form>
@@ -91,24 +92,24 @@ export default function Register() {
   }
 
   return (
-    <AuthLayout back="/login" right="Step 1 of 2">
+    <AuthLayout back="/login" right={t('common.stepOf', { step: 1, total: 2 })}>
       <StepBar step={1} />
-      <h1 className="text-display tracking-tight text-ink">Create your account</h1>
-      <p className="text-body text-muted mt-2 mb-6">Tell us who you are.</p>
+      <h1 className="text-display tracking-tight text-ink">{t('register.title')}</h1>
+      <p className="text-body text-muted mt-2 mb-6">{t('register.sub')}</p>
 
       <form onSubmit={continueToPin} className="space-y-6">
         <div>
-          <p className="text-label text-ink mb-2">I am a…</p>
-          <div role="radiogroup" aria-label="I am a" className="grid grid-cols-2 gap-3">
-            <OptionCard selected={details.role === 'client'} title="Client" description="I need work done" onSelect={() => set({ role: 'client' })} />
-            <OptionCard selected={details.role === 'worker'} title="Worker" description="I do the work" onSelect={() => set({ role: 'worker' })} />
+          <p className="text-label text-ink mb-2">{t('register.iAm')}</p>
+          <div role="radiogroup" aria-label={t('register.iAmLabel')} className="grid grid-cols-2 gap-3">
+            <OptionCard selected={details.role === 'client'} title={t('common.client')} description={t('register.client.desc')} onSelect={() => set({ role: 'client' })} />
+            <OptionCard selected={details.role === 'worker'} title={t('common.worker')} description={t('register.worker.desc')} onSelect={() => set({ role: 'worker' })} />
           </div>
         </div>
 
         {details.role === 'worker' && (
           <div>
-            <p className="text-label text-ink mb-2">What work do you do?</p>
-            <ChipRow label="What work do you do?">
+            <p className="text-label text-ink mb-2">{t('register.whatWork')}</p>
+            <ChipRow label={t('register.whatWork')}>
               {CATEGORIES.map(c => (
                 <Chip key={c.value} active={details.skills.includes(c.value)} onClick={() => toggleSkill(c.value)}>{c.label}</Chip>
               ))}
@@ -116,24 +117,24 @@ export default function Register() {
           </div>
         )}
 
-        <FormField label="Full name">
-          {field => <TextInput {...field} autoComplete="name" value={details.name} onChange={e => set({ name: e.target.value })} placeholder="e.g. Eric Habimana" />}
+        <FormField label={t('register.fullName')}>
+          {field => <TextInput {...field} autoComplete="name" value={details.name} onChange={e => set({ name: e.target.value })} placeholder={t('register.namePlaceholder')} />}
         </FormField>
 
-        <FormField label="Phone number">
-          {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="tel" value={details.phone} onChange={e => set({ phone: e.target.value })} placeholder="078X XXX XXX" />}
+        <FormField label={t('common.phoneNumber')}>
+          {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="tel" value={details.phone} onChange={e => set({ phone: e.target.value })} placeholder={t('common.phonePlaceholder')} />}
         </FormField>
 
         <AreaPicker
-          label="Your area"
+          label={t('register.yourArea')}
           value={details.area}
-          onChange={area => { set({ area }); if (error === 'Choose your area.') setError(''); }}
-          error={error === 'Choose your area.' ? error : ''}
+          onChange={area => { set({ area }); if (error === t('register.err.area')) setError(''); }}
+          error={error === t('register.err.area') ? error : ''}
         />
 
-        {error && error !== 'Choose your area.' && <p className="text-small text-danger" role="alert">{error}</p>}
+        {error && error !== t('register.err.area') && <p className="text-small text-danger" role="alert">{error}</p>}
         <div>
-          <Button type="submit" disabled={sending} aria-busy={sending}>{sending ? 'Sending code…' : 'Continue'}</Button>
+          <Button type="submit" disabled={sending} aria-busy={sending}>{sending ? t('register.sendingCode') : t('common.continue')}</Button>
           <SlowNotice active={sending} className="mt-3 text-center" />
         </div>
       </form>
@@ -184,15 +185,15 @@ function InviterPhone({ confirmed, onConfirm }) {
   };
 
   const summary = person =>
-    `${person.name} · ${areaLabel(person.area)} · ${person.role === 'worker' ? 'Worker' : 'Client'} · phone ending ${person.phoneEnding}`;
+    t('register.inviter.summary', { name: person.name, area: areaLabel(person.area), role: t(person.role === 'worker' ? 'common.worker' : 'common.client'), ending: person.phoneEnding });
 
   if (confirmed) {
     return (
       <div>
-        <p className="text-label text-ink mb-2">Who invited you?</p>
+        <p className="text-label text-ink mb-2">{t('register.inviter.who')}</p>
         <Card className="flex items-center gap-3">
-          <p className="min-w-0 flex-1 text-body text-ink">Invited by {summary(confirmed.person)}</p>
-          <Button variant="outline" size="md" onClick={startOver}>Change</Button>
+          <p className="min-w-0 flex-1 text-body text-ink">{t('register.inviter.by', { summary: summary(confirmed.person) })}</p>
+          <Button variant="outline" size="md" onClick={startOver}>{t('common.change')}</Button>
         </Card>
       </div>
     );
@@ -200,7 +201,7 @@ function InviterPhone({ confirmed, onConfirm }) {
 
   return (
     <div>
-      <FormField label="Inviter's phone number (optional)" helper="Being vouched for helps you get found faster. You can skip this.">
+      <FormField label={t('register.inviter.label')} helper={t('register.inviter.helper')}>
         {field => {
           inputId.current = field.id;
           return (
@@ -211,19 +212,19 @@ function InviterPhone({ confirmed, onConfirm }) {
               autoComplete="off"
               value={phone}
               onChange={e => change(e.target.value)}
-              placeholder="078X XXX XXX"
+              placeholder={t('common.phonePlaceholder')}
             />
           );
         }}
       </FormField>
       <div aria-live="polite">
-        {looking && <p className="text-small text-muted mt-3">Looking up this number…</p>}
+        {looking && <p className="text-small text-muted mt-3">{t('register.inviter.looking')}</p>}
         {found && (
           <Card className="mt-3">
-            <p className="text-body text-ink">{summary(found)}. Is this who invited you?</p>
+            <p className="text-body text-ink">{t('register.inviter.isThis', { summary: summary(found) })}</p>
             <div className="flex flex-wrap gap-3 mt-4">
-              <Button size="md" onClick={() => onConfirm({ phone, person: found })}>Confirm</Button>
-              <Button variant="outline" size="md" onClick={startOver}>Change</Button>
+              <Button size="md" onClick={() => onConfirm({ phone, person: found })}>{t('common.confirm')}</Button>
+              <Button variant="outline" size="md" onClick={startOver}>{t('common.change')}</Button>
             </div>
           </Card>
         )}
@@ -232,7 +233,7 @@ function InviterPhone({ confirmed, onConfirm }) {
         <div className="mt-3">
           <p className="text-small text-danger" role="alert">{error.message}</p>
           {(error.retryable || error.status === 429) && (
-            <Button variant="outline" size="md" className="mt-3" onClick={() => lookup(phone)}>Try again</Button>
+            <Button variant="outline" size="md" className="mt-3" onClick={() => lookup(phone)}>{t('common.tryAgain')}</Button>
           )}
         </div>
       )}

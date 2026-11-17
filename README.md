@@ -186,6 +186,8 @@ Added during the build:
 | Account deletion, with settled jobs kept for the other party | Delivered | `modules/users/deleteUser.js`, `scripts/deleteUser.js` |
 | Worker job search with filters | Delivered | `modules/jobs/feed.js`, `pages/OpenJobs.jsx` |
 | Light and dark mode | Delivered | `styles/index.css`, `theme.js` |
+| English and Kinyarwanda (beta), chosen on the landing page, log in or profile; server errors translated by code | Delivered; the Kinyarwanda is a first draft awaiting a native speaker's review ([`docs/translation-review.csv`](docs/translation-review.csv)); the researcher's /admin page and SMS texts stay in English | `client/src/i18n/`, `server/modules/errorCodes.js` |
+| Pay sheet: amount, worker and the MoMo PIN-approval note, then waiting for approval, held, or a failure with Try again; the test-payment notice is here and on Transactions | Delivered | `components/JobActions.jsx` |
 
 ## Install and run locally
 
@@ -320,10 +322,10 @@ USB. Screenshots: [`docs/screenshots/android/`](docs/screenshots/android/).
 
 | Suite | Count | What it covers |
 |---|---|---|
-| Server unit and experiment tests | 109 | The trust rules and worked example, ratings as evidence, session tokens, OTP logging with masked phones, error logs, the MoMo sandbox client (against a stub, never the real API), the experiment code |
+| Server unit and experiment tests | 113 | The trust rules and worked example, the error codes the app translates, ratings as evidence, session tokens, OTP logging with masked phones, error logs, the MoMo sandbox client (against a stub, never the real API), the experiment code |
 | Server API tests (replica set) | 132 | Every route through HTTP: signup and login lockout, Discover rankings and reasons, the job feed, offers and choosing, escrow funding, release, refunds, double-payment races, disputes, automatic release with a test clock, the call-button privacy rule, the active-job limit and two clients choosing at once, Transactions, verification, account deletion, area changes |
-| Client tests | 32 | Reason sentences, trust tiles and paths, money and date labels, dispute reasons, phone links, the Android build settings (plain http only in the local build) and the web manifest and icons |
-| End to end | 1 flow × 5 projects, all passing | Register a client and an invited worker, post a job, offer, see the ranked offer with its reason, choose, pay into escrow, call buttons, start, finish, the automatic-release deadline, confirm and rate both ways, earnings, Transactions, and the reason sentence on Discover |
+| Client tests | 41 | Reason sentences, trust tiles and paths, money and date labels, dispute reasons, phone links, the Android build settings (plain http only in the local build) and the web manifest and icons, both languages (every key in both, placeholders, the saved choice, translated server errors, Kinyarwanda reason sentences and dates) |
+| End to end | 7 tests × 5 projects, all passing | The whole flow: register a client and an invited worker, post a job, offer, see the ranked offer with its reason, choose, pay into escrow in the pay sheet, call buttons, start, finish, the automatic-release deadline, confirm and rate both ways, earnings, Transactions, and the reason sentence on Discover; Kinyarwanda chosen on the landing page, kept after a reload, sign up and a translated server error, back to English; no sandbox banner and content kept below a simulated phone status bar; the pay sheet waiting for approval, refused, declined, and its keyboard focus |
 | Ranking regression | 300 rankings | Positive-only rankings on the seed data stay identical |
 
 The cross-browser and device results, and the manual checks on real phones,

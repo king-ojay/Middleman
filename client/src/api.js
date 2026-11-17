@@ -1,4 +1,6 @@
 import { loadSession, saveSession } from './session.js';
+import { t } from './i18n/index.js';
+import { errorText } from './i18n/errors.js';
 
 // Base URL for the API. Empty in dev (Vite proxies /api to :4000); set
 // VITE_API_URL to the deployed API's origin for production builds.
@@ -45,7 +47,7 @@ export async function api(path, { session = true, ...options } = {}) {
     });
   } catch {
     // fetch only throws when there is no answer at all (offline, DNS, CORS).
-    const err = new Error("Can't reach Middleman. Check your internet connection and try again.");
+    const err = new Error(t('error.offline'));
     err.retryable = true;
     throw err;
   } finally {
@@ -60,7 +62,7 @@ export async function api(path, { session = true, ...options } = {}) {
     window.location.assign('/login');
   }
   if (!res.ok) {
-    const err = new Error(data?.error || `Request failed (${res.status})`);
+    const err = new Error(errorText(data, res.status));
     err.status = res.status;
     // A server error (5xx) may pass if asked again; a refusal (4xx) won't.
     err.retryable = res.status >= 500;

@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import TabBar from './TabBar.jsx';
+import { t } from '../../i18n/index.js';
 
 // `back` may be true (browser back), a path, or a function (e.g. previous step).
 // Browser back only within the app: on a page opened straight from a link
@@ -15,7 +16,7 @@ function BackButton({ back }) {
     <button
       type="button"
       onClick={goBack}
-      aria-label="Back"
+      aria-label={t('common.back')}
       className="w-11 h-11 inline-flex items-center justify-center rounded-full bg-surface text-ink transition-colors hover:bg-soft"
     >
       <svg width="12" height="20" viewBox="0 0 12 20" fill="none" aria-hidden="true">
@@ -47,7 +48,7 @@ export default function PageLayout({ back, right, eyebrow, title, subtitle, tabB
       {tabBar && <TabBar role={role} />}
       {/* Side padding matches the top bar (24px, 40px from 1024px) so content lines up with the logo. */}
       <div className={`mx-auto w-full ${WIDTHS[size]}`}>
-        <div className={`px-screen lg:px-10 pt-[max(env(safe-area-inset-top),24px)] lg:pt-6 ${tabBar ? 'pb-[calc(100px+env(safe-area-inset-bottom))] lg:pb-12' : 'pb-10'}`}>
+        <div className={`px-screen lg:px-10 pt-[max(var(--safe-top),24px)] lg:pt-6 ${tabBar ? 'pb-[calc(100px+env(safe-area-inset-bottom))] lg:pb-12' : 'pb-10'}`}>
           {hasHeaderRow && (
             <div className="flex items-center justify-between h-11 mb-4">
               <div>{back && <BackButton back={back} />}</div>

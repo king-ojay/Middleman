@@ -1,5 +1,7 @@
-// App shell: the sandbox banner, the routes for each screen (guarded by role),
-// and the notice shown while the free-tier API wakes up.
+// App shell: the strip behind the phone's status bar, the routes for each
+// screen (guarded by role), and the notice shown while the free-tier API wakes
+// up. The tree is keyed on the language, so switching it redraws every
+// screen in the new words (i18n/index.js).
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
@@ -14,16 +16,18 @@ import Profile from './pages/Profile.jsx';
 import Transactions from './pages/Transactions.jsx';
 import Admin from './pages/Admin.jsx';
 import ServerWaking from './components/ServerWaking.jsx';
-import SandboxBanner from './components/SandboxBanner.jsx';
+import StatusBarBackdrop from './components/StatusBarBackdrop.jsx';
+import { useLang } from './i18n/useLang.js';
 import { useAuth, homePathFor, RequireRole, RequireUser } from './auth.jsx';
 
 // Mobile-first: every screen is designed at 390px. From 768px up, PageLayout
 // widens the content and the tab bar becomes a top navigation bar.
 export default function App() {
   const { user } = useAuth();
+  const lang = useLang();
   return (
-    <main className="min-h-dvh bg-canvas">
-      <SandboxBanner />
+    <main key={lang} className="min-h-dvh bg-canvas">
+      <StatusBarBackdrop />
       <Routes>
         <Route path="/" element={user ? <Navigate to={homePathFor(user)} replace /> : <Landing />} />
         <Route path="/login" element={<Login />} />

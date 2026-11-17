@@ -6,6 +6,8 @@ import { categoryLabel, areaLabel } from '../options.js';
 import { formatRwf } from '../format.js';
 import { THEMES, loadTheme, saveTheme } from '../theme.js';
 import AreaPicker from '../components/AreaPicker.jsx';
+import LanguageSwitch from '../components/LanguageSwitch.jsx';
+import { t, tn } from '../i18n/index.js';
 import {
   Avatar, Button, Card, Chip, ChipRow, LoadingState, PageLayout, Skeleton, SkeletonText, StarRating, TierBadge, VerifiedBadge
 } from '../components/ui/index.js';
@@ -35,10 +37,10 @@ export default function Profile() {
   }, [profileId]);
 
   const layout = { back: isOwn ? undefined : true, tabBar: true, role: user.role, width: 'medium' };
-  if (error) return <PageLayout {...layout}><p className="text-body text-danger" role="alert">Couldn't load this profile: {error}</p></PageLayout>;
+  if (error) return <PageLayout {...layout}><p className="text-body text-danger" role="alert">{t('common.loadError', { what: t('profile.loadError'), message: error })}</p></PageLayout>;
   if (!profile) return <PageLayout {...layout}><ProfileSkeleton /></PageLayout>;
 
-  const role = profile.role === 'worker' ? (profile.skills || []).map(categoryLabel).join(', ') : 'Client';
+  const role = profile.role === 'worker' ? (profile.skills || []).map(categoryLabel).join(', ') : t('common.client');
   const { stats } = profile;
   const extraVouchers = profile.vouchedBy.length - MAX_VOUCHER_CHIPS;
 
@@ -55,26 +57,26 @@ export default function Profile() {
       </div>
 
       <Card className="grid grid-cols-3 text-center py-5 mt-6">
-        <Stat value={stats.jobsDone} label="Jobs done" />
-        <Stat value={stats.avgRating ?? '–'} label="Avg rating" />
-        <Stat value={stats.vouches} label="Vouches" />
+        <Stat value={stats.jobsDone} label={t('profile.jobsDone')} />
+        <Stat value={stats.avgRating ?? '–'} label={t('profile.avgRating')} />
+        <Stat value={stats.vouches} label={t('profile.vouches')} />
       </Card>
 
       {isOwn && profile.earnings && <Earnings earnings={profile.earnings} role={profile.role} />}
 
-      <h2 className="text-section text-ink mt-8 mb-3">Vouched for by</h2>
+      <h2 className="text-section text-ink mt-8 mb-3">{t('profile.vouchedBy')}</h2>
       {profile.vouchedBy.length === 0 ? (
-        <p className="text-body text-muted">No vouches yet.</p>
+        <p className="text-body text-muted">{t('profile.noVouches')}</p>
       ) : (
-        <ChipRow label="Vouched for by">
+        <ChipRow label={t('profile.vouchedBy')}>
           {profile.vouchedBy.slice(0, MAX_VOUCHER_CHIPS).map(name => <Chip static key={name}>{name}</Chip>)}
-          {extraVouchers > 0 && <Chip static>+ {extraVouchers} more</Chip>}
+          {extraVouchers > 0 && <Chip static>{t('profile.more', { n: extraVouchers })}</Chip>}
         </ChipRow>
       )}
 
-      <h2 className="text-section text-ink mt-8 mb-3">Recent ratings</h2>
+      <h2 className="text-section text-ink mt-8 mb-3">{t('profile.recentRatings')}</h2>
       {profile.recentRatings.length === 0 ? (
-        <p className="text-body text-muted">No ratings yet.</p>
+        <p className="text-body text-muted">{t('profile.noRatings')}</p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {profile.recentRatings.map(r => (
@@ -93,7 +95,7 @@ export default function Profile() {
       {isOwn && <Preferences />}
 
       {isOwn && (
-        <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>Log out</Button>
+        <Button variant="outline" className="mt-10" onClick={() => { logout(); navigate('/'); }}>{t('profile.logOut')}</Button>
       )}
     </PageLayout>
   );
@@ -105,12 +107,12 @@ export default function Profile() {
 function Earnings({ earnings, role }) {
   return (
     <Card className="p-5 mt-3">
-      <p className="text-body font-semibold text-ink">{role === 'worker' ? 'Earned on Middleman' : 'Paid through Middleman'}</p>
+      <p className="text-body font-semibold text-ink">{role === 'worker' ? t('profile.earned') : t('profile.paid')}</p>
       <p className="text-amount text-ink mt-2">{formatRwf(earnings.total)}</p>
       <p className="text-small text-muted mt-1">
-        {earnings.jobs} completed job{earnings.jobs === 1 ? '' : 's'} · only you can see this
+        {tn('profile.completedJobs', earnings.jobs)}
       </p>
-      <Button to="/transactions" variant="outline" size="md" className="mt-4">View transactions</Button>
+      <Button to="/transactions" variant="outline" size="md" className="mt-4">{t('profile.viewTransactions')}</Button>
     </Card>
   );
 }
@@ -141,23 +143,23 @@ function AreaSetting({ area, onSaved }) {
 
   return (
     <>
-      <h2 className="text-section text-ink mt-8 mb-3">Your area</h2>
+      <h2 className="text-section text-ink mt-8 mb-3">{t('profile.yourArea')}</h2>
       <Card className="p-5">
         {!editing ? (
           <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-body font-semibold text-ink">{areaLabel(area)}</p>
-              <p className="text-small text-muted mt-1">Where you live or work. It decides who counts as "in this area" and which jobs and workers you see first.</p>
+              <p className="text-small text-muted mt-1">{t('profile.areaNote')}</p>
             </div>
-            <Button variant="outline" size="md" className="shrink-0" onClick={() => { setChoice(area); setEditing(true); }}>Change</Button>
+            <Button variant="outline" size="md" className="shrink-0" onClick={() => { setChoice(area); setEditing(true); }}>{t('common.change')}</Button>
           </div>
         ) : (
           <div className="space-y-4">
-            <AreaPicker label="Choose your area" value={choice} onChange={setChoice} />
+            <AreaPicker label={t('profile.chooseArea')} value={choice} onChange={setChoice} />
             {error && <p className="text-small text-danger" role="alert">{error}</p>}
             <div className="flex flex-wrap gap-3">
-              <Button size="md" onClick={save} disabled={saving || choice === area}>{saving ? 'Saving…' : 'Save area'}</Button>
-              <Button variant="outline" size="md" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button>
+              <Button size="md" onClick={save} disabled={saving || choice === area}>{saving ? t('common.saving') : t('profile.saveArea')}</Button>
+              <Button variant="outline" size="md" onClick={() => setEditing(false)} disabled={saving}>{t('common.cancel')}</Button>
             </div>
           </div>
         )}
@@ -166,21 +168,25 @@ function AreaSetting({ area, onSaved }) {
   );
 }
 
-const THEME_LABELS = { system: 'Match phone', light: 'Light', dark: 'Dark' };
-
-// Your own profile only. Appearance is saved on this device (theme.js).
+// Your own profile only. Appearance (theme.js) and language (i18n) are saved
+// on this device.
 function Preferences() {
   const [theme, setTheme] = useState(loadTheme);
   const choose = next => { saveTheme(next); setTheme(next); };
   return (
     <>
-      <h2 className="text-section text-ink mt-8 mb-3">Preferences</h2>
+      <h2 className="text-section text-ink mt-8 mb-3">{t('profile.preferences')}</h2>
       <Card className="p-5">
-        <p className="text-body font-semibold text-ink">Appearance</p>
-        <p className="text-small text-muted mt-1">Dark mode is easier on the eyes at night and saves battery on many phones.</p>
-        <div role="group" aria-label="Appearance" className="flex flex-wrap gap-2 mt-4">
-          {THEMES.map(t => <Chip key={t} active={theme === t} onClick={() => choose(t)}>{THEME_LABELS[t]}</Chip>)}
+        <p className="text-body font-semibold text-ink">{t('profile.appearance')}</p>
+        <p className="text-small text-muted mt-1">{t('profile.appearanceNote')}</p>
+        <div role="group" aria-label={t('profile.appearance')} className="flex flex-wrap gap-2 mt-4">
+          {THEMES.map(name => <Chip key={name} active={theme === name} onClick={() => choose(name)}>{t(`theme.${name}`)}</Chip>)}
         </div>
+      </Card>
+      <Card className="p-5 mt-3">
+        <p className="text-body font-semibold text-ink">{t('language.label')}</p>
+        <p className="text-small text-muted mt-1">{t('profile.languageNote')}</p>
+        <LanguageSwitch className="mt-4" />
       </Card>
     </>
   );
@@ -190,7 +196,7 @@ function Preferences() {
 // three stats, then the vouches and recent ratings.
 function ProfileSkeleton() {
   return (
-    <LoadingState label="Loading profile">
+    <LoadingState label={t('profile.loading')}>
       <div className="flex flex-col items-center pt-2">
         <Skeleton on="canvas" className="w-[88px] h-[88px] rounded-full" />
         <SkeletonText size="title" on="canvas" className="w-48 mt-4" />
@@ -205,11 +211,11 @@ function ProfileSkeleton() {
           </div>
         ))}
       </Card>
-      <h2 className="text-section text-ink mt-8 mb-3">Vouched for by</h2>
+      <h2 className="text-section text-ink mt-8 mb-3">{t('profile.vouchedBy')}</h2>
       <div className="flex gap-2">
         {[0, 1].map(i => <Skeleton key={i} on="canvas" className="h-11 w-28 rounded-full" />)}
       </div>
-      <h2 className="text-section text-ink mt-8 mb-3">Recent ratings</h2>
+      <h2 className="text-section text-ink mt-8 mb-3">{t('profile.recentRatings')}</h2>
       <ul className="grid gap-3 md:grid-cols-2">
         {[0, 1].map(i => (
           <Card as="li" key={i} className="p-5">

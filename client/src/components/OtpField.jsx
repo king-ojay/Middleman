@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { Button, FormField, TextInput } from './ui/index.js';
+import { t } from '../i18n/index.js';
 
 const RESEND_SECONDS = 30;
 
@@ -25,7 +26,7 @@ export default function OtpField({ phone, purpose, value, onChange, autoFocus })
     setSending(true);
     try {
       await api('/api/auth/otp', { method: 'POST', body: JSON.stringify({ phone, purpose }) });
-      setNote('We sent a new code.');
+      setNote(t('otp.sentNew'));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -37,7 +38,7 @@ export default function OtpField({ phone, purpose, value, onChange, autoFocus })
 
   return (
     <div>
-      <FormField label={`Code we sent to ${phone}`} helper={note || 'It can take a minute to arrive. It expires after 5 minutes.'} error={error}>
+      <FormField label={t('otp.label', { phone })} helper={note || t('otp.helper')} error={error}>
         {field => (
           <TextInput
             {...field}
@@ -46,13 +47,13 @@ export default function OtpField({ phone, purpose, value, onChange, autoFocus })
             maxLength={6}
             value={value}
             onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="6-digit code"
+            placeholder={t('otp.placeholder')}
             autoFocus={autoFocus}
           />
         )}
       </FormField>
       <Button variant="plain" size="md" className="-ml-5" disabled={wait > 0 || sending} aria-busy={sending} onClick={resend}>
-        {sending ? 'Sending…' : wait > 0 ? `Resend code in ${wait}s` : 'Resend code'}
+        {sending ? t('common.sending') : wait > 0 ? t('otp.resendIn', { seconds: wait }) : t('otp.resend')}
       </Button>
     </div>
   );

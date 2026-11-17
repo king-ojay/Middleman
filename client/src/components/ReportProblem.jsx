@@ -1,6 +1,8 @@
 import { useId, useState } from 'react';
 import { api } from '../api.js';
-import { DISPUTE_DETAILS_MAX, DISPUTE_DETAILS_MIN, DISPUTE_REASONS, cleanDisputeDetails } from '../disputeReasons.shared.js';
+import { DISPUTE_DETAILS_MAX, DISPUTE_DETAILS_MIN, cleanDisputeDetails } from '../disputeReasons.shared.js';
+import { reasonsFor } from '../disputeReasons.js';
+import { t } from '../i18n/index.js';
 import { Button, FormField, Sheet, TextArea } from './ui/index.js';
 
 // "Report a problem" (FR-14): the reporter picks a reason from their role's
@@ -16,8 +18,8 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
   const reasonsId = useId();
 
   const length = cleanDisputeDetails(details).length;
-  const reasonError = tried && !reason ? 'Choose what the problem is.' : '';
-  const detailsError = tried && length < DISPUTE_DETAILS_MIN ? `Describe what is wrong in at least ${DISPUTE_DETAILS_MIN} characters.` : '';
+  const reasonError = tried && !reason ? t('report.err.reason') : '';
+  const detailsError = tried && length < DISPUTE_DETAILS_MIN ? t('report.err.details', { min: DISPUTE_DETAILS_MIN }) : '';
 
   const send = async () => {
     setTried(true);
@@ -35,16 +37,16 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
   };
 
   return (
-    <Sheet open={open} title="Report a problem" onClose={() => !sending && onClose()}>
+    <Sheet open={open} title={t('report.title')} onClose={() => !sending && onClose()}>
       <div className="space-y-5">
         <p className="text-body text-on-warn bg-warn rounded-field px-4 py-3">
-          The money stays locked in escrow until an admin reviews this and decides to pay the worker or refund the client.
+          {t('report.locked')}
         </p>
 
         <div>
-          <p id={reasonsId} className="text-label text-ink mb-2">What is the problem?</p>
+          <p id={reasonsId} className="text-label text-ink mb-2">{t('report.what')}</p>
           <div role="radiogroup" aria-labelledby={reasonsId} aria-required="true" aria-invalid={reasonError ? true : undefined} className="grid gap-2">
-            {DISPUTE_REASONS[role].map(r => {
+            {reasonsFor(role).map(r => {
               const selected = reason === r.value;
               return (
                 <button
@@ -66,8 +68,8 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
         </div>
 
         <FormField
-          label="What is wrong?"
-          helper={`${length} of ${DISPUTE_DETAILS_MAX} characters, at least ${DISPUTE_DETAILS_MIN}. The other person and the admin will read this.`}
+          label={t('report.wrong')}
+          helper={t('report.helper', { length, max: DISPUTE_DETAILS_MAX, min: DISPUTE_DETAILS_MIN })}
           error={detailsError}
         >
           {field => (
@@ -77,15 +79,15 @@ export default function ReportProblem({ job, role, open, onClose, onReported }) 
               value={details}
               maxLength={DISPUTE_DETAILS_MAX}
               onChange={e => setDetails(e.target.value)}
-              placeholder={role === 'client' ? 'For example: the tap still leaks and the worker has not come back.' : 'For example: the work was finished on Monday and the client has not replied since.'}
+              placeholder={t(`report.placeholder.${role}`)}
             />
           )}
         </FormField>
 
         {error && <p className="text-small text-danger" role="alert">{error}</p>}
         <div className="space-y-2">
-          <Button onClick={send} disabled={sending}>{sending ? 'Sending…' : 'Report problem'}</Button>
-          <Button variant="outline" onClick={onClose} disabled={sending}>Cancel</Button>
+          <Button onClick={send} disabled={sending}>{sending ? t('common.sending') : t('report.submit')}</Button>
+          <Button variant="outline" onClick={onClose} disabled={sending}>{t('common.cancel')}</Button>
         </div>
       </div>
     </Sheet>

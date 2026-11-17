@@ -232,7 +232,7 @@ test('an unknown server error answers "Something went wrong. Please try again." 
       User.findById = original;
     }
     assert.equal(res.status, 500, `call ${failOnCall}`);
-    assert.deepEqual(res.data, { error: 'Something went wrong. Please try again.' });
+    assert.deepEqual(res.data, { error: 'Something went wrong. Please try again.', code: 'server_error' });
     const line = lines.join('\n');
     assert.match(line, /\[error\] GET \/api\/users\/:id\/profile Error: lookup failed at \*{5}002/);
     assert.equal(line.includes('0788200002'), false);

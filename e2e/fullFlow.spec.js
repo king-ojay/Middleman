@@ -1,57 +1,21 @@
 // The whole flow, two people in two browser sessions: a client and a worker
 // the client invited. Register both, post a job, offer, see the ranked offers
-// with the reason sentence, choose and pay into escrow (fake provider), do
+// with the reason sentence, choose and pay into escrow in the pay sheet (fake
+// provider), do
 // the work, confirm, rate both ways, then check the worker's private earnings
 // and Transactions page, and the client's Discover sentence built from the
 // real rating.
-import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
-import { API_LOG } from './playwright.config.js';
+import { register } from './helpers.js';
 
 const client = { name: 'Clara Mukamana', phone: '0788700101', role: 'Client' };
 const worker = { name: 'Walter Niyonzima', phone: '0788700202', role: 'Worker', trade: 'Plumber' };
-const AREA = 'Kimironko';
 const JOB = 'Kitchen tap is leaking, needs replacing';
 const PRICE = '15,000 RWF';
-
-// The latest code the console OTP provider printed for this number
-// ("[otp] code for +250*****101 is 123456").
-async function codeFor(phone) {
-  const pattern = new RegExp(`\\[otp\\] code for \\+250\\*{5}${phone.slice(-3)} is (\\d{6})`, 'g');
-  for (let i = 0; i < 50; i++) {
-    const found = [...readFileSync(API_LOG, 'utf8').matchAll(pattern)];
-    if (found.length) return found.at(-1)[1];
-    await new Promise(r => setTimeout(r, 200));
-  }
-  throw new Error(`no OTP logged for ${phone}`);
-}
-
-async function register(page, person, inviter) {
-  await page.goto('/register');
-  await page.getByRole('radio', { name: new RegExp(person.role) }).click();
-  if (person.trade) await page.getByRole('button', { name: person.trade, exact: true }).click();
-  await page.getByLabel('Full name').fill(person.name);
-  await page.getByLabel('Phone number').fill(person.phone);
-  await page.getByRole('radio', { name: AREA }).click();
-  await page.getByRole('button', { name: 'Continue' }).click();
-
-  await expect(page.getByRole('heading', { name: 'Set your PIN' })).toBeVisible();
-  await page.getByLabel(/Code we sent to/).fill(await codeFor(person.phone));
-  await page.getByLabel('PIN digit 1').pressSequentially('1357');
-  if (inviter) {
-    await page.getByLabel("Inviter's phone number (optional)").fill(inviter.phone);
-    await expect(page.getByText(`${inviter.name.split(' ')[0]}`, { exact: false }).first()).toBeVisible();
-    await page.getByRole('button', { name: 'Confirm' }).click();
-    await expect(page.getByText(/Invited by/)).toBeVisible();
-  }
-  await page.getByRole('button', { name: 'Create account' }).click();
-  await expect(page).not.toHaveURL(/register/);
-}
 
 test('the whole flow, client and invited worker', async ({ browser }) => {
   const asClient = await (await browser.newContext()).newPage();
   const asWorker = await (await browser.newContext()).newPage();
-  asClient.on('dialog', d => d.accept()); // "Pay … into escrow?"
   let jobUrl;
 
   await test.step('1. register the client', async () => {
@@ -96,9 +60,20 @@ test('the whole flow, client and invited worker', async ({ browser }) => {
     await asClient.screenshot({ path: '.logs/05-offers.png', fullPage: true });
   });
 
-  await test.step('6. the client chooses and pays into escrow', async () => {
+  await test.step('6. the client chooses and pays into escrow in the pay sheet', async () => {
     await asClient.getByRole('listitem').filter({ hasText: worker.name }).getByRole('button', { name: 'Choose' }).click();
     await asClient.getByRole('button', { name: 'Pay into escrow' }).click();
+    const sheet = asClient.getByRole('dialog', { name: 'Pay into escrow' });
+    await expect(sheet.getByText(PRICE, { exact: true })).toBeVisible();
+    await expect(sheet.getByText(worker.name)).toBeVisible();
+    await expect(sheet.getByText('MTN MoMo will ask the payer to approve with their PIN.')).toBeVisible();
+    await expect(sheet.getByText('Test payment, no real money moves')).toBeVisible();
+    await expect(sheet.getByRole('button', { name: 'Pay 15,000 RWF' })).toBeFocused(); // focus moves into the sheet
+    await sheet.getByRole('button', { name: 'Pay 15,000 RWF' }).click();
+    await expect(sheet.getByText('Payment held in escrow')).toBeVisible();
+    await asClient.screenshot({ path: '.logs/06-paid.png' });
+    await sheet.getByRole('button', { name: 'Done' }).click();
+    await expect(asClient.getByRole('dialog')).toHaveCount(0);
     await expect(asClient.getByRole('button', { name: 'Pay into escrow' })).toHaveCount(0);
     await expect(asClient.getByText(/held/i).first()).toBeVisible();
     // an active job: the client can call the worker

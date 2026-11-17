@@ -1,5 +1,6 @@
 import { initials } from './ui/Avatar.jsx';
 import { reasonPath } from '../trustReason.js';
+import { t } from '../i18n/index.js';
 
 // The trust path as overlapping round avatars: you, the named hop-1 person
 // (only when the sentence names them), a blank grey circle for anyone kept
@@ -28,7 +29,7 @@ export default function TrustPath({ reason, ring = 'ring-surface' }) {
             key={i}
             className={`relative ${STACK[i]} w-10 h-10 rounded-full ring-2 ${ring} inline-flex items-center justify-center text-[11px] font-semibold ${i > 0 ? '-ml-2' : ''} ${FILL[kind]}`}
           >
-            {p.you ? 'You' : p.anonymous ? '' : initials(p.name)}
+            {p.you ? t('common.you') : p.anonymous ? '' : initials(p.name)}
           </span>
         );
       })}

@@ -2,6 +2,7 @@
 // can be up to a minute while the server wakes). Each screen draws skeletons
 // in the shape of its real content, so nothing jumps when the data arrives.
 import { useSlowNotice } from '../../slowNotice.js';
+import { t } from '../../i18n/index.js';
 
 // The pulse is off for people who ask for reduced motion (motion-reduce), not
 // just shortened: index.css cuts every animation to 0.01ms, which would make
@@ -35,7 +36,7 @@ export function SlowNotice({ active, className = '' }) {
   const slow = useSlowNotice(active);
   return (
     <p role="status" className={slow ? `text-small text-muted ${className}` : 'sr-only'}>
-      {slow ? 'Starting the server, this can take up to a minute.' : ''}
+      {slow ? t('server.starting') : ''}
     </p>
   );
 }

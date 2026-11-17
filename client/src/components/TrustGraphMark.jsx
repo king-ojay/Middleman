@@ -1,3 +1,5 @@
+import { t } from '../i18n/index.js';
+
 // The trust mechanism in one picture, drawn for the deep green (brand) panel. Trust
 // is directed, so every edge has an arrowhead pointing away from you:
 //   You -> Amina  solid: a real edge (you invited her: the signup_referral
@@ -11,7 +13,7 @@ export default function TrustGraphMark({ className = '' }) {
       viewBox="0 0 260 140"
       className={className}
       role="img"
-      aria-label="Arrows from You to Amina and from Amina to Eric are real ties. A dashed arrow from You to Eric is inferred from Amina's trust."
+      aria-label={t('trustExample.picture')}
     >
       <defs>
         <marker id="trust-arrow-tie" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
@@ -27,7 +29,7 @@ export default function TrustGraphMark({ className = '' }) {
       <circle cx="40" cy="30" r="24" className="fill-on-brand-soft" />
       <circle cx="150" cy="30" r="24" className="fill-on-brand-soft" />
       <circle cx="90" cy="112" r="24" className="fill-on-brand" />
-      <text x="40" y="34" textAnchor="middle" className="fill-brand font-sans text-micro font-semibold">You</text>
+      <text x="40" y="34" textAnchor="middle" className="fill-brand font-sans text-micro font-semibold">{t('common.you')}</text>
       <text x="150" y="34" textAnchor="middle" className="fill-brand font-sans text-micro font-semibold">Amina</text>
       <text x="90" y="116" textAnchor="middle" className="fill-brand font-sans text-micro font-semibold">Eric</text>
     </svg>
@@ -40,17 +42,17 @@ export default function TrustGraphMark({ className = '' }) {
 export function TrustExample({ markClassName = '' }) {
   return (
     <>
-      <h2 className="text-section text-on-brand">Because you trust Amina, you can trust Eric</h2>
+      <h2 className="text-section text-on-brand">{t('trustExample.title')}</h2>
       <TrustGraphMark className={`w-full h-auto mt-4 ${markClassName}`} />
       {/* caption for the dashed line, outside the picture so it stays caption-sized */}
       <p className="flex items-center gap-2 text-small text-on-brand-soft mt-2">
         <svg width="28" height="4" viewBox="0 0 28 4" aria-hidden="true" className="shrink-0">
           <path d="M0 2 H28" className="stroke-on-brand" strokeWidth="2" strokeDasharray="4 4" />
         </svg>
-        Inferred from Amina's trust
+        {t('trustExample.inferred')}
       </p>
-      <p className="text-body text-on-brand mt-4">You know Amina, and Amina has worked with Eric. She hired him and rated him highly.</p>
-      <p className="text-small text-on-brand-soft mt-1">Because you trust Amina, Eric ranks higher for you, even though you have never met him.</p>
+      <p className="text-body text-on-brand mt-4">{t('trustExample.body')}</p>
+      <p className="text-small text-on-brand-soft mt-1">{t('trustExample.note')}</p>
     </>
   );
 }

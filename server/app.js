@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { allowedOrigins, rejectOtherOrigins } from './config/cors.js';
+import { addErrorCodes } from './modules/errorCodes.js';
 
 import authRouter from './modules/auth/auth.routes.js';
 import jobsRouter from './modules/jobs/jobs.routes.js';
@@ -25,6 +26,8 @@ app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 // Only the app's own origins (config/cors.js); anything else gets 403.
 const origins = allowedOrigins();
+// Error bodies get a stable code for the app's translations (errorCodes.js).
+app.use(addErrorCodes);
 app.use(rejectOtherOrigins(origins));
 app.use(cors({ origin: [...origins] }));
 app.use(express.json());

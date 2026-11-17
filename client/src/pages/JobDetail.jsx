@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
-import { DELETED_USER, firstName } from '../greeting.js';
+import { deletedUser, firstName } from '../greeting.js';
+import { t } from '../i18n/index.js';
 import { formatRwf, timeAgo } from '../format.js';
 import { categoryLabel, areaLabel, escrowLabel, statusLabel } from '../options.js';
 import {
@@ -65,15 +66,15 @@ export default function JobDetail() {
   const isClient = user.role === 'client';
   const layout = { back: '/my-jobs', tabBar: true, role: user.role, width: 'medium' };
 
-  if (error) return <PageLayout {...layout} title="Job"><LoadError prefix="Couldn't load this job" error={error} retrying={retrying} onRetry={tryAgain} /></PageLayout>;
+  if (error) return <PageLayout {...layout} title={t('job.title')}><LoadError prefix={t('job.loadError')} error={error} retrying={retrying} onRetry={tryAgain} /></PageLayout>;
   if (!job && isClient && expectOffers) return <PageLayout {...layout}><OffersSkeleton /></PageLayout>;
   if (!job) return <PageLayout {...layout}><JobSkeleton /></PageLayout>;
 
   if (isClient && job.status === 'open') {
     return (
-      <PageLayout {...layout} eyebrow="Offers for your job" title={job.description} subtitle={`${categoryLabel(job.category)} · ${areaLabel(job.area)}`}>
+      <PageLayout {...layout} eyebrow={t('job.offersFor')} title={job.description} subtitle={`${categoryLabel(job.category)} · ${areaLabel(job.area)}`}>
         <div className="-mt-2 mb-6">
-          <p className="text-small text-muted">Your price</p>
+          <p className="text-small text-muted">{t('job.yourPrice')}</p>
           <p className="text-amount-xl text-ink whitespace-nowrap">{formatRwf(job.proposedPrice)}</p>
         </div>
         <Offers job={job} onChosen={load} />
@@ -91,7 +92,7 @@ export default function JobDetail() {
     || (job.status === 'completed' && !job.myRating && !gone && ['releasing', 'released'].includes(job.escrow?.status)));
   const escrowNote = escrowLabel(job.escrow, user.role);
   return (
-    <PageLayout {...layout} title={job.description} subtitle={[counterpart?.name || DELETED_USER, areaLabel(job.area)].join(' · ')}>
+    <PageLayout {...layout} title={job.description} subtitle={[counterpart?.name || deletedUser(), areaLabel(job.area)].join(' · ')}>
       {!['disputed', 'resolved'].includes(job.status) && <JobStepper status={job.status} />}
 
       {confirming ? (
@@ -111,17 +112,17 @@ export default function JobDetail() {
             </div>
             {escrowNote && <p className="text-body text-muted mt-1">{escrowNote}</p>}
             {job.autoReleaseAt && <p className="text-body text-muted mt-1">{autoReleaseNote(job.autoReleaseAt, user.role)}</p>}
-            <p className="text-small text-muted mt-3">{job.agreedPrice ? 'Agreed price' : isClient ? 'Your price' : "Client's price"}</p>
+            <p className="text-small text-muted mt-3">{job.agreedPrice ? t('job.agreedPrice') : isClient ? t('job.yourPrice') : t('job.clientPrice')}</p>
             <p className="text-amount text-ink">{formatRwf(job.agreedPrice ?? job.proposedPrice)}</p>
-            {job.depositAmount > 0 && <p className="text-body text-muted mt-1">Needs {formatRwf(job.depositAmount)} upfront for materials</p>}
+            {job.depositAmount > 0 && <p className="text-body text-muted mt-1">{t('job.materials', { amount: formatRwf(job.depositAmount) })}</p>}
             <JobActions job={job} role={user.role} onChange={load} stalled={stalled} />
           </Card>
           {['disputed', 'resolved'].includes(job.status) && job.disputedAt && <ProblemReported job={job} userId={user._id} />}
           {!isClient && paidOut && !gone && <RateClient job={job} onRated={load} />}
-          {gone && <p className="text-body text-muted mt-3">This person has deleted their account.</p>}
+          {gone && <p className="text-body text-muted mt-3">{t('job.deleted')}</p>}
           {isClient && job.myRating && (
             <Card className="p-5 mt-3">
-              <p className="text-body text-ink">You rated {firstName(job.worker)}</p>
+              <p className="text-body text-ink">{t('job.youRated', { name: firstName(job.worker) })}</p>
               <StarRating readOnly value={job.myRating.score} />
             </Card>
           )}
@@ -134,11 +135,11 @@ export default function JobDetail() {
 // Disputed or resolved: what was reported, by whom and when, for both parties.
 function ProblemReported({ job, userId }) {
   const byClient = String(job.disputedBy) === String(job.client?._id);
-  const reporter = !job.disputedBy ? null : String(job.disputedBy) === String(userId) ? 'you' : firstName(byClient ? job.client : job.worker);
+  const reporter = !job.disputedBy ? null : String(job.disputedBy) === String(userId) ? t('job.you') : firstName(byClient ? job.client : job.worker);
   return (
     <Card className="p-5 mt-3">
       <p className="text-small text-muted">
-        Problem reported{reporter ? ` by ${reporter}` : ''} · <time dateTime={job.disputedAt}>{timeAgo(job.disputedAt)}</time>
+        {reporter ? t('job.problemReportedBy', { who: reporter }) : t('job.problemReported')} · <time dateTime={job.disputedAt}>{timeAgo(job.disputedAt)}</time>
       </p>
       <DisputeSummary job={job} reporterRole={byClient ? 'client' : 'worker'} className="mt-2" />
     </Card>
@@ -149,7 +150,7 @@ function ProblemReported({ job, userId }) {
 // where, the progress steps, and the status card with its price and action.
 function JobSkeleton() {
   return (
-    <LoadingState label="Loading job">
+    <LoadingState label={t('job.loading')}>
       <div className="mb-6">
         <SkeletonText size="display" on="canvas" className="w-3/4" />
         <SkeletonText on="canvas" className="w-1/2 mt-2" />
@@ -177,7 +178,7 @@ function JobSkeleton() {
 // most trusted offer's large card, then smaller offer cards.
 function OffersSkeleton() {
   return (
-    <LoadingState label="Loading offers">
+    <LoadingState label={t('job.loadingOffers')}>
       <SkeletonText on="canvas" className="w-40" />
       <SkeletonText size="display" on="canvas" className="w-3/4" />
       <SkeletonText on="canvas" className="w-1/2 mt-2" />
@@ -220,9 +221,9 @@ function OffersSkeleton() {
 // How an offer compares with the client's price, as a small tinted label:
 // the same ("Your price"), above it in amber, below it in green.
 function PriceDifference({ amount, proposed, top = false }) {
-  if (amount === proposed) return <Badge tone={top ? 'trust' : 'soft'}>{top ? 'Accepts your price' : 'Your price'}</Badge>;
+  if (amount === proposed) return <Badge tone={top ? 'trust' : 'soft'}>{top ? t('job.acceptsPrice') : t('job.samePrice')}</Badge>;
   const more = amount > proposed;
-  return <Badge tone={more ? 'action' : 'trust'}>{formatRwf(Math.abs(amount - proposed))} {more ? 'more' : 'less'}</Badge>;
+  return <Badge tone={more ? 'action' : 'trust'}>{t(more ? 'job.more' : 'job.less', { amount: formatRwf(Math.abs(amount - proposed)) })}</Badge>;
 }
 
 const ShieldIcon = () => (
@@ -252,12 +253,12 @@ function Offers({ job, onChosen }) {
   };
 
   if (job.responses.length === 0) {
-    return <p className="text-body text-muted">No offers yet. Workers nearby can see your job and their offers will appear here.</p>;
+    return <p className="text-body text-muted">{t('job.noOffers')}</p>;
   }
 
   return (
     <>
-      <h2 className="text-section text-ink mb-3">Ranked by trust in your network</h2>
+      <h2 className="text-section text-ink mb-3">{t('job.ranked')}</h2>
       {error && <p className="text-body text-danger mb-3" role="alert">{error}</p>}
       <ul className="grid gap-3">
         {job.responses.map((r, i) => {
@@ -268,14 +269,14 @@ function Offers({ job, onChosen }) {
       </ul>
       <p className="flex items-start gap-2 text-body text-muted mt-5">
         <ShieldIcon />
-        Choosing an offer fixes the price. You then pay it into escrow.
+        {t('job.choosingFixes')}
       </p>
     </>
   );
 }
 
 const Deposit = ({ offer }) => offer.depositAmount > 0
-  ? <p className="text-body text-muted mt-2">Needs {formatRwf(offer.depositAmount)} upfront for materials</p>
+  ? <p className="text-body text-muted mt-2">{t('job.materials', { amount: formatRwf(offer.depositAmount) })}</p>
   : null;
 
 // The most trusted offer: chip and price comparison, who, the amount, the
@@ -285,7 +286,7 @@ function TopOffer({ offer: r, job, label, disabled, choosing, onChoose }) {
     <Card as="li" className="p-5">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone="trust">{label}</Badge>
-        {r.busy && <Badge tone="soft">Busy right now</Badge>}
+        {r.busy && <Badge tone="soft">{t('job.busy')}</Badge>}
         <PriceDifference amount={r.amount} proposed={job.proposedPrice} top />
         {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
       </div>
@@ -302,10 +303,11 @@ function TopOffer({ offer: r, job, label, disabled, choosing, onChoose }) {
         <TrustPath reason={r.reason} ring="ring-soft" />
         <p className="text-body text-ink">{reasonSentence(r.reason)}</p>
       </div>
-      <div className="grid grid-cols-3 gap-2 mt-4">
-        <ProfileButton worker={r.worker} label="Profile" size="lg" />
-        <Button className="col-span-2" disabled={disabled} onClick={onChoose}>
-          {choosing ? 'Choosing…' : `Choose ${firstName(r.worker)}`}
+      {/* Profile as wide as its word (longer in Kinyarwanda), Choose takes the rest. */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-2 mt-4">
+        <ProfileButton worker={r.worker} label={t('profileButton.profile')} size="lg" />
+        <Button disabled={disabled} onClick={onChoose}>
+          {choosing ? t('job.choosing') : t('job.chooseName', { name: firstName(r.worker) })}
         </Button>
       </div>
     </Card>
@@ -322,7 +324,7 @@ function OfferCard({ offer: r, job, disabled, choosing, onChoose }) {
           <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
           {(r.busy || r.worker.verifiedStatus === 'verified') && (
             <div className="flex flex-wrap gap-2 mt-1">
-              {r.busy && <Badge tone="soft">Busy right now</Badge>}
+              {r.busy && <Badge tone="soft">{t('job.busy')}</Badge>}
               {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
             </div>
           )}
@@ -336,7 +338,7 @@ function OfferCard({ offer: r, job, disabled, choosing, onChoose }) {
           <PriceDifference amount={r.amount} proposed={job.proposedPrice} />
         </div>
         <Button variant="secondary" size="md" disabled={disabled} onClick={onChoose}>
-          {choosing ? 'Choosing…' : <>Choose<span className="sr-only"> {r.worker.name}</span></>}
+          {choosing ? t('job.choosing') : <>{t('job.choose')}<span className="sr-only"> {r.worker.name}</span></>}
         </Button>
       </div>
     </Card>
@@ -362,7 +364,7 @@ function ConfirmAndRate({ job, onChange, stalled }) {
   // payout has gone through. While it is on its way the screen stays, and
   // sending again (once it has arrived) saves the rating.
   const confirm = async () => {
-    if (!score) return setError(`Choose how many stars to give ${worker}.`);
+    if (!score) return setError(t('confirm.err.stars', { name: worker }));
     setError('');
     setBusy(true);
     try {
@@ -381,42 +383,42 @@ function ConfirmAndRate({ job, onChange, stalled }) {
   return (
     <>
       <div className="bg-trust text-on-trust rounded-card p-5 mb-8">
-        <p className="text-card">{confirmed ? 'You confirmed this job' : `${worker} marked this job complete`}</p>
+        <p className="text-card">{confirmed ? t('confirm.youConfirmed') : t('confirm.markedComplete', { name: worker })}</p>
         <p className="text-body mt-1">
-          {paying ? `Paying ${worker} from escrow… You can send your rating once the payment arrives.`
-            : confirmed ? `${worker} has been paid. Send your rating to finish.`
-            : `Confirming pays ${worker} from escrow.`}
+          {paying ? t('confirm.paying', { name: worker })
+            : confirmed ? t('confirm.paid', { name: worker })
+            : t('confirm.willPay', { name: worker })}
         </p>
         <p className="text-amount mt-3">{formatRwf(job.agreedPrice)}</p>
-        <p className="text-small">agreed price</p>
+        <p className="text-small">{t('confirm.agreed')}</p>
       </div>
 
-      <h2 className="text-section text-ink mb-2">How was {worker}'s work?</h2>
-      <StarRating value={score} onChange={setScore} label={`Rate ${worker}'s work`} />
+      <h2 className="text-section text-ink mb-2">{t('confirm.howWas', { name: worker })}</h2>
+      <StarRating value={score} onChange={setScore} label={t('confirm.rateLabel', { name: worker })} />
 
       <Card className="flex items-start justify-between gap-4 p-5 mt-6">
         <div>
-          <p id="vouch-label" className="text-card text-ink">Vouch for {worker}</p>
-          <p className="text-body text-muted mt-1">Tell your network {worker} is someone you would hire again.</p>
+          <p id="vouch-label" className="text-card text-ink">{t('confirm.vouch', { name: worker })}</p>
+          <p className="text-body text-muted mt-1">{t('confirm.vouchNote', { name: worker })}</p>
         </div>
         <Switch checked={vouch} onChange={setVouch} aria-labelledby="vouch-label" />
       </Card>
 
-      <FormField label="Comment (optional)" className="mt-6">
-        {field => <TextArea {...field} value={comment} maxLength={500} onChange={e => setComment(e.target.value)} placeholder={`What should others know about ${worker}?`} />}
+      <FormField label={t('common.commentOptional')} className="mt-6">
+        {field => <TextArea {...field} value={comment} maxLength={500} onChange={e => setComment(e.target.value)} placeholder={t('confirm.commentPlaceholder', { name: worker })} />}
       </FormField>
 
       {(error || payoutFailed) && (
         <p className="text-small text-danger mt-4" role="alert">
-          {error || "The payment to the worker didn't go through. The money is still held. Please try again."}
+          {error || t('confirm.payoutFailed')}
         </p>
       )}
       <div className="mt-6 space-y-2">
         <Button onClick={confirm} disabled={busy || paying}>
-          {busy ? 'Sending…' : confirmed ? 'Send rating' : 'Confirm job is done'}
+          {busy ? t('common.sending') : confirmed ? t('confirm.sendRating') : t('confirm.submit')}
         </Button>
         {paying && stalled && <JobActions job={job} role="client" onChange={onChange} stalled />}
-        {!confirmed && <Button variant="plain" onClick={() => setReporting(true)} disabled={busy}>Report a problem</Button>}
+        {!confirmed && <Button variant="plain" onClick={() => setReporting(true)} disabled={busy}>{t('actions.dispute')}</Button>}
       </div>
       <ReportProblem job={job} role="client" open={reporting} onClose={() => setReporting(false)} onReported={() => navigate('/my-jobs')} />
     </>
@@ -435,14 +437,14 @@ function RateClient({ job, onRated }) {
   if (job.myRating) {
     return (
       <Card className="p-5 mt-3">
-        <p className="text-body text-ink">You rated {client}</p>
+        <p className="text-body text-ink">{t('job.youRated', { name: client })}</p>
         <StarRating readOnly value={job.myRating.score} />
       </Card>
     );
   }
 
   const send = async () => {
-    if (!score) return setError(`Choose how many stars to give ${client}.`);
+    if (!score) return setError(t('confirm.err.stars', { name: client }));
     setError('');
     setBusy(true);
     try {
@@ -456,13 +458,13 @@ function RateClient({ job, onRated }) {
 
   return (
     <Card className="p-5 mt-3">
-      <h2 className="text-section text-ink mb-2">How was working with {client}?</h2>
-      <StarRating value={score} onChange={setScore} label={`Rate ${client}`} />
-      <FormField label="Comment (optional)" className="mt-4">
+      <h2 className="text-section text-ink mb-2">{t('rateClient.title', { name: client })}</h2>
+      <StarRating value={score} onChange={setScore} label={t('rateClient.label', { name: client })} />
+      <FormField label={t('common.commentOptional')} className="mt-4">
         {field => <TextArea {...field} value={comment} maxLength={500} onChange={e => setComment(e.target.value)} />}
       </FormField>
       {error && <p className="text-small text-danger mt-3" role="alert">{error}</p>}
-      <Button className="mt-4" onClick={send} disabled={busy}>{busy ? 'Sending…' : 'Send rating'}</Button>
+      <Button className="mt-4" onClick={send} disabled={busy}>{busy ? t('common.sending') : t('confirm.sendRating')}</Button>
     </Card>
   );
 }

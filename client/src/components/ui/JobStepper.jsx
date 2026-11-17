@@ -1,6 +1,9 @@
-const STEPS = ['Accepted', 'Paid', 'Started', 'Done', 'Confirm'];
+import { t } from '../../i18n/index.js';
 
-// How many steps a status has completed (Fig. 5 order).
+const STEPS = ['accepted', 'paid', 'started', 'done', 'confirm'];
+
+// How many steps a status has completed (Fig. 5 order). Kinyarwanda step
+// words are longer, so they are set a size smaller to fit five across a phone.
 const COMPLETED = { quote_accepted: 1, escrow_held: 2, in_progress: 3, awaiting_confirmation: 4, completed: 5, disputed: 0, resolved: 0 };
 
 function Check() {
@@ -14,12 +17,13 @@ function Check() {
 export default function JobStepper({ status }) {
   const done = COMPLETED[status] ?? 0;
   return (
-    <ol className="flex items-start mb-6" aria-label="Job progress">
-      {STEPS.map((label, i) => {
+    <ol className="flex items-start mb-6" aria-label={t('stepper.label')}>
+      {STEPS.map((step, i) => {
+        const label = t(`stepper.${step}`);
         const isDone = i < done;
         const isCurrent = i === done;
         return (
-          <li key={label} className="flex-1 flex flex-col items-center relative">
+          <li key={step} className="flex-1 flex flex-col items-center relative">
             {i > 0 && <span aria-hidden="true" className={`absolute top-3 right-1/2 w-full h-0.5 ${i <= done ? 'bg-signal' : 'bg-line'}`} />}
             <span
               className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center ${
@@ -28,9 +32,9 @@ export default function JobStepper({ status }) {
             >
               {isDone && <Check />}
             </span>
-            <span className={`mt-2 text-small ${isCurrent ? 'font-semibold text-ink' : 'text-muted'}`}>
+            <span className={`mt-2 text-small text-center [html[lang=rw]_&]:text-micro ${isCurrent ? 'font-semibold text-ink' : 'text-muted'}`}>
               {label}
-              <span className="sr-only">{isDone ? ' (done)' : isCurrent ? ' (current)' : ''}</span>
+              <span className="sr-only">{isDone ? t('stepper.isDone') : isCurrent ? t('stepper.isCurrent') : ''}</span>
             </span>
           </li>
         );

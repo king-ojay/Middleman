@@ -5,6 +5,7 @@ import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
 import AuthLayout from '../components/AuthLayout.jsx';
 import { Button, FormField, PinBoxes, SlowNotice, StepBar, TextInput } from '../components/ui/index.js';
+import { t } from '../i18n/index.js';
 
 // Forgot PIN: phone -> code by SMS + new PIN. The only time codes are used
 // after signup; daily login is phone + PIN.
@@ -47,19 +48,19 @@ export default function ResetPin() {
 
   if (step === 2) {
     return (
-      <AuthLayout back={() => { setError(''); setStep(1); }} right="Step 2 of 2">
+      <AuthLayout back={() => { setError(''); setStep(1); }} right={t('common.stepOf', { step: 2, total: 2 })}>
         <StepBar step={2} />
-        <h1 className="text-display tracking-tight text-ink">Choose a new PIN</h1>
-        <p className="text-body text-muted mt-2 mb-6">If this number has an account, we sent it a code.</p>
+        <h1 className="text-display tracking-tight text-ink">{t('reset.newTitle')}</h1>
+        <p className="text-body text-muted mt-2 mb-6">{t('reset.newSub')}</p>
         <form onSubmit={reset} className="space-y-6">
           <OtpField phone={phone} purpose="pin_reset" value={code} onChange={setCode} autoFocus />
           <div>
-            <p className="text-label text-ink mb-2">New 4-digit PIN</p>
-            <PinBoxes value={pin} onChange={setPin} label="New PIN" />
+            <p className="text-label text-ink mb-2">{t('reset.newPin')}</p>
+            <PinBoxes value={pin} onChange={setPin} label={t('reset.newPinLabel')} />
           </div>
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <div>
-            <Button type="submit" disabled={busy || code.length !== 6 || pin.length !== 4} aria-busy={busy}>{busy ? 'Saving…' : 'Save PIN and log in'}</Button>
+            <Button type="submit" disabled={busy || code.length !== 6 || pin.length !== 4} aria-busy={busy}>{busy ? t('common.saving') : t('reset.save')}</Button>
             <SlowNotice active={busy} className="mt-3 text-center" />
           </div>
         </form>
@@ -68,16 +69,16 @@ export default function ResetPin() {
   }
 
   return (
-    <AuthLayout back="/login" right="Step 1 of 2">
+    <AuthLayout back="/login" right={t('common.stepOf', { step: 1, total: 2 })}>
       <StepBar step={1} />
-      <h1 className="text-display tracking-tight text-ink">Forgot your PIN?</h1>
-      <p className="text-body text-muted mt-2 mb-6">We will text a code to your phone.</p>
+      <h1 className="text-display tracking-tight text-ink">{t('reset.title')}</h1>
+      <p className="text-body text-muted mt-2 mb-6">{t('reset.sub')}</p>
       <form onSubmit={sendCode} className="space-y-6">
-        <FormField label="Phone number" error={error}>
-          {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="078X XXX XXX" required />}
+        <FormField label={t('common.phoneNumber')} error={error}>
+          {field => <TextInput {...field} type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder={t('common.phonePlaceholder')} required />}
         </FormField>
         <div>
-          <Button type="submit" disabled={busy} aria-busy={busy}>{busy ? 'Sending code…' : 'Send code'}</Button>
+          <Button type="submit" disabled={busy} aria-busy={busy}>{busy ? t('register.sendingCode') : t('reset.send')}</Button>
           <SlowNotice active={busy} className="mt-3 text-center" />
         </div>
       </form>
