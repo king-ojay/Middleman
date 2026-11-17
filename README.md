@@ -19,7 +19,7 @@ David Tuyishimire.
 | Demo video | [VIDEO LINK] |
 | Final report | [REPORT LINK] |
 | Technical report | [TECH REPORT LINK] |
-| Android app | [APK LINK] |
+| Android app | https://github.com/king-ojay/Middleman/releases/tag/v1.0-android |
 
 **Try it:** log in with phone `0788000001` and PIN `1234` (Amina, a client in
 Kimironko), open Discover and pick Electrician, then My jobs → "Install ceiling
@@ -27,13 +27,16 @@ fan" to see three offers ranked by trust, not price. Other demo accounts are
 listed under [Seed data](#seed-data).
 
 <p>
-  <img src="docs/screenshots/readme-discover.png" width="200" alt="Discover: the most trusted electrician for Amina, with the reason sentence">
-  <img src="docs/screenshots/readme-offers.png" width="200" alt="Offers for a job, ranked by trust, the top one explained">
-  <img src="docs/screenshots/readme-job-in-progress.png" width="200" alt="A job in progress with the call button">
-  <img src="docs/screenshots/readme-transactions.png" width="200" alt="Transactions: money in escrow, released and refunded">
+  <img src="docs/screenshots/final/01-discover.png" width="200" alt="Discover: the most trusted worker, with the reason sentence">
+  <img src="docs/screenshots/final/02-offers.png" width="200" alt="Offers for a job, ranked by trust, each with its reason">
+  <img src="docs/screenshots/final/04-held-in-escrow.png" width="200" alt="Payment held in escrow, with the call button">
+  <img src="docs/screenshots/final/06-transactions.png" width="200" alt="Transactions: money in escrow, released and refunded">
 </p>
 
-Discover · offers ranked by trust · a job in progress · Transactions (phone, 390 px).
+Discover · offers ranked by trust · payment held in escrow · Transactions, from
+the Android app. All final screenshots, including the pay sheet, the dialler,
+the Privacy Policy & Terms and the consent screen, are in
+[`docs/screenshots/final/`](docs/screenshots/final/).
 
 ## The trust algorithm
 
