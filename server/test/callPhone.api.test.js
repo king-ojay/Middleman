@@ -5,6 +5,7 @@
 // other route. Needs TEST_MONGO_URI.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
   const url = new URL(process.env.TEST_MONGO_URI);
@@ -46,6 +47,8 @@ before(async () => {
   ]);
   users = Object.fromEntries(['client', 'worker', 'bidder', 'stranger', 'leavingWorker', 'leavingClient'].map((k, i) => [k, created[i]]));
   tokens = {};
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   for (const [key, u] of Object.entries(users)) tokens[key] = createSessionToken(await User.findById(u._id).select('+sessionVersion'));
   setPaymentProvider(createFakeProvider());
   server = app.listen(0);

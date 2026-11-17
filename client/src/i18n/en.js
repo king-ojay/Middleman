@@ -696,12 +696,12 @@ export default {
   "privacy.sees.4": "Your payments and earnings are visible only to you.",
   "privacy.sees.5": "The researcher can see account and job records to verify workers, settle disputes and delete accounts.",
   "privacy.stored.title": "Where it is stored",
-  "privacy.stored.body": "On MongoDB Atlas (the database), Render (the server) and Vercel (the website). Data region: REGION_TBC. Every connection uses HTTPS.",
+  "privacy.stored.body": "Database: MongoDB Atlas, Paris, France (AWS eu-west-3). API server: Render, Oregon, USA. Website: Vercel (global). This means your data is stored outside Rwanda. Every connection uses HTTPS.",
   "privacy.rights.title": "How long, and your rights",
-  "privacy.rights.1": "Your data is kept for the pilot study and deleted when it ends.",
+  "privacy.rights.1": "Pilot data will be deleted by the researcher after the study ends.",
   "privacy.rights.2": "You can see your details, jobs, ratings and payments in the app.",
   "privacy.rights.3": "You can change your area in your profile, and ask us to correct anything else.",
-  "privacy.rights.4": "You can ask us to delete your account at any time.",
+  "privacy.rights.4": "You can ask for your account to be deleted at any time by emailing o.attah@alustudent.com; it is removed within 7 days.",
   "privacy.deleteLink": "Ask to delete my account",
   "privacy.deleteSubject": "Delete my Middleman account",
   "privacy.security.title": "Security",
@@ -715,5 +715,11 @@ export default {
   "privacy.rules.2": "Use one account, in your own name. No fake accounts.",
   "privacy.rules.3": "Report a problem only for a real reason, and describe it truthfully.",
   "privacy.rules.4": "The researcher verifies workers and settles disputes, deciding whether the money goes to the worker or back to the client.",
-  "privacy.changes": "If this policy changes, the version and date at the top change too."
+  "privacy.changes": "If this policy changes, the version and date at the top change too.",
+
+  // policy 1.1: consent for existing accounts
+  "error.consent_required": "Agree to the current Privacy Policy & Terms to continue",
+  "consent.title": "Before you continue",
+  "consent.sub": "To keep using Middleman, confirm that you are 18 or older and agree to the Privacy Policy & Terms (version {version}).",
+  "consent.continue": "Continue"
 };

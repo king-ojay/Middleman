@@ -10,6 +10,7 @@ import { MAX_ACTIVE_JOBS } from '../config/workload.js';
 import { AUTO_RELEASE_AFTER_MS } from '../config/autoRelease.js';
 import { setNow } from '../modules/clock.js';
 import { AT_LIMIT_MESSAGE, WORKER_BUSY_MESSAGE } from '../modules/jobs/workload.js';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
   const url = new URL(process.env.TEST_MONGO_URI);
@@ -54,6 +55,8 @@ before(async () => {
   ]);
   users = Object.fromEntries(['client', 'stranger', 'walter', 'olga', 'cyiza', 'diane', 'eric', 'grace'].map((k, i) => [k, created[i]]));
   tokens = {};
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   for (const [key, u] of Object.entries(users)) tokens[key] = createSessionToken(await User.findById(u._id).select('+sessionVersion'));
   setPaymentProvider(createFakeProvider());
   server = app.listen(0);

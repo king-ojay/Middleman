@@ -121,3 +121,12 @@ test('the reviewer\'s sheet (docs/translation-review.csv) lists every key, with 
   assert.deepEqual(keys, Object.keys(en), 'run node client/scripts/translationReview.mjs');
   assert.equal((csv.match(/"CHECK: /g) || []).length, Object.keys(CHECK).length);
 });
+
+test('VITE_ENABLE_KINYARWANDA=false makes the app English only', async () => {
+  const { kinyarwandaEnabled, languagesFor } = await import('./i18n/index.js');
+  assert.equal(kinyarwandaEnabled({}), true, 'unset: Kinyarwanda offered');
+  assert.equal(kinyarwandaEnabled({ VITE_ENABLE_KINYARWANDA: 'true' }), true);
+  for (const off of ['false', 'FALSE', '0', 'off', ' false ']) assert.equal(kinyarwandaEnabled({ VITE_ENABLE_KINYARWANDA: off }), false, off);
+  assert.deepEqual(languagesFor(false).map(l => l.value), ['en']);
+  assert.deepEqual(languagesFor(true).map(l => l.value), ['en', 'rw']);
+});

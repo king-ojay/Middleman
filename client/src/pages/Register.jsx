@@ -5,11 +5,11 @@ import { useAuth, homePathFor } from '../auth.jsx';
 import OtpField from '../components/OtpField.jsx';
 import AuthLayout from '../components/AuthLayout.jsx';
 import AreaPicker from '../components/AreaPicker.jsx';
-import PrivacyPolicy from '../components/PrivacyPolicy.jsx';
+import ConsentBoxes from '../components/ConsentBoxes.jsx';
 import { POLICY_VERSION } from '../policy.shared.js';
 import { CATEGORIES, areaLabel } from '../options.js';
 import {
-  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, Sheet, SlowNotice, StepBar, TextInput
+  Button, Card, Chip, ChipRow, FormField, OptionCard, PinBoxes, SlowNotice, StepBar, TextInput
 } from '../components/ui/index.js';
 import { t } from '../i18n/index.js';
 
@@ -33,7 +33,6 @@ export default function Register() {
   const [submitting, setSubmitting] = useState(false);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
-  const [readingPolicy, setReadingPolicy] = useState(false);
   // The SMS couldn't be sent (MTN rejects the shared sender ID): the code is
   // with the researcher (the admin code relay).
   const [relay, setRelay] = useState(false);
@@ -94,23 +93,13 @@ export default function Register() {
             <PinBoxes value={pin} onChange={setPin} />
           </div>
           <InviterPhone confirmed={inviter} onConfirm={setInviter} />
-          <fieldset className="space-y-2">
-            <legend className="sr-only">{t('register.consentHelper')}</legend>
-            <Consent checked={ageConfirmed} onChange={setAgeConfirmed}>{t('register.age')}</Consent>
-            <Consent checked={policyAccepted} onChange={setPolicyAccepted}>
-              <AgreeText onOpen={() => setReadingPolicy(true)} />
-            </Consent>
-            {!(ageConfirmed && policyAccepted) && <p className="text-small text-muted">{t('register.consentHelper')}</p>}
-          </fieldset>
+          <ConsentBoxes ageConfirmed={ageConfirmed} onAgeConfirmed={setAgeConfirmed} policyAccepted={policyAccepted} onPolicyAccepted={setPolicyAccepted} />
           {error && <p className="text-small text-danger" role="alert">{error}</p>}
           <div>
             <Button type="submit" disabled={submitting || pin.length !== 4 || otpCode.length !== 6 || !ageConfirmed || !policyAccepted} aria-busy={submitting}>{submitting ? t('register.creating') : t('register.create')}</Button>
             <SlowNotice active={submitting} className="mt-3 text-center" />
           </div>
         </form>
-        <Sheet open={readingPolicy} title={t('privacy.title')} onClose={() => setReadingPolicy(false)}>
-          <PrivacyPolicy />
-        </Sheet>
       </AuthLayout>
     );
   }
@@ -163,32 +152,6 @@ export default function Register() {
         </div>
       </form>
     </AuthLayout>
-  );
-}
-
-// One consent checkbox: a native checkbox (keyboard and screen readers as
-// usual) in a 52px row that is tappable as a whole.
-function Consent({ checked, onChange, children }) {
-  return (
-    <label className="flex items-start gap-3 min-h-[52px] py-3 px-4 rounded-field bg-surface border border-line cursor-pointer">
-      <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5 w-5 h-5 shrink-0 accent-[rgb(var(--primary))]" />
-      <span className="text-body text-ink">{children}</span>
-    </label>
-  );
-}
-
-// "I have read and agree to the Privacy Policy & Terms", the policy's name a
-// button that opens it in a sheet. The sentence comes from i18n with {link}
-// where the name goes, so the word order can differ by language.
-function AgreeText({ onOpen }) {
-  const [before, after = ''] = t('register.agree').split('{link}');
-  const open = e => { e.preventDefault(); onOpen(); };
-  return (
-    <>
-      {before}
-      <button type="button" onClick={open} className="font-semibold underline text-ink">{t('register.agreeLink')}</button>
-      {after}
-    </>
   );
 }
 

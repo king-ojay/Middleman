@@ -7,6 +7,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { allowedOrigins, DEV_ORIGINS } from '../config/cors.js';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 // Its own database (TEST_MONGO_URI's name + "_security"): node --test runs
 // files in parallel, and sessions.api.test.js drops the shared one.
@@ -47,6 +48,8 @@ before(async () => {
     { name: 'Lock Me', phone: '0788200003', role: 'client', area: 'remera', pinHash },
     { name: 'Clear Me', phone: '0788200004', role: 'client', area: 'remera', pinHash }
   ]);
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   users = { client, worker };
   server = app.listen(0);
   base = `http://127.0.0.1:${server.address().port}`;

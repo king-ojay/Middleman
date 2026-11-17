@@ -6,6 +6,7 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { SHARED, generated } from '../../scripts/syncShared.mjs';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
   const url = new URL(process.env.TEST_MONGO_URI);
@@ -45,6 +46,8 @@ before(async () => {
   ]);
   users = { client, worker, otherWorker, otherClient };
   tokens = {};
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   for (const [key, u] of Object.entries(users)) tokens[key] = createSessionToken(await User.findById(u._id).select('+sessionVersion'));
   setPaymentProvider(createFakeProvider());
   server = app.listen(0);

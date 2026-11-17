@@ -13,6 +13,7 @@ import { clearFailures, hit, lockedFor, recordFailure } from './rateLimit.js';
 import { createSessionToken } from './session.js';
 import { serverError } from '../serverError.js';
 import { POLICY_VERSION } from '../../config/policy.shared.js';
+import { requireSession } from './currentUser.js';
 
 const router = express.Router();
 
@@ -133,6 +134,26 @@ router.post('/pin/reset', async (req, res) => {
     res.json(session(user));
   } catch (err) {
     if (err instanceof OtpError) return res.status(err.status).json({ error: err.message });
+    serverError(res, err, req);
+  }
+});
+
+// POST /api/auth/consent   Body: { ageConfirmed, policyAccepted, policyVersion }
+// For a logged-in account with no consent for the current policy (an account
+// from before consent was asked for, or after the policy changes): records
+// the same three things sign-up does and returns { user }. Needs only a valid
+// session, since every other route waits for this.
+router.post('/consent', requireSession, async (req, res) => {
+  try {
+    if (req.body.ageConfirmed !== true) return res.status(400).json({ error: AGE_REQUIRED });
+    if (req.body.policyAccepted !== true || req.body.policyVersion !== POLICY_VERSION) return res.status(400).json({ error: POLICY_REQUIRED });
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true },
+      { new: true }
+    );
+    res.json({ user: publicUser(user) });
+  } catch (err) {
     serverError(res, err, req);
   }
 });

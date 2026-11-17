@@ -4,6 +4,13 @@
 // en.js is here too, with the same {placeholders} (i18n.test.js). Escrow is
 // "ingwate" throughout; offers are "ibyifuzo".
 export const CHECK = {
+  "privacy.stored.body": 'New in policy 1.1: please check the whole sentence.',
+  "privacy.rights.1": 'New in policy 1.1: please check the whole sentence.',
+  "privacy.rights.4": 'New in policy 1.1: please check the whole sentence.',
+  "error.consent_required": 'New in policy 1.1: please check the whole sentence.',
+  "consent.title": 'New in policy 1.1: please check the whole sentence.',
+  "consent.sub": 'New in policy 1.1: please check the whole sentence.',
+  "consent.continue": 'New in policy 1.1: please check the whole sentence.',
   "error.age_required": 'New in policy 1.0: please check the whole sentence.',
   "error.policy_required": 'New in policy 1.0: please check the whole sentence.',
   "register.age": 'New in policy 1.0: please check the whole sentence.',
@@ -36,12 +43,9 @@ export const CHECK = {
   "privacy.sees.4": 'New in policy 1.0: please check the whole sentence.',
   "privacy.sees.5": 'New in policy 1.0: please check the whole sentence.',
   "privacy.stored.title": 'New in policy 1.0: please check the whole sentence.',
-  "privacy.stored.body": 'New in policy 1.0: please check the whole sentence.',
   "privacy.rights.title": 'New in policy 1.0: please check the whole sentence.',
-  "privacy.rights.1": 'New in policy 1.0: please check the whole sentence.',
   "privacy.rights.2": 'New in policy 1.0: please check the whole sentence.',
   "privacy.rights.3": 'New in policy 1.0: please check the whole sentence.',
-  "privacy.rights.4": 'New in policy 1.0: please check the whole sentence.',
   "privacy.deleteLink": 'New in policy 1.0: please check the whole sentence.',
   "privacy.deleteSubject": 'New in policy 1.0: please check the whole sentence.',
   "privacy.security.title": 'New in policy 1.0: please check the whole sentence.',
@@ -820,12 +824,12 @@ export default {
   "privacy.sees.4": "Ubwishyu bwawe n'ayo winjije ubibona wenyine.",
   "privacy.sees.5": "Umushakashatsi ashobora kureba konti n'akazi kugira ngo yemeze abakozi, akemure ibibazo kandi asibe konti.",
   "privacy.stored.title": "Aho bibikwa",
-  "privacy.stored.body": "Kuri MongoDB Atlas (ububiko), Render (seriveri) na Vercel (urubuga). Akarere amakuru abikwamo: REGION_TBC. Itumanaho ryose rikoresha HTTPS.",
+  "privacy.stored.body": "Ububiko bw'amakuru: MongoDB Atlas, i Paris mu Bufaransa (AWS eu-west-3). Seriveri ya API: Render, muri Oregon, Leta Zunze Ubumwe za Amerika. Urubuga: Vercel (ku isi hose). Ibi bivuze ko amakuru yawe abikwa hanze y'u Rwanda. Itumanaho ryose rikoresha HTTPS.",
   "privacy.rights.title": "Igihe bibikwa n'uburenganzira bwawe",
-  "privacy.rights.1": "Amakuru yawe abikwa mu gihe cy'ubushakashatsi bw'igerageza, agasibwa iyo burangiye.",
+  "privacy.rights.1": "Amakuru y'igerageza azasibwa n'umushakashatsi ubushakashatsi burangiye.",
   "privacy.rights.2": "Ushobora kureba amakuru yawe, akazi, amanota n'ubwishyu muri porogaramu.",
   "privacy.rights.3": "Ushobora guhindura agace kawe mu mwirondoro, ukadusaba gukosora ibindi.",
-  "privacy.rights.4": "Ushobora kudusaba gusiba konti yawe igihe icyo ari cyo cyose.",
+  "privacy.rights.4": "Ushobora gusaba ko konti yawe isibwa igihe icyo ari cyo cyose wohereje imeyili kuri o.attah@alustudent.com; isibwa mu minsi 7.",
   "privacy.deleteLink": "Saba gusiba konti yanjye",
   "privacy.deleteSubject": "Siba konti yanjye ya Middleman",
   "privacy.security.title": "Umutekano",
@@ -839,5 +843,11 @@ export default {
   "privacy.rules.2": "Koresha konti imwe, mu izina ryawe. Nta konti z'ibinyoma.",
   "privacy.rules.3": "Menyesha ikibazo gusa iyo gifite impamvu nyayo, kandi ugisobanure mu kuri.",
   "privacy.rules.4": "Umushakashatsi yemeza abakozi kandi akemura ibibazo, agahitamo niba amafaranga ajya ku mukozi cyangwa asubira ku mukiriya.",
-  "privacy.changes": "Iyi politiki nihinduka, verisiyo n'itariki biri hejuru nabyo bizahinduka."
+  "privacy.changes": "Iyi politiki nihinduka, verisiyo n'itariki biri hejuru nabyo bizahinduka.",
+
+  // policy 1.1: consent for existing accounts
+  "error.consent_required": "Emera Politiki y'ibanga n'amabwiriza iriho kugira ngo ukomeze",
+  "consent.title": "Mbere yo gukomeza",
+  "consent.sub": "Kugira ngo ukomeze gukoresha Middleman, emeza ko ufite imyaka 18 cyangwa irenga kandi wemera Politiki y'ibanga n'amabwiriza (verisiyo {version}).",
+  "consent.continue": "Komeza"
 };
