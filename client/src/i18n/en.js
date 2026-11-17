@@ -721,5 +721,6 @@ export default {
   "error.consent_required": "Agree to the current Privacy Policy & Terms to continue",
   "consent.title": "Before you continue",
   "consent.sub": "To keep using Middleman, confirm that you are 18 or older and agree to the Privacy Policy & Terms (version {version}).",
-  "consent.continue": "Continue"
+  "consent.continue": "Continue",
+  "consent.helper": "Tick both boxes to continue."
 };

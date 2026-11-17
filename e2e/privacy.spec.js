@@ -53,6 +53,7 @@ test('sign-up needs both boxes; the policy opens in a sheet without losing the f
   const age = page.getByRole('checkbox', { name: 'I am 18 or older' });
   const agree = page.getByRole('checkbox', { name: /I have read and agree to the/ });
   await expect(create).toBeDisabled();
+  await expect(page.getByRole('paragraph').filter({ hasText: 'Tick both boxes to create your account.' })).toBeVisible();
   await age.check();
   await expect(create).toBeDisabled();
   await page.screenshot({ path: '.logs/consent-en.png', fullPage: true });
@@ -99,6 +100,8 @@ test('an account without consent to the current policy sees only the consent scr
   await page.getByRole('button', { name: 'Log in', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Before you continue' })).toBeVisible();
   await expect(page.getByText('(version 1.1)', { exact: false })).toBeVisible();
+  await expect(page.getByRole('paragraph').filter({ hasText: 'Tick both boxes to continue.' })).toBeVisible();
+  await expect(page.getByText('Tick both boxes to create your account.')).toHaveCount(0);
   await expect(page.getByRole('navigation')).toHaveCount(0);
   const go = page.getByRole('button', { name: 'Continue' });
   await expect(go).toBeDisabled();

@@ -7,17 +7,19 @@ import PrivacyPolicy from './PrivacyPolicy.jsx';
 // for accounts without consent to the current policy (ConsentScreen.jsx):
 // "I am 18 or older" and "I have read and agree to the Privacy Policy &
 // Terms", whose name opens the policy in a sheet so nothing typed is lost.
-export default function ConsentBoxes({ ageConfirmed, onAgeConfirmed, policyAccepted, onPolicyAccepted }) {
+// `helper` is the i18n key of the line under the boxes: sign-up says they
+// create the account, the consent screen that they continue.
+export default function ConsentBoxes({ ageConfirmed, onAgeConfirmed, policyAccepted, onPolicyAccepted, helper = 'register.consentHelper' }) {
   const [reading, setReading] = useState(false);
   return (
     <>
       <fieldset className="space-y-2">
-        <legend className="sr-only">{t('register.consentHelper')}</legend>
+        <legend className="sr-only">{t(helper)}</legend>
         <Consent checked={ageConfirmed} onChange={onAgeConfirmed}>{t('register.age')}</Consent>
         <Consent checked={policyAccepted} onChange={onPolicyAccepted}>
           <AgreeText onOpen={() => setReading(true)} />
         </Consent>
-        {!(ageConfirmed && policyAccepted) && <p className="text-small text-muted">{t('register.consentHelper')}</p>}
+        {!(ageConfirmed && policyAccepted) && <p className="text-small text-muted">{t(helper)}</p>}
       </fieldset>
       <Sheet open={reading} title={t('privacy.title')} onClose={() => setReading(false)}>
         <PrivacyPolicy />

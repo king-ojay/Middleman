@@ -4,6 +4,7 @@
 // en.js is here too, with the same {placeholders} (i18n.test.js). Escrow is
 // "ingwate" throughout; offers are "ibyifuzo".
 export const CHECK = {
+  "consent.helper": 'Consent screen helper: please check the whole sentence.',
   "privacy.stored.body": 'New in policy 1.1: please check the whole sentence.',
   "privacy.rights.1": 'New in policy 1.1: please check the whole sentence.',
   "privacy.rights.4": 'New in policy 1.1: please check the whole sentence.',
@@ -849,5 +850,6 @@ export default {
   "error.consent_required": "Emera Politiki y'ibanga n'amabwiriza iriho kugira ngo ukomeze",
   "consent.title": "Mbere yo gukomeza",
   "consent.sub": "Kugira ngo ukomeze gukoresha Middleman, emeza ko ufite imyaka 18 cyangwa irenga kandi wemera Politiki y'ibanga n'amabwiriza (verisiyo {version}).",
-  "consent.continue": "Komeza"
+  "consent.continue": "Komeza",
+  "consent.helper": "Emeza ibisanduku byombi kugira ngo ukomeze."
 };

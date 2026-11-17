@@ -4,9 +4,9 @@
     <group android:translateX="65.60" android:translateY="65.60" android:scaleX="3.4" android:scaleY="3.4">
         <path android:pathData="M8,7 L24,7" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
         <path android:pathData="M24,7 L13,25" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
-        <path android:pathData="M8.000,7.000 L8.669,9.409 M9.472,12.299 L10.141,14.708 M10.944,17.599 L11.613,20.007 M12.416,22.898 L13.000,25.000" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
-        <path android:pathData="M4,7 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 Z" android:fillColor="#166534" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
-        <path android:pathData="M20,7 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 Z" android:fillColor="#166534" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
+        <path android:pathData="M8.000,7.000 L8.669,9.409 M9.472,12.299 L10.141,14.708 M10.944,17.599 L11.613,20.007 M12.416,22.898 L13.000,25.000" android:strokeColor="#20BA58" android:strokeWidth="2.6"/>
+        <path android:pathData="M4,7 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 Z" android:fillColor="#111827" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
+        <path android:pathData="M20,7 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0 Z" android:fillColor="#111827" android:strokeColor="#FFFFFF" android:strokeWidth="2.6"/>
         <path android:pathData="M8,25 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z" android:fillColor="#FFFFFF"/>
     </group>
 </vector>
