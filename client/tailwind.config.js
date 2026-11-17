@@ -18,16 +18,17 @@ export default {
         surface: v('surface'),         // cards, sheets, inputs, floating nav buttons
         ink: v('ink'),                 // text only
         'on-ink': v('on-ink'),         // text and icons on ink
-        primary: v('primary'),         // primary buttons, selected pills, active nav, focus ring
+        primary: v('primary'),         // ink: primary buttons, selected pills, active nav, focus ring, links
         'primary-hover': v('primary-hover'), // hover and pressed on primary
         'on-primary': v('on-primary'), // text and icons on primary
+        avatar: v('avatar'),           // neutral avatar circles (ink initials)
         muted: v('muted'),             // secondary text
         faint: v('faint'),             // placeholders
         line: v('line'),               // secondary button and pill borders, dividers
         field: v('field'),             // input borders (3:1 against the input)
         soft: v('soft'),               // neutral tint: grey tiles, insets, quiet badges
         shade: v('shade'),             // skeleton blocks on the grey page
-        trust: v('trust'),             // the one accent: trust and released money
+        trust: v('trust'),             // green, for meaning only: held, released, success
         'on-trust': v('on-trust'),
         warn: v('warn'),               // amber: more than your price, something to do
         'on-warn': v('on-warn'),
@@ -35,7 +36,7 @@ export default {
         step: v('step'),               // grey marks: a refunded job's steps
         danger: v('danger'),           // form and request errors
         'danger-soft': v('danger-soft'), // behind "Failed"
-        brand: v('brand'),             // the deep green panel on landing and sign-in
+        brand: v('brand'),             // the ink panel on landing and sign-in
         'on-brand': v('on-brand'),     // text on that panel
         'on-brand-soft': v('on-brand-soft'), // light text and marks on that panel
         scrim: v('scrim')              // dimmed page behind a sheet
@@ -66,11 +67,12 @@ export default {
         amount: ['22px', { lineHeight: '1.2', fontWeight: '700', letterSpacing: '-0.01em' }],
         'amount-xl': ['32px', { lineHeight: '1.15', fontWeight: '700', letterSpacing: '-0.02em' }]
       },
+      // Cards 14px; buttons, chips and badges stay fully round.
       borderRadius: {
-        card: '22px',
-        hero: '26px',
-        field: '16px',
-        tile: '16px'
+        card: '14px',
+        hero: '18px',
+        field: '12px',
+        tile: '12px'
       },
       boxShadow: {
         float: 'var(--shadow-float)' // floating nav buttons and sheets only; cards are flat

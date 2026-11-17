@@ -218,12 +218,12 @@ function OffersSkeleton() {
   );
 }
 
-// How an offer compares with the client's price, as a small tinted label:
-// the same ("Your price"), above it in amber, below it in green.
+// How an offer compares with the client's price, in words beside the amount
+// (no pill): the same ("Your price"), more in amber text, less in grey.
 function PriceDifference({ amount, proposed, top = false }) {
-  if (amount === proposed) return <Badge tone={top ? 'trust' : 'soft'}>{top ? t('job.acceptsPrice') : t('job.samePrice')}</Badge>;
+  if (amount === proposed) return <span className="text-small font-semibold text-muted">{top ? t('job.acceptsPrice') : t('job.samePrice')}</span>;
   const more = amount > proposed;
-  return <Badge tone={more ? 'action' : 'trust'}>{t(more ? 'job.more' : 'job.less', { amount: formatRwf(Math.abs(amount - proposed)) })}</Badge>;
+  return <span className={`text-small font-semibold ${more ? 'text-on-warn' : 'text-muted'}`}>{t(more ? 'job.more' : 'job.less', { amount: formatRwf(Math.abs(amount - proposed)) })}</span>;
 }
 
 const ShieldIcon = () => (
@@ -285,13 +285,13 @@ function TopOffer({ offer: r, job, label, disabled, choosing, onChoose }) {
   return (
     <Card as="li" className="p-5">
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone="trust">{label}</Badge>
+        <Badge tone="ink">{label}</Badge>
         {r.busy && <Badge tone="soft">{t('job.busy')}</Badge>}
         <PriceDifference amount={r.amount} proposed={job.proposedPrice} top />
         {r.worker.verifiedStatus === 'verified' && <VerifiedBadge />}
       </div>
       <div className="flex items-center gap-3 mt-4">
-        <Avatar name={r.worker.name} tier={r.trustSource} size={52} />
+        <Avatar name={r.worker.name} size={52} />
         <div className="min-w-0 flex-1">
           <Link to={`/people/${r.worker._id}`} className="block text-section text-ink hover:underline">{r.worker.name}</Link>
           <p className="text-small text-muted">{(r.worker.skills || []).map(categoryLabel).join(', ')} · {areaLabel(r.worker.area)}</p>
@@ -319,7 +319,7 @@ function OfferCard({ offer: r, job, disabled, choosing, onChoose }) {
   return (
     <Card as="li" className="p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={r.worker.name} tier={r.trustSource} size={44} />
+        <Avatar name={r.worker.name} size={44} />
         <div className="min-w-0 flex-1">
           <Link to={`/people/${r.worker._id}`} className="block text-card text-ink hover:underline">{r.worker.name}</Link>
           {(r.busy || r.worker.verifiedStatus === 'verified') && (
@@ -382,7 +382,7 @@ function ConfirmAndRate({ job, onChange, stalled }) {
 
   return (
     <>
-      <div className="bg-trust text-on-trust rounded-card p-5 mb-8">
+      <div className="bg-surface text-ink rounded-card p-5 mb-8">
         <p className="text-card">{confirmed ? t('confirm.youConfirmed') : t('confirm.markedComplete', { name: worker })}</p>
         <p className="text-body mt-1">
           {paying ? t('confirm.paying', { name: worker })

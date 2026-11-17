@@ -3,7 +3,8 @@ import { t } from '../../i18n/index.js';
 
 // Labelled trust tier, never a raw score (Section 3.3.3). Accepts the API's
 // trustSource values too ('fallback' is the "new" tier).
-const TONES = { network: 'trust', area: 'trust', new: 'soft' };
+// Neutral: the tier is in the words; green is kept for money and success.
+const TONES = { network: 'ink', area: 'ink', new: 'soft' };
 
 export const tierKey = tier => (tier === 'network' || tier === 'area' ? tier : 'new');
 

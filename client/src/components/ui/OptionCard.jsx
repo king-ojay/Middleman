@@ -1,5 +1,5 @@
 // A large selectable tile (e.g. "Client / I need work done"). Behaves as a
-// radio button inside a role="radiogroup". Selected: a 2px green (primary) edge.
+// radio button inside a role="radiogroup". Selected: a 2px ink (primary) edge.
 export default function OptionCard({ selected, title, description, onSelect }) {
   return (
     <button

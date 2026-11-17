@@ -1,5 +1,5 @@
 // Role-based navigation. Phones and tablets: separate round buttons floating
-// above the bottom edge, the active one filled green with its label. From
+// above the bottom edge, the active one filled ink with its label. From
 // 1024px: a top bar of pills beside the logo (inactive ones white with a
 // thin border).
 import { Link, NavLink } from 'react-router-dom';

@@ -47,7 +47,7 @@ export default function Profile() {
   return (
     <PageLayout {...layout}>
       <div className="flex flex-col items-center text-center pt-2">
-        <Avatar name={profile.name} tier={isOwn ? 'network' : profile.trustSource} size={88} />
+        <Avatar name={profile.name} size={88} />
         <h1 className="text-title text-ink mt-4">{profile.name}</h1>
         <p className="text-body text-muted mt-1">{role} · {areaLabel(profile.area)}</p>
         <div className="flex flex-wrap justify-center gap-2 mt-3">

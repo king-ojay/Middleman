@@ -25,26 +25,27 @@
     --surface: 255 255 255;       /* cards, sheets, inputs, nav buttons */
     --ink: 31 41 55;              /* #1F2937 text only */
     --on-ink: 255 255 255;        /* text and icons on ink */
-    --primary: 21 128 61;         /* #15803D primary buttons, selected pills, active nav, focus */
-    --primary-hover: 22 101 52;   /* #166534 hover and pressed */
-    --on-primary: 255 255 255;    /* text and icons on primary */
+    --primary: 17 24 39;          /* #111827 ink: primary buttons, selected pills, active nav, focus, links */
+    --primary-hover: 55 65 81;    /* #374151 hover and pressed */
+    --on-primary: 255 255 255;    /* text and icons on primary (17.7:1) */
+    --avatar: 229 231 235;        /* #E5E7EB neutral avatar circles, ink initials (12.6:1) */
     --muted: 75 85 99;            /* #4B5563 secondary text */
     --faint: 100 116 139;         /* #64748B placeholders */
     --line: 195 202 213;          /* #C3CAD5 secondary button and pill borders */
     --field: 123 134 152;         /* #7B8698 input borders (3:1 on white) */
     --soft: 233 237 242;          /* #E9EDF2 neutral tint, grey tiles */
     --shade: 221 226 233;         /* skeleton blocks on the grey page */
-    --trust: 201 242 214;         /* #C9F2D6 trust and released money */
+    --trust: 201 242 214;         /* #C9F2D6 green for meaning only: held, released, success */
     --on-trust: 11 92 46;         /* #0B5C2E */
     --warn: 253 236 200;          /* #FDECC8 "more than your price", things to do */
     --on-warn: 138 75 8;          /* #8A4B08 */
-    --signal: 21 128 61;          /* #15803D green marks: done steps, checks */
+    --signal: 21 128 61;          /* #15803D green marks for meaning: Verified check, released bars */
     --step: 138 148 166;          /* #8A94A6 grey marks: a refunded job's steps */
     --danger: 180 35 24;          /* #B42318 */
     --danger-soft: 253 228 225;   /* #FDE4E1 behind "Failed" */
-    --brand: 22 101 52;           /* #166534 deep green panel on the landing and sign-in pages */
-    --on-brand: 255 255 255;      /* text on that panel (the same in both themes) */
-    --on-brand-soft: 201 242 214; /* light text and marks on that panel */
+    --brand: 17 24 39;            /* #111827 ink panel on the landing and sign-in pages */
+    --on-brand: 255 255 255;      /* text on that panel (17.7:1) */
+    --on-brand-soft: 209 213 219; /* #D1D5DB light text and marks on that panel (12.0:1) */
     --scrim: 11 18 32;            /* dimmed page behind a sheet */
     --shadow-float: 0 6px 20px rgba(11, 18, 32, 0.12);
   }
@@ -56,9 +57,10 @@
       --surface: 22 28 39;
       --ink: 229 231 235;
       --on-ink: 11 18 32;
-      --primary: 26 134 68;
-      --primary-hover: 22 101 52;
-      --on-primary: 255 255 255;
+      --primary: 229 231 235;
+      --primary-hover: 209 213 219;
+      --on-primary: 11 18 32;
+      --avatar: 55 65 81;
       --muted: 156 163 175;
       --faint: 141 152 171;
       --line: 58 68 84;
@@ -73,10 +75,10 @@
       --step: 111 123 143;
       --danger: 255 147 137;
       --danger-soft: 61 29 28;
-      --brand: 22 101 52;
+      --brand: 31 41 55;
       --scrim: 26 34 50;
       --on-brand: 255 255 255;
-      --on-brand-soft: 201 242 214;
+      --on-brand-soft: 209 213 219;
       --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.5);
     }
   }
@@ -87,9 +89,10 @@
     --surface: 22 28 39;
     --ink: 229 231 235;
     --on-ink: 11 18 32;
-    --primary: 26 134 68;
-    --primary-hover: 22 101 52;
-    --on-primary: 255 255 255;
+    --primary: 229 231 235;
+    --primary-hover: 209 213 219;
+    --on-primary: 11 18 32;
+    --avatar: 55 65 81;
     --muted: 156 163 175;
     --faint: 141 152 171;
     --line: 58 68 84;
@@ -104,10 +107,10 @@
     --step: 111 123 143;
     --danger: 255 147 137;
     --danger-soft: 61 29 28;
-    --brand: 22 101 52;
+    --brand: 31 41 55;
     --scrim: 26 34 50;
     --on-brand: 255 255 255;
-    --on-brand-soft: 201 242 214;
+    --on-brand-soft: 209 213 219;
     --shadow-float: 0 6px 20px rgba(0, 0, 0, 0.5);
   }
 

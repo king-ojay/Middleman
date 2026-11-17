@@ -1,5 +1,5 @@
 // 52x30 track, 24px knob, with an invisible 44px-tall hit area (::after).
-// On: green (primary) track. Off: a neutral track with a 1px muted outline so it stays
+// On: ink (primary) track. Off: a neutral track with a 1px muted outline so it stays
 // visible on a white card (3:1 non-text contrast). Labelled by the caller via
 // aria-label or aria-labelledby.
 export default function Switch({ checked, onChange, className = '', ...props }) {
