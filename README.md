@@ -339,7 +339,9 @@ are in [`docs/TEST_MATRIX.md`](docs/TEST_MATRIX.md).
 
 ## Architecture
 
-![Architecture: browsers load the React app from Vercel and call the Express API on Render, which uses MongoDB Atlas, an SMS provider and the MTN MoMo sandbox](docs/architecture.svg)
+![Architecture: the browser loads the React app from Vercel over HTTPS and then calls the Express API on Render (Oregon) directly, as does the Android app; the API uses MongoDB Atlas 8.0 in Paris over TLS, the MTN MoMo sandbox and Africa's Talking for SMS over HTTPS REST](docs/architecture.png)
+
+Source: [`docs/architecture.svg`](docs/architecture.svg).
 
 ### Tech stack
 
@@ -369,7 +371,7 @@ client/src/            React app: pages/, components/, components/ui/ (design sy
 client/android/        the Android app (Capacitor project; icon and splash in app/src/main/res)
 e2e/                   Playwright end-to-end flow, five browser and device projects
 shared/                pilot areas and dispute reasons, copied into server/ and client/ by npm run sync:shared
-docs/                  RUNBOOK.md, TEST_MATRIX.md, architecture.svg, screenshots/, designs/
+docs/                  RUNBOOK.md, TEST_MATRIX.md, architecture.svg and .png, screenshots/, designs/
 results/               committed benchmark results (aggregate metrics only)
 ```
 

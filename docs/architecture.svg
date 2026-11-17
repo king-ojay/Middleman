@@ -1,85 +1,131 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 560" width="960" height="560" font-family="Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 760" width="1240" height="760" font-family="Helvetica, Arial, sans-serif">
   <title>Middleman architecture</title>
-  <desc>Browsers load the React app from Vercel and call the Express API on Render over HTTPS. The API stores data in MongoDB Atlas, sends one-time codes through an SMS provider, and moves sandbox money through the MTN MoMo sandbox. The researcher uses the admin page with the admin secret.</desc>
+  <desc>Browsers load the React app as static files from Vercel over HTTPS; the browser then runs the app and calls the Express API on Render (Oregon) directly over HTTPS with JSON, allowed by the CORS list. The Android app (Capacitor 8) bundles the same React app and calls the API directly too. The researcher uses the admin page with the admin secret. The API talks to MongoDB Atlas 8.0 in Paris through the MongoDB driver over TLS, to the MTN MoMo sandbox through its HTTPS REST API (Collections requesttopay, Disbursements transfer), which calls back over HTTPS, and to Africa's Talking for SMS over HTTPS REST.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M0 0 10 5 0 10z" fill="#4b5563"/>
     </marker>
   </defs>
-  <rect width="960" height="560" fill="#ffffff"/>
+  <rect width="1240" height="760" fill="#ffffff"/>
 
-  <!-- people -->
+  <!-- people and clients -->
   <g>
-    <rect x="30" y="60" width="200" height="96" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
-    <text x="130" y="94" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Clients and workers</text>
-    <text x="130" y="118" text-anchor="middle" font-size="13" fill="#4b5563">phone, tablet or desktop</text>
-    <text x="130" y="138" text-anchor="middle" font-size="13" fill="#4b5563">browser</text>
+    <rect x="30" y="50" width="220" height="100" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="140" y="86" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Clients and workers</text>
+    <text x="140" y="110" text-anchor="middle" font-size="13" fill="#4b5563">browser on a phone, tablet</text>
+    <text x="140" y="130" text-anchor="middle" font-size="13" fill="#4b5563">or desktop</text>
 
-    <rect x="30" y="380" width="200" height="96" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
-    <text x="130" y="414" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Researcher</text>
-    <text x="130" y="438" text-anchor="middle" font-size="13" fill="#4b5563">/admin page, secret kept</text>
-    <text x="130" y="458" text-anchor="middle" font-size="13" fill="#4b5563">in memory only</text>
+    <rect x="30" y="330" width="220" height="100" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="140" y="366" text-anchor="middle" font-size="15" font-weight="700" fill="#1f2937">Android app (Capacitor 8)</text>
+    <text x="140" y="390" text-anchor="middle" font-size="13" fill="#4b5563">the same React app, bundled</text>
+    <text x="140" y="410" text-anchor="middle" font-size="13" fill="#4b5563">in the APK</text>
+
+    <rect x="30" y="600" width="220" height="100" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="140" y="636" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Researcher</text>
+    <text x="140" y="660" text-anchor="middle" font-size="13" fill="#4b5563">/admin page, secret kept</text>
+    <text x="140" y="680" text-anchor="middle" font-size="13" fill="#4b5563">in memory only</text>
   </g>
 
-  <!-- app -->
-  <rect x="300" y="40" width="250" height="136" rx="14" fill="#c9f2d6" stroke="#15803d"/>
-  <text x="425" y="72" text-anchor="middle" font-size="16" font-weight="700" fill="#0b5c2e">Web app (Vercel)</text>
-  <text x="425" y="98" text-anchor="middle" font-size="13" fill="#0b5c2e">React 18, Vite 5, Tailwind 3</text>
-  <text x="425" y="120" text-anchor="middle" font-size="13" fill="#0b5c2e">Discover, offers, jobs,</text>
-  <text x="425" y="140" text-anchor="middle" font-size="13" fill="#0b5c2e">Transactions, profile, admin</text>
-  <text x="425" y="162" text-anchor="middle" font-size="12" fill="#0b5c2e">CSP: scripts, styles, fonts from self</text>
+  <!-- web app -->
+  <rect x="380" y="30" width="420" height="160" rx="14" fill="#f2f4f7" stroke="#111827" stroke-width="1.5"/>
+  <text x="590" y="62" text-anchor="middle" font-size="16" font-weight="700" fill="#111827">Web app (Vercel, global)</text>
+  <text x="590" y="88" text-anchor="middle" font-size="13" fill="#1f2937">React 18, Vite 5, Tailwind 3: static files only</text>
+  <text x="590" y="110" text-anchor="middle" font-size="13" fill="#1f2937">The browser runs the React app and calls the</text>
+  <text x="590" y="130" text-anchor="middle" font-size="13" fill="#1f2937">API directly (nothing passes through Vercel)</text>
+  <text x="590" y="152" text-anchor="middle" font-size="13" fill="#4b5563">Discover, offers, jobs, Transactions, profile, admin</text>
+  <text x="590" y="174" text-anchor="middle" font-size="12" fill="#4b5563">CSP: scripts, styles, fonts from self</text>
 
   <!-- api -->
-  <rect x="300" y="230" width="380" height="290" rx="14" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
-  <text x="490" y="262" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">API (Render): Node 24, Express 4, Mongoose 8</text>
+  <rect x="380" y="270" width="460" height="450" rx="14" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+  <text x="610" y="302" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">API (Render, Oregon)</text>
+  <text x="610" y="324" text-anchor="middle" font-size="13" fill="#4b5563">Node 24, Express 4, Mongoose 8</text>
   <g font-size="13" fill="#1f2937">
-    <rect x="320" y="282" width="160" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
-    <text x="400" y="306" text-anchor="middle" font-weight="700">auth, users</text>
-    <text x="400" y="326" text-anchor="middle" fill="#4b5563">PIN, OTP, sessions</text>
+    <rect x="400" y="344" width="200" height="72" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="500" y="372" text-anchor="middle" font-weight="700">auth, users</text>
+    <text x="500" y="394" text-anchor="middle" fill="#4b5563">PIN, OTP, sessions, consent</text>
 
-    <rect x="500" y="282" width="160" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
-    <text x="580" y="306" text-anchor="middle" font-weight="700">jobs</text>
-    <text x="580" y="326" text-anchor="middle" fill="#4b5563">offers, lifecycle, disputes</text>
+    <rect x="620" y="344" width="200" height="72" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="720" y="372" text-anchor="middle" font-weight="700">jobs</text>
+    <text x="720" y="394" text-anchor="middle" fill="#4b5563">offers, lifecycle, disputes</text>
 
-    <rect x="320" y="358" width="160" height="62" rx="10" fill="#c9f2d6" stroke="#15803d"/>
-    <text x="400" y="382" text-anchor="middle" font-weight="700" fill="#0b5c2e">trust</text>
-    <text x="400" y="402" text-anchor="middle" fill="#0b5c2e">computeTrust, reasons</text>
+    <rect x="400" y="430" width="200" height="72" rx="10" fill="#f2f4f7" stroke="#111827"/>
+    <text x="500" y="458" text-anchor="middle" font-weight="700" fill="#111827">trust</text>
+    <text x="500" y="480" text-anchor="middle" fill="#4b5563">computeTrust, reasons</text>
 
-    <rect x="500" y="358" width="160" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
-    <text x="580" y="382" text-anchor="middle" font-weight="700">payments</text>
-    <text x="580" y="402" text-anchor="middle" font-size="12" fill="#4b5563">escrow, ledger, auto-release</text>
+    <rect x="620" y="430" width="200" height="72" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="720" y="453" text-anchor="middle" font-weight="700">payments</text>
+    <text x="720" y="473" text-anchor="middle" fill="#4b5563">escrow, ledger,</text>
+    <text x="720" y="491" text-anchor="middle" fill="#4b5563">auto-release, reminders</text>
 
-    <rect x="320" y="434" width="340" height="62" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
-    <text x="490" y="458" text-anchor="middle" font-weight="700">admin (X-Admin-Secret)</text>
-    <text x="490" y="478" text-anchor="middle" fill="#4b5563">verification, dispute settlement, account deletion</text>
+    <rect x="400" y="516" width="420" height="72" rx="10" fill="#f2f4f7" stroke="#c3cad5"/>
+    <text x="610" y="544" text-anchor="middle" font-weight="700">admin (X-Admin-Secret)</text>
+    <text x="610" y="566" text-anchor="middle" fill="#4b5563">verification, dispute settlement, account deletion, code relay</text>
+
+    <rect x="400" y="602" width="420" height="96" rx="10" fill="#ffffff" stroke="#c3cad5" stroke-dasharray="4 4"/>
+    <text x="610" y="630" text-anchor="middle" font-weight="700">Every request</text>
+    <text x="610" y="652" text-anchor="middle" fill="#4b5563">CORS allow-list, helmet, rate limits,</text>
+    <text x="610" y="672" text-anchor="middle" fill="#4b5563">session and consent check, error codes</text>
   </g>
 
-  <!-- external -->
-  <rect x="740" y="240" width="190" height="80" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
-  <text x="835" y="272" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">MongoDB Atlas</text>
-  <text x="835" y="296" text-anchor="middle" font-size="13" fill="#4b5563">replica set, transactions</text>
+  <!-- external services -->
+  <rect x="980" y="300" width="230" height="100" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+  <text x="1095" y="334" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">MongoDB Atlas 8.0</text>
+  <text x="1095" y="358" text-anchor="middle" font-size="13" fill="#4b5563">Paris (AWS eu-west-3)</text>
+  <text x="1095" y="378" text-anchor="middle" font-size="13" fill="#4b5563">replica set, transactions</text>
 
-  <rect x="740" y="350" width="190" height="80" rx="14" fill="#fdecc8" stroke="#8a4b08"/>
-  <text x="835" y="382" text-anchor="middle" font-size="16" font-weight="700" fill="#8a4b08">MTN MoMo sandbox</text>
-  <text x="835" y="406" text-anchor="middle" font-size="13" fill="#8a4b08">no real money</text>
+  <rect x="980" y="450" width="230" height="110" rx="14" fill="#fdecc8" stroke="#8a4b08"/>
+  <text x="1095" y="490" text-anchor="middle" font-size="16" font-weight="700" fill="#8a4b08">MTN MoMo sandbox</text>
+  <text x="1095" y="514" text-anchor="middle" font-size="13" fill="#8a4b08">no real money</text>
 
-  <rect x="740" y="460" width="190" height="80" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
-  <text x="835" y="492" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">SMS provider</text>
-  <text x="835" y="516" text-anchor="middle" font-size="13" fill="#4b5563">one-time codes</text>
+  <rect x="980" y="610" width="230" height="100" rx="14" fill="#f2f4f7" stroke="#c3cad5"/>
+  <text x="1095" y="646" text-anchor="middle" font-size="16" font-weight="700" fill="#1f2937">Africa's Talking (SMS)</text>
+  <text x="1095" y="670" text-anchor="middle" font-size="13" fill="#4b5563">one-time codes, reminders</text>
 
-  <!-- arrows -->
-  <g stroke="#4b5563" stroke-width="1.6" fill="none" marker-end="url(#arrow)">
-    <path d="M230 108 H296"/>
-    <path d="M425 176 V226"/>
-    <path d="M230 428 C 262 428 262 160 296 150"/>
-    <path d="M680 280 H736"/>
-    <path d="M680 390 H736"/>
-    <path d="M680 470 C 710 470 710 500 736 500"/>
+  <!-- arrows: one-way (loading the app) and two-way (request and response) -->
+  <g stroke="#4b5563" stroke-width="1.6" fill="none">
+    <!-- user loads the web app: one way -->
+    <path d="M250 100 H376" marker-end="url(#arrow)"/>
+    <!-- browser <-> API -->
+    <path d="M200 154 C 230 230, 320 262, 376 300" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <!-- Android <-> API -->
+    <path d="M254 380 H376" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <!-- researcher <-> API -->
+    <path d="M254 650 H376" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <!-- API <-> Atlas -->
+    <path d="M844 350 H976" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <!-- API <-> MoMo: requests and their answers -->
+    <path d="M844 478 H976" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+    <!-- MoMo -> API: callback -->
+    <path d="M976 532 H844" marker-end="url(#arrow)" stroke-dasharray="6 4"/>
+    <!-- API <-> Africa's Talking -->
+    <path d="M844 660 H976" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
   </g>
-  <g font-size="12" fill="#4b5563">
-    <text x="263" y="100" text-anchor="middle">HTTPS</text>
-    <text x="434" y="206">HTTPS, JSON, CORS allow-list</text>
-    <text x="708" y="272" text-anchor="middle">data</text>
-    <text x="708" y="382" text-anchor="middle">money</text>
+  <g font-size="12" fill="#374151">
+    <text x="313" y="92" text-anchor="middle">HTTPS</text>
+    <text x="313" y="118" text-anchor="middle" fill="#6b7280">loads the app</text>
+
+    <text x="196" y="226" text-anchor="middle">HTTPS, JSON</text>
+    <text x="196" y="242" text-anchor="middle">(CORS allow-list)</text>
+    <text x="196" y="260" text-anchor="middle" fill="#6b7280">requests / responses</text>
+
+    <text x="315" y="354" text-anchor="middle">HTTPS, JSON</text>
+    <text x="315" y="370" text-anchor="middle">(CORS allow-list)</text>
+    <text x="315" y="400" text-anchor="middle" fill="#6b7280">requests / responses</text>
+
+    <text x="315" y="640" text-anchor="middle">HTTPS, JSON</text>
+    <text x="315" y="670" text-anchor="middle" fill="#6b7280">+ admin secret</text>
+
+    <text x="910" y="330" text-anchor="middle">MongoDB driver</text>
+    <text x="910" y="344" text-anchor="middle">over TLS</text>
+    <text x="910" y="368" text-anchor="middle" fill="#6b7280">queries / documents</text>
+
+    <text x="910" y="430" text-anchor="middle">HTTPS REST:</text>
+    <text x="910" y="446" text-anchor="middle">Collections requesttopay,</text>
+    <text x="910" y="462" text-anchor="middle">Disbursements transfer</text>
+    <text x="910" y="496" text-anchor="middle" fill="#6b7280">request / status</text>
+    <text x="910" y="552" text-anchor="middle">HTTPS callback</text>
+
+    <text x="910" y="650" text-anchor="middle">HTTPS REST</text>
+    <text x="910" y="678" text-anchor="middle" fill="#6b7280">send / status</text>
   </g>
 </svg>

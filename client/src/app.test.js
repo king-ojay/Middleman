@@ -36,9 +36,10 @@ test('only the local build may call a plain http:// API', async () => {
   assert.equal(local.android.allowMixedContent, true);
 });
 
-test('the splash is the brand green', async () => {
-  assert.equal((await capConfig()).plugins.SplashScreen.backgroundColor, '#166534');
-  assert.match(readFileSync(file('android/app/src/main/res/values/splash.xml'), 'utf8'), /#166534/);
+test('the splash is ink, with the logo\'s green dashed line', async () => {
+  assert.equal((await capConfig()).plugins.SplashScreen.backgroundColor, '#111827');
+  assert.match(readFileSync(file('android/app/src/main/res/values/splash.xml'), 'utf8'), /#111827/);
+  assert.match(readFileSync(file('android/app/src/main/res/drawable/splash_mark.xml'), 'utf8'), /strokeColor="#20BA58"/);
 });
 
 // Width and height from a PNG's IHDR chunk.

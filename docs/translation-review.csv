@@ -654,3 +654,4 @@
 "consent.title","Before you continue","Mbere yo gukomeza","CHECK: New in policy 1.1: please check the whole sentence."
 "consent.sub","To keep using Middleman, confirm that you are 18 or older and agree to the Privacy Policy & Terms (version {version}).","Kugira ngo ukomeze gukoresha Middleman, emeza ko ufite imyaka 18 cyangwa irenga kandi wemera Politiki y'ibanga n'amabwiriza (verisiyo {version}).","CHECK: New in policy 1.1: please check the whole sentence."
 "consent.continue","Continue","Komeza","CHECK: New in policy 1.1: please check the whole sentence."
+"consent.helper","Tick both boxes to continue.","Emeza ibisanduku byombi kugira ngo ukomeze.","CHECK: Consent screen helper: please check the whole sentence."

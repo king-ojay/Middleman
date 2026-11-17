@@ -40,7 +40,7 @@ export default function ConsentScreen() {
       <h1 className="text-display tracking-tight text-ink">{t('consent.title')}</h1>
       <p className="text-body text-muted mt-2 mb-6">{t('consent.sub', { version: POLICY_VERSION })}</p>
       <form onSubmit={save} className="space-y-6">
-        <ConsentBoxes ageConfirmed={ageConfirmed} onAgeConfirmed={setAgeConfirmed} policyAccepted={policyAccepted} onPolicyAccepted={setPolicyAccepted} />
+        <ConsentBoxes ageConfirmed={ageConfirmed} onAgeConfirmed={setAgeConfirmed} policyAccepted={policyAccepted} onPolicyAccepted={setPolicyAccepted} helper="consent.helper" />
         {error && <p className="text-small text-danger" role="alert">{error}</p>}
         <div className="space-y-3">
           <Button type="submit" disabled={saving || !ageConfirmed || !policyAccepted} aria-busy={saving}>{saving ? t('common.saving') : t('consent.continue')}</Button>
