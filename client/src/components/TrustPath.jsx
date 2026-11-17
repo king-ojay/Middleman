@@ -12,9 +12,9 @@ const STACK = ['z-30', 'z-20', 'z-10', 'z-0'];
 
 const FILL = {
   you: 'bg-surface text-ink border border-line',
-  named: 'bg-trust text-on-trust',
+  named: 'bg-avatar text-ink',
   anonymous: 'bg-shade',
-  worker: 'bg-trust text-on-trust'
+  worker: 'bg-avatar text-ink'
 };
 
 export default function TrustPath({ reason, ring = 'ring-surface' }) {

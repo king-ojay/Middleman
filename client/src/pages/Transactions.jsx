@@ -138,7 +138,7 @@ function JobMoney({ card, role }) {
   return (
     <Card as="li" className="p-4">
       <div className="flex items-start gap-3">
-        <Avatar name={card.other || ''} tier="new" anonymous={!card.other} size={44} />
+        <Avatar name={card.other || ''} anonymous={!card.other} size={44} />
         <div className="min-w-0 flex-1">
           <Link to={`/my-jobs/${card.job._id}`} className="block truncate text-card text-ink hover:underline">{card.job.description}</Link>
           <p className="text-small text-muted mt-0.5">

@@ -1,4 +1,4 @@
-// h-10 visual pill, 14px. Selected: filled green (primary). Interactive chips extend
+// h-10 visual pill, 14px. Selected: filled ink (primary). Interactive chips extend
 // their hit area 2px above and below (44px) with an invisible ::after layer.
 // Pass static to render a non-interactive chip (e.g. a list of names).
 export function Chip({ active = false, static: isStatic = false, className = '', ...props }) {

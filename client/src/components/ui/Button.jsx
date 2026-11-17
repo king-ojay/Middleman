@@ -1,10 +1,10 @@
-// The one button style for the app: pills in primary (green), secondary
+// The one button style for the app: pills in primary (ink), secondary
 // (white with a thin border), soft and plain variants, in two sizes, both at
 // least 44px tall; renders a router Link when given `to`.
 import { Link } from 'react-router-dom';
 
 // Hover (pointer devices only, see tailwind.config.js) and pressed states:
-// green buttons darken, white ones take the neutral tint, plain text
+// ink buttons lighten, white ones take the neutral tint, plain text
 // actions turn ink.
 const VARIANTS = {
   primary: 'bg-primary text-on-primary hover:bg-primary-hover active:bg-primary-hover',

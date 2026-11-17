@@ -89,7 +89,7 @@ export default function Login() {
         <h2 className="text-title text-on-brand-soft">{t('landing.headline')}</h2>
         <p className="text-body text-on-brand mt-2">{t('login.promoSub')}</p>
         <div className="mt-5 flex items-center gap-3 bg-on-brand/10 rounded-card p-3">
-          <Avatar name="Eric Habimana" tier="area" size={44} />
+          <Avatar name="Eric Habimana" size={44} />
           <div>
             <p className="text-body font-semibold text-on-brand">Eric Habimana</p>
             <p className="text-small text-on-brand-soft">{t('tier.network')}</p>

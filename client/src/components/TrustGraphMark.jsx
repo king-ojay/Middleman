@@ -1,6 +1,6 @@
 import { t } from '../i18n/index.js';
 
-// The trust mechanism in one picture, drawn for the deep green (brand) panel. Trust
+// The trust mechanism in one picture, drawn for the ink (brand) panel. Trust
 // is directed, so every edge has an arrowhead pointing away from you:
 //   You -> Amina  solid: a real edge (you invited her: the signup_referral
 //                 edge, written from inviter to invitee, auth.routes.js)

@@ -42,7 +42,7 @@ export default function Landing() {
         <ol className="grid gap-3 md:grid-cols-3">
           {STEPS.map(n => (
             <Card as="li" key={n} className="flex gap-4">
-              <span className="w-11 h-11 shrink-0 rounded-full bg-trust text-on-trust text-card flex items-center justify-center">{n}</span>
+              <span className="w-11 h-11 shrink-0 rounded-full bg-avatar text-ink text-card flex items-center justify-center">{n}</span>
               <div>
                 <h3 className="text-card text-ink">{t(`landing.step${n}.title`)}</h3>
                 <p className="text-body text-muted mt-1">{t(`landing.step${n}.body`)}</p>

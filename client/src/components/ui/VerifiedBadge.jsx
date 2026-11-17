@@ -1,7 +1,7 @@
 import { t } from '../../i18n/index.js';
 
 // "Verified" (reviewed manually by the researcher): an outlined pill with a
-// green check, so it never reads as part of the tinted trust chip it often
+// green check (green marks meaning), so it never reads as part of the tier chip it often
 // sits next to.
 export default function VerifiedBadge() {
   return (

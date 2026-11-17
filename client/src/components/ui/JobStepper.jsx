@@ -24,10 +24,10 @@ export default function JobStepper({ status }) {
         const isCurrent = i === done;
         return (
           <li key={step} className="flex-1 flex flex-col items-center relative">
-            {i > 0 && <span aria-hidden="true" className={`absolute top-3 right-1/2 w-full h-0.5 ${i <= done ? 'bg-signal' : 'bg-line'}`} />}
+            {i > 0 && <span aria-hidden="true" className={`absolute top-3 right-1/2 w-full h-0.5 ${i <= done ? 'bg-ink' : 'bg-line'}`} />}
             <span
               className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center ${
-                isDone ? 'bg-signal' : isCurrent ? 'bg-surface border-[3px] border-signal' : 'bg-surface border-2 border-line'
+                isDone ? 'bg-ink' : isCurrent ? 'bg-surface border-[3px] border-ink' : 'bg-surface border-2 border-line'
               }`}
             >
               {isDone && <Check />}

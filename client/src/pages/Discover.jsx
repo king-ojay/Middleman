@@ -197,11 +197,11 @@ function TopWorkerCard({ worker: w, label }) {
     <Card as="li" className="p-5 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center lg:gap-x-6">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge tone="trust">{label}</Badge>
+          <Badge tone="ink">{label}</Badge>
           {w.verified && <VerifiedBadge />}
         </div>
         <div className="flex items-center gap-3 mt-4">
-          <Avatar name={w.name} tier={w.trustSource} size={52} />
+          <Avatar name={w.name} size={52} />
           <div className="min-w-0">
             <h2 className="text-section text-ink">{w.name}</h2>
             <p className="text-body text-muted">{trades(w)} · {areaLabel(w.area)}</p>
@@ -223,7 +223,7 @@ function TopWorkerCard({ worker: w, label }) {
 function WorkerCard({ worker: w }) {
   return (
     <Card as="li" className="p-4 flex items-start gap-3">
-      <Avatar name={w.name} tier={w.trustSource} size={44} />
+      <Avatar name={w.name} size={44} />
       <div className="min-w-0 flex-1">
         <h3 className="text-card text-ink">{w.name}</h3>
         <p className="text-small text-muted flex flex-wrap items-center gap-x-2 gap-y-1">

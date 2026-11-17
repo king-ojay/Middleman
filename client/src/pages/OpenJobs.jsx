@@ -153,13 +153,13 @@ export default function OpenJobs() {
       <ul className="grid gap-3 md:grid-cols-2">
         {!loading && jobs.map(job => (
           <Card as="li" key={job._id} className="p-5 flex flex-col">
-            {job.myResponse && <div className="mb-2"><Badge tone="trust">{t('jobs.responded')}</Badge></div>}
+            {job.myResponse && <div className="mb-2"><Badge tone="ink">{t('jobs.responded')}</Badge></div>}
             <h2 className="text-card text-ink break-words">{job.description}</h2>
             <p className="text-body text-muted mt-1">
               {categoryLabel(job.category)} · {areaLabel(job.area)} · {t('jobs.posted', { when: timeAgo(job.createdAt) })}
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <Avatar name={job.client?.name} tier={job.clientTrust} size={44} />
+              <Avatar name={job.client?.name} size={44} />
               <div className="min-w-0">
                 <Link to={`/people/${job.client?._id}`} className="block text-body font-semibold text-ink hover:underline truncate">{job.client?.name}</Link>
                 <TierBadge tier={job.clientTrust} />
@@ -215,7 +215,7 @@ function ResponseControls({ job, atLimit, onSent }) {
   if (job.myResponse) {
     const r = job.myResponse;
     return (
-      <p className="text-body text-on-trust bg-trust rounded-field px-4 py-3 mt-4">
+      <p className="text-body text-ink bg-soft rounded-field px-4 py-3 mt-4">
         {t(r.isCounter ? 'jobs.youCountered' : 'jobs.youAccepted', { amount: formatRwf(r.amount) })}
         {r.depositAmount > 0 && t('jobs.needingMaterials', { amount: formatRwf(r.depositAmount) })}{t('jobs.waitingChoose')}
       </p>
