@@ -4,6 +4,7 @@
 // TEST_MONGO_URI is set.
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 // Its own database: node --test runs files in parallel.
 const MONGO = process.env.TEST_MONGO_URI && (() => {
@@ -49,6 +50,8 @@ before(async () => {
   users = { client, worker, stranger };
   tokens = Object.fromEntries(await Promise.all(Object.entries(users).map(async ([k, u]) => {
     const full = await User.findById(u._id).select('+sessionVersion');
+    // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+    await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
     return [k, createSessionToken(full)];
   })));
   server = app.listen(0);

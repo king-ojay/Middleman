@@ -2,7 +2,7 @@
 // screen (guarded by role), and the notice shown while the free-tier API wakes
 // up. The tree is keyed on the language, so switching it redraws every
 // screen in the new words (i18n/index.js).
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
@@ -16,6 +16,7 @@ import Profile from './pages/Profile.jsx';
 import Transactions from './pages/Transactions.jsx';
 import Admin from './pages/Admin.jsx';
 import Privacy from './pages/Privacy.jsx';
+import ConsentScreen from './pages/ConsentScreen.jsx';
 import ServerWaking from './components/ServerWaking.jsx';
 import StatusBarBackdrop from './components/StatusBarBackdrop.jsx';
 import { useLang } from './i18n/useLang.js';
@@ -24,8 +25,20 @@ import { useAuth, homePathFor, RequireRole, RequireUser } from './auth.jsx';
 // Mobile-first: every screen is designed at 390px. From 768px up, PageLayout
 // widens the content and the tab bar becomes a top navigation bar.
 export default function App() {
-  const { user } = useAuth();
+  const { user, needsConsent } = useAuth();
   const lang = useLang();
+  const { pathname } = useLocation();
+  // Logged in without consent to the current policy: the consent screen in
+  // place of every screen but the policy itself and the researcher's page.
+  if (needsConsent && !['/privacy', '/admin'].includes(pathname)) {
+    return (
+      <main key={lang} className="min-h-dvh bg-canvas">
+        <StatusBarBackdrop />
+        <ConsentScreen />
+        <ServerWaking />
+      </main>
+    );
+  }
   return (
     <main key={lang} className="min-h-dvh bg-canvas">
       <StatusBarBackdrop />

@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
   const url = new URL(process.env.TEST_MONGO_URI);
@@ -62,6 +63,8 @@ before(async () => {
   await Otp.create({ phone: doomed.phone, purpose: 'pin_reset', codeHash: 'x', expiresAt: new Date(Date.now() + 300000) });
 
   tokens = {};
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   for (const [key, u] of Object.entries(users)) tokens[key] = createSessionToken(await User.findById(u._id).select('+sessionVersion'));
   setPaymentProvider(createFakeProvider());
   server = app.listen(0);

@@ -5,6 +5,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { stubAfricasTalking, atAnswer } from './africasTalkingStub.js';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 const MONGO = process.env.TEST_MONGO_URI;
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
@@ -37,6 +38,8 @@ before(async () => {
     { name: 'Client Two', phone: '0788100002', role: 'client', area: 'gikondo', pinHash },
     { name: 'Worker One', phone: '0788100003', role: 'worker', area: 'kimironko', skills: ['electrician'], pinHash }
   ]);
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   server = app.listen(0);
   base = `http://127.0.0.1:${server.address().port}`;
 });
@@ -111,7 +114,7 @@ test('registration returns a working session', { skip }, async () => {
   const phone = '0788100009';
   assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' } })).status, 200);
   const reg = await call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Client', phone, area: 'remera', pin: '2468', otpCode: codes.get(phone.slice(-3)), ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' }
+    body: { role: 'client', name: 'New Client', phone, area: 'remera', pin: '2468', otpCode: codes.get(phone.slice(-3)), ageConfirmed: true, policyAccepted: true, policyVersion: POLICY_VERSION }
   });
   assert.equal(reg.status, 201);
   assert.equal((await call('GET', `/api/users/${reg.data.user._id}/profile`, { token: reg.data.token })).status, 200);

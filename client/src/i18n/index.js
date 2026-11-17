@@ -4,16 +4,25 @@
 // tn('key', n) picks 'key.one' for 1 and 'key.other' otherwise (n is passed
 // as {n}). A key missing from rw.js falls back to English. The choice is
 // kept on this device (localStorage) and set on <html lang>. Changing it
-// re-renders the whole app (App.jsx keys its tree on the language).
+// re-renders the whole app (App.jsx keys its tree on the language). With
+// Kinyarwanda switched off (VITE_ENABLE_KINYARWANDA) only English is offered.
 // The researcher's /admin page stays in English.
 import en from './en.js';
 import rw from './rw.js';
 
-export const DICTIONARIES = { en, rw };
-export const LANGUAGES = [
+// VITE_ENABLE_KINYARWANDA=false (or 0, off) at build time makes the app
+// English only: no language switch, and a saved Kinyarwanda choice is
+// ignored. Unset, Kinyarwanda is offered.
+export const kinyarwandaEnabled = env => !['false', '0', 'off'].includes(String(env?.VITE_ENABLE_KINYARWANDA ?? '').trim().toLowerCase());
+export const KINYARWANDA = kinyarwandaEnabled(import.meta.env);
+
+const ALL_LANGUAGES = [
   { value: 'en', label: 'English' },
   { value: 'rw', label: 'Kinyarwanda (beta)' }
 ];
+export const languagesFor = enabled => ALL_LANGUAGES.filter(l => enabled || l.value === 'en');
+export const LANGUAGES = languagesFor(KINYARWANDA);
+export const DICTIONARIES = Object.fromEntries(LANGUAGES.map(l => [l.value, { en, rw }[l.value]]));
 const STORAGE_KEY = 'middleman.lang';
 
 export function loadLang() {

@@ -28,6 +28,7 @@ const CODES = [
   [/^We couldn't find that phone number\. Check it or skip this step\.$/, 'lookup_not_found'],
   [/^Too many lookups\. Please wait 15 minutes and try again\.$/, 'lookup_limited'],
   [/^Please log in again$/, 'login_again'],
+  [/^Agree to the current Privacy Policy & Terms to continue$/, 'consent_required'],
   [/^Only clients can do this$/, 'clients_only'],
   [/^Only workers can do this$/, 'workers_only'],
   [/^Person not found$/, 'person_not_found'],

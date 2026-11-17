@@ -5,5 +5,5 @@
 // `npm run sync:shared`. Change the version whenever the policy's meaning
 // changes; everyone signing up after that agrees to the new one.
 // No imports, so Node and Vite can both load it.
-export const POLICY_VERSION = '1.0';
+export const POLICY_VERSION = '1.1';
 export const POLICY_UPDATED = '2026-11-17';

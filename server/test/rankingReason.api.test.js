@@ -6,6 +6,7 @@
 // Needs TEST_MONGO_URI.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 const MONGO = process.env.TEST_MONGO_URI && (() => {
   const url = new URL(process.env.TEST_MONGO_URI);
@@ -96,6 +97,8 @@ before(async () => {
       ({ job: jobId(), fromUser: id(from), toUser: id('Jean'), score: 3, createdAt: april }))
   ]);
 
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   const token = createSessionToken(await User.findById(id('Viewer')).select('+sessionVersion'));
   server = app.listen(0);
   base = `http://127.0.0.1:${server.address().port}`;

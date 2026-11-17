@@ -6,9 +6,11 @@
 //   the payer declining while it waits;
 //   Tab stays in the sheet and Escape closes it.
 import { test, expect } from '@playwright/test';
+import { POLICY_VERSION } from '../client/src/policy.shared.js';
 
 const JOB = '/api/jobs/job1';
-const user = { _id: 'u1', name: 'Clara Mukamana', role: 'client', area: 'kimironko' };
+// Has agreed to the current policy, so the app opens (no consent screen).
+const user = { _id: 'u1', name: 'Clara Mukamana', role: 'client', area: 'kimironko', policyVersion: POLICY_VERSION, ageConfirmed: true };
 const job = escrow => ({
   _id: 'job1', description: 'Kitchen tap is leaking', category: 'plumber', area: 'kimironko',
   status: escrow.status === 'held' ? 'escrow_held' : 'quote_accepted',

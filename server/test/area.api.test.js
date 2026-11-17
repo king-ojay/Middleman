@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { AREAS as SHARED, AREA_VALUES } from '../../shared/areas.js';
 import { COPIES, SOURCE, generated } from '../../scripts/syncShared.mjs';
 import { AREAS as SERVER_AREAS } from '../config/areas.js';
+import { POLICY_VERSION } from '../config/policy.shared.js';
 
 test('one shared list of exactly the four pilot areas feeds the server, the models and the app', async () => {
   assert.deepEqual(SHARED.map(a => a.label), ['Kimironko', 'Kwa Nayinzira', 'Remera', 'Gikondo']);
@@ -97,6 +98,8 @@ before(async () => {
   users = { worker, rater, viewer };
   tokens = Object.fromEntries(await Promise.all(Object.entries(users).map(async ([k, u]) => {
     const full = await User.findById(u._id).select('+sessionVersion');
+    // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+    await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
     return [k, createSessionToken(full)];
   })));
   // A 4-star rating from the rater to the worker; the viewer has no path to either.
@@ -129,7 +132,7 @@ const call = async (method, path, { as, body, ip } = {}) => {
 const signup = async (phone, extra, ip) => {
   assert.equal((await call('POST', '/api/auth/otp', { body: { phone, purpose: 'register' }, ip })).status, 200);
   return call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone, pin: '2468', otpCode: codes.get(phone.slice(-3)), ageConfirmed: true, policyAccepted: true, policyVersion: '1.0', ...extra },
+    body: { role: 'client', name: 'New Person', phone, pin: '2468', otpCode: codes.get(phone.slice(-3)), ageConfirmed: true, policyAccepted: true, policyVersion: POLICY_VERSION, ...extra },
     ip
   });
 };
@@ -241,7 +244,7 @@ test('a referral attaches to the person whose phone was given, even when two peo
 test('signup refuses an unknown, partial or own inviter phone and creates nobody', { skip }, async () => {
   await sameName();
   const register = (phone, referrerPhone) => call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone, area: 'remera', pin: '2468', otpCode: '000000', referrerPhone, ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' },
+    body: { role: 'client', name: 'New Person', phone, area: 'remera', pin: '2468', otpCode: '000000', referrerPhone, ageConfirmed: true, policyAccepted: true, policyVersion: POLICY_VERSION },
     ip: '10.70.2.1'
   });
   for (const referrerPhone of ['0788600999', '0788600', '600102', 'Amina Uwase']) {
@@ -296,7 +299,7 @@ test('inviter lookups are limited to 30 per IP per 15 minutes, and signup shares
   assert.equal(limited.status, 429);
   assert.deepEqual(limited.data, { error: 'Too many lookups. Please wait 15 minutes and try again.', code: 'lookup_limited' });
   const viaSignup = await call('POST', '/api/auth/register', {
-    body: { role: 'client', name: 'New Person', phone: '0788600131', area: 'remera', pin: '2468', otpCode: '000000', referrerPhone: '0788600101', ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' },
+    body: { role: 'client', name: 'New Person', phone: '0788600131', area: 'remera', pin: '2468', otpCode: '000000', referrerPhone: '0788600101', ageConfirmed: true, policyAccepted: true, policyVersion: POLICY_VERSION },
     ip
   });
   assert.equal(viaSignup.status, 429);

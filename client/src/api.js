@@ -30,6 +30,14 @@ export function wakeApi() {
   fetch(`${API_BASE}/api/health`).catch(() => { woken = false; });
 }
 
+// Called when the server answers consent_required (an account without consent
+// to the current policy): auth.jsx shows the consent screen.
+const consentListeners = new Set();
+export const onConsentRequired = fn => {
+  consentListeners.add(fn);
+  return () => consentListeners.delete(fn);
+};
+
 // `session: false` sends no login token (the admin page, below).
 export async function api(path, { session = true, ...options } = {}) {
   const token = session ? loadSession()?.token : null;
@@ -61,6 +69,7 @@ export async function api(path, { session = true, ...options } = {}) {
     saveSession(null);
     window.location.assign('/login');
   }
+  if (res.status === 403 && data?.code === 'consent_required') consentListeners.forEach(fn => fn());
   if (!res.ok) {
     const err = new Error(errorText(data, res.status));
     err.status = res.status;

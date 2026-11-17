@@ -23,7 +23,7 @@ const MONGO = process.env.TEST_MONGO_URI && (() => {
 const skip = !MONGO && 'set TEST_MONGO_URI to run API tests';
 const ADMIN_SECRET = 'pilot-fixes-admin-secret';
 const HOUR = 60 * 60 * 1000;
-const CONSENT = { ageConfirmed: true, policyAccepted: true, policyVersion: '1.0' };
+const CONSENT = { ageConfirmed: true, policyAccepted: true, policyVersion: POLICY_VERSION };
 
 let server, base, mongoose, User, Job, users, tokens, sms, releaseDueJobs, setSmsProvider, SmsRejectedError, clearSignupCodes;
 
@@ -70,6 +70,8 @@ before(async () => {
   ]);
   users = { client: created[0], worker: created[1] };
   tokens = {};
+  // Created directly, not through sign-up: mark them as having agreed to the policy (requireUser).
+  await User.updateMany({}, { policyVersion: POLICY_VERSION, consentedAt: new Date(), ageConfirmed: true });
   for (const [key, u] of Object.entries(users)) tokens[key] = createSessionToken(await User.findById(u._id).select('+sessionVersion'));
   setPaymentProvider(createFakeProvider());
   server = app.listen(0);
@@ -117,7 +119,7 @@ const signup = (phone, otpCode, consent) => post('/api/auth/register', null, {
 });
 
 test('the shared policy version is the one the app shows', () => {
-  assert.equal(POLICY_VERSION, '1.0');
+  assert.equal(POLICY_VERSION, '1.1');
   const shared = readFileSync(new URL('../../shared/policy.js', import.meta.url), 'utf8');
   for (const copy of ['../config/policy.shared.js', '../../client/src/policy.shared.js']) {
     assert.ok(readFileSync(new URL(copy, import.meta.url), 'utf8').endsWith(shared), `${copy} is out of date: npm run sync:shared`);
@@ -132,7 +134,7 @@ test('sign-up is refused without both consents or for an older policy, and creat
     [{ ...CONSENT, ageConfirmed: false }, 'age_required'],
     [{ ...CONSENT, ageConfirmed: 'yes' }, 'age_required'],
     [{ ...CONSENT, policyAccepted: false }, 'policy_required'],
-    [{ ageConfirmed: true, policyVersion: '1.0' }, 'policy_required'],
+    [{ ageConfirmed: true, policyVersion: POLICY_VERSION }, 'policy_required'],
     [{ ...CONSENT, policyVersion: '0.9' }, 'policy_required']
   ];
   for (const [consent, code] of refusals) {
@@ -151,7 +153,7 @@ test('sign-up with consent stores the policy version, when, and the age confirma
   const res = await signup(phone, await codeFor(phone), CONSENT);
   assert.equal(res.status, 201);
   const user = await User.findOne({ phone }).lean();
-  assert.equal(user.policyVersion, '1.0');
+  assert.equal(user.policyVersion, POLICY_VERSION);
   assert.equal(user.ageConfirmed, true);
   assert.ok(user.consentedAt.getTime() >= before && user.consentedAt.getTime() <= Date.now());
   // Nobody else sees it: another person's profile carries none of it.
