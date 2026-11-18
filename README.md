@@ -18,7 +18,7 @@ David Tuyishimire.
 | API health | https://middleman-api-74zb.onrender.com/api/health (free host: the first request can take up to a minute to wake it) |
 | Demo video | [VIDEO LINK] |
 | Final report | https://docs.google.com/document/d/10trmQ5pRa0PepEsrW8lFZxp09JRTeV0r/edit?usp=sharing&ouid=100568644269257457377&rtpof=true&sd=true |
-| Technical report | [TECH REPORT LINK] |
+| Technical report | https://docs.google.com/document/d/1pKanLl6vHkHQs5R09DoLI2ZXce7Rjqtw/edit?usp=sharing&ouid=100568644269257457377&rtpof=true&sd=true |
 | Android app | https://github.com/king-ojay/Middleman/releases/tag/v1.0-android |
 
 **Try it:** log in with phone `0788000001` and PIN `1234` (Amina, a client in
